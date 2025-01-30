@@ -2,6 +2,7 @@
 ## NOTE: Please try to make a push, to see that everyone can push (add your name to group members list)
 
 ### Group Members:
+- Jashanjot Gill
 - Ginelle Temull
 - Una Mayberry
 - Sahil Sharma
