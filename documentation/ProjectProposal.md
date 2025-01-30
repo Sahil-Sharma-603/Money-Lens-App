@@ -37,6 +37,9 @@ Logic Layer -> NodeJS & ExpressJS
 Persistence Layer -> MongoDB
 
 APIs -> Plaid (connecting with banks)
+### Architecture:
+![Picture1](https://github.com/user-attachments/assets/1913d6d9-c350-4052-99d4-0149e279e5a5)
+
 ### User Stories:
 #### Authentication System
 - As an existing user, I want to log into my account so that I can access my financial data securely.
