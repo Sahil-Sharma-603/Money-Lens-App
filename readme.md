@@ -10,3 +10,27 @@
 
 # About Us
 Money Lens is a web application designed to simplify the process of managing personal finances. For more information about our project or plans, see our [Project Proposal](documentation/ProjectProposal.md).
+
+
+# Coding Conventions
+
+Commit log description message: 
+"Feature##-UserStory##-SubTask## description of task"
+eg. "01-09-39 implemented login form fields and buttons for UI" 
+for feature #01 (Authentication System), user story #09 (Login), subtask #39 (Login UI)
+
+Branches: 
+main - final submission
+develop - working branch
+feature - a branch for each feature 
+
+File architecture: 
+/front end
+    /dashboard
+    /transactions
+    /analysis
+/backend
+/config
+/scripts
+/docs
+/tests

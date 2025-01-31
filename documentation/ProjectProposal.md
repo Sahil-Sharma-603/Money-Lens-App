@@ -17,7 +17,7 @@ The home page for Money Lens. Displays general transaction information on income
 #### 3. Importing Data via CSV
 Users can import their downloaded CSV bank statement files.  
 #### 4. Connecting to and Importing Data from an External Bank Account
-Users can connect their transactional information from their online banking by autherizing Money Lens to sync transactions. 
+Users can connect their transactional information from their online banking by authorizing Money Lens to sync transactions. 
 #### 5. Editing, Adding, and Deleting Transactions
 New transactions can be created to account for cash transactions for example. Transaction information and categories can be edited or deleted. 
 #### 6. Basic Analytics
