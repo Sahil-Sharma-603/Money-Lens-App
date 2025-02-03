@@ -11,7 +11,7 @@ app.use(cors());
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, {
+  .connect("mongodb+srv://jashangill3592:4GQyPIRwT6lm5IiE@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })

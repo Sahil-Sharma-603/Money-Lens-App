@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: my_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: myadmin
+      MONGO_INITDB_ROOT_PASSWORD: mysecurepassword
+    volumes:
+      - mongodb_data:/data/db
+
+  backend:
+    build: ./backend  # Uses the Dockerfile inside the backend folder
+    container_name: my_backend
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      MONGO_URI: mongodb://myadmin:mysecurepassword@mongodb:27017/mydatabase
+    depends_on:
+      - mongodb
+
+  frontend:
+    build: ./frontend  # Uses the Dockerfile inside the frontend folder
+    container_name: my_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    command: ["npm", "start"]
+
+volumes:
+  mongodb_data:
