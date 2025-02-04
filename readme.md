@@ -43,6 +43,13 @@ feature - a branch for each feature
 
 /tests
 
+
+### Using Docker Containers
+
+First build the containers with the command `docker-compose up --build -d`
+
+When finished using the containers, close them with the command `docker-compose down`
+
 ### Running Frontend
 
 - Once in frontend directory, run `npm run dev`
