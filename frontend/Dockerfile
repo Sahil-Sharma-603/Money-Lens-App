@@ -1,5 +1,5 @@
 # Frontend Dockerfile
-FROM node:apline
+FROM node:alpine
 
 WORKDIR /src
 
