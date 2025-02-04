@@ -5,7 +5,7 @@ import React from 'react';
 export default function Home() {
   const handleClick = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/users/hello');
+      const response = await fetch('http://localhost:5001/api/users/hello');
       const data = await response.text();
       alert(data);
     } catch (error) {
