@@ -2,8 +2,8 @@
   --font-jost: "Jost", sans-serif;
 
   /* Gradient Colours */
-  --gradient-start: #DAE6FF; /* Light Blue */
-  --gradient-end: #BBE4FF; /* Purple */
+  --gradient-start: #DAE6FF;
+  --gradient-end: #BBE4FF;
 
   /* Primary colors */
   --positive: #0707E2;
