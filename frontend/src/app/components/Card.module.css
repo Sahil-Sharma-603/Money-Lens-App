@@ -1,0 +1,28 @@
+.card {
+    background: rgba(255, 255, 255, 0.58);
+    border: 1px solid white;
+    border-radius: 1px; 
+    padding: 20px; 
+    margin: 20px;
+    width: 100%;
+}
+
+.fullPageCard {
+    position: relative;
+    background: rgba(255, 255, 255, 0.58);
+    border-radius: 15px; 
+    top: 0;
+    left: 0;
+    height: 95vh; 
+    display: flex;
+}
+
+.dashboard {
+    position: relative;
+    margin-left: 200px;
+    /* margin-right: 5px; */
+    padding-left: 15px;
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden; 
+  }
