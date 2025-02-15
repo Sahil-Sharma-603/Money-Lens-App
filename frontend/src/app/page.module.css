@@ -20,7 +20,7 @@
 
 .sidebar {
   width: 40%;
-  background: var(--background);
+  background: #f0f7ff; /*light blue background*/
   border-right: 1px solid rgba(0, 0, 0, 0.1);
   padding: 40px;
   display: flex;
