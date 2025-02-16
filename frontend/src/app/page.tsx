@@ -1,39 +1,100 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePlaidLink } from 'react-plaid-link';
 
 export default function Home() {
-  const handleClick = async () => {
+  const [linkToken, setLinkToken] = useState(null);
+
+  // Fetch a link token from the backend on component mount
+  useEffect(() => {
+    const fetchLinkToken = async () => {
+      try {
+        const res = await fetch(
+          'http://localhost:5001/api/plaid/create_link_token',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+        const data = await res.json();
+        if (data.link_token) {
+          setLinkToken(data.link_token);
+          console.log('Received link token:', data.link_token);
+        } else {
+          console.error('No link token in response:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching link token:', error);
+      }
+    };
+    fetchLinkToken();
+  }, []);
+
+  const onSuccess = async (public_token, metadata) => {
+    console.log('Plaid onSuccess – public_token:', public_token);
     try {
-      const response = await fetch('http://localhost:5001/api/users/hello');
-      const data = await response.text();
-      alert(data);
+      // Exchange the public_token for an access token on the backend
+      const tokenExchangeResponse = await fetch(
+        'http://localhost:5001/api/plaid/set_access_token',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ public_token }),
+        }
+      );
+      const tokenData = await tokenExchangeResponse.json();
+      console.log('Token exchange response:', tokenData);
+
+      // Now call the transactions endpoint to fetch transactions
+      const transactionsResponse = await fetch(
+        'http://localhost:5001/api/plaid/transactions',
+        {
+          method: 'GET',
+        }
+      );
+      const transactionsData = await transactionsResponse.json();
+      console.log('Transactions received:', transactionsData);
+      alert('Transactions loaded! Check the console for details.');
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error during Plaid flow:', error);
+      alert('There was an error connecting your bank account.');
     }
   };
 
+  // Only initialize the Plaid config when we have a valid linkToken
+  const config = {
+    token: linkToken,
+    onSuccess,
+  };
+
+  const { open, ready } = usePlaidLink(config);
+
   return (
-    <div>
+    <div style={{ padding: '40px' }}>
+      <h1>Welcome to Money-Lens App</h1>
+
+      {/* Button to launch Plaid Link */}
       <button
         style={{
-          backgroundColor: 'blue',
+          backgroundColor: 'green',
           color: 'white',
           padding: '10px 20px',
           border: 'none',
           borderRadius: '5px',
-          cursor: 'pointer',
-          marginBottom: '10px'
+          cursor: linkToken && ready ? 'pointer' : 'not-allowed',
+          marginBottom: '10px',
         }}
-        onClick={handleClick}
+        onClick={() => open()}
+        disabled={!linkToken || !ready}
       >
-        Click Me
+        Connect a bank account
       </button>
 
       <br />
 
-      {/* Eventually this can be replaced with a login button */}
+      {/* Navigation button to Dashboard */}
       <Link href="/dashboard">
         <button
           style={{
@@ -43,10 +104,9 @@ export default function Home() {
             border: 'none',
             borderRadius: '5px',
             cursor: 'pointer',
-            marginBottom: '10px'
           }}
         >
-          Go to Dashboard 
+          Go to Dashboard
         </button>
       </Link>
     </div>

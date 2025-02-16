@@ -1,0 +1,117 @@
+const express = require('express');
+const moment = require('moment');
+const { v4: uuidv4 } = require('uuid');
+const { Products } = require('plaid');
+
+const router = express.Router();
+
+// TODO: "FIX THIS"
+let ACCESS_TOKEN = null;
+let ITEM_ID = null;
+let PUBLIC_TOKEN = null;
+
+// Helper for logging responses
+const prettyPrintResponse = (response) => {
+  console.log(JSON.stringify(response.data, null, 2));
+};
+
+// Create a link token configuration endpoint
+router.post('/create_link_token', async (req, res) => {
+  try {
+    const client = req.app.locals.plaidClient;
+    const PLAID_PRODUCTS = (
+      process.env.PLAID_PRODUCTS || Products.Transactions
+    ).split(',');
+    const PLAID_COUNTRY_CODES = (process.env.PLAID_COUNTRY_CODES || 'US').split(
+      ','
+    );
+    const PLAID_REDIRECT_URI = process.env.PLAID_REDIRECT_URI || '';
+    const PLAID_ANDROID_PACKAGE_NAME =
+      process.env.PLAID_ANDROID_PACKAGE_NAME || '';
+
+    const configs = {
+      user: {
+        // Use a generated UUID for a unique client_user_id.
+        client_user_id: uuidv4(),
+      },
+      client_name: 'Money-Lens App',
+      products: PLAID_PRODUCTS,
+      country_codes: PLAID_COUNTRY_CODES,
+      language: 'en',
+    };
+
+    if (PLAID_REDIRECT_URI !== '') {
+      configs.redirect_uri = PLAID_REDIRECT_URI;
+    }
+    if (PLAID_ANDROID_PACKAGE_NAME !== '') {
+      configs.android_package_name = PLAID_ANDROID_PACKAGE_NAME;
+    }
+    if (PLAID_PRODUCTS.includes(Products.Statements)) {
+      // Optionally include statements configuration.
+      configs.statements = {
+        start_date: moment().subtract(30, 'days').format('YYYY-MM-DD'),
+        end_date: moment().format('YYYY-MM-DD'),
+      };
+    }
+
+    const responseToken = await client.linkTokenCreate(configs);
+    prettyPrintResponse(responseToken);
+    res.json(responseToken.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
+// Exchange a public token for an access token
+router.post('/set_access_token', async (req, res) => {
+  try {
+    const client = req.app.locals.plaidClient;
+    PUBLIC_TOKEN = req.body.public_token;
+    const tokenResponse = await client.itemPublicTokenExchange({
+      public_token: PUBLIC_TOKEN,
+    });
+    prettyPrintResponse(tokenResponse);
+    ACCESS_TOKEN = tokenResponse.data.access_token;
+    ITEM_ID = tokenResponse.data.item_id;
+    res.json({
+      access_token: ACCESS_TOKEN,
+      item_id: ITEM_ID,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
+// Retrieve Item's accounts
+router.get('/accounts', async (req, res) => {
+  try {
+    const client = req.app.locals.plaidClient;
+    const accountsResponse = await client.accountsGet({
+      access_token: ACCESS_TOKEN,
+    });
+    prettyPrintResponse(accountsResponse);
+    res.json(accountsResponse.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
+// Retrieve ACH or ETF Auth data for an Item's accounts
+router.get('/auth', async (req, res) => {
+  try {
+    const client = req.app.locals.plaidClient;
+    const authResponse = await client.authGet({
+      access_token: ACCESS_TOKEN,
+    });
+    prettyPrintResponse(authResponse);
+    res.json(authResponse.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
+module.exports = router;
