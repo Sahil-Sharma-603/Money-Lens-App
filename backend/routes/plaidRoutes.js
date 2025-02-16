@@ -15,6 +15,9 @@ const prettyPrintResponse = (response) => {
   console.log(JSON.stringify(response.data, null, 2));
 };
 
+// Helper to pause execution for a given number of milliseconds
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Create a link token configuration endpoint
 router.post('/create_link_token', async (req, res) => {
   try {
@@ -108,6 +111,51 @@ router.get('/auth', async (req, res) => {
     });
     prettyPrintResponse(authResponse);
     res.json(authResponse.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
+// Retrieve Transactions for an Item using transactionsSync
+router.get('/transactions', async (req, res) => {
+  try {
+    const client = req.app.locals.plaidClient;
+    let cursor = null;
+    let added = [];
+    let modified = [];
+    let removed = [];
+    let hasMore = true;
+
+    // Iterate through each page of new transaction updates
+    while (hasMore) {
+      const syncResponse = await client.transactionsSync({
+        access_token: ACCESS_TOKEN,
+        cursor: cursor,
+      });
+      const data = syncResponse.data;
+      cursor = data.next_cursor;
+      // If no new transactions yet, wait and poll again
+      if (cursor === '') {
+        await sleep(2000);
+        continue;
+      }
+      // Aggregate results
+      added = added.concat(data.added);
+      modified = modified.concat(data.modified);
+      removed = removed.concat(data.removed);
+      hasMore = data.has_more;
+
+      prettyPrintResponse(syncResponse);
+    }
+
+    // Sort and return the 8 most recent transactions
+    const compareTxnsByDateAscending = (a, b) =>
+      (a.date > b.date) - (a.date < b.date);
+    const recently_added = [...added]
+      .sort(compareTxnsByDateAscending)
+      .slice(-8);
+    res.json({ latest_transactions: recently_added });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.toString() });

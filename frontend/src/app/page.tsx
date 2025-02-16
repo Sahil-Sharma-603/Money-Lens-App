@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePlaidLink } from 'react-plaid-link';
 
 export default function Home() {
-  const [linkToken, setLinkToken] = useState(null);
+  const [linkToken, setLinkToken] = useState<string | null>(null);
 
   // Fetch a link token from the backend on component mount
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function Home() {
     fetchLinkToken();
   }, []);
 
-  const onSuccess = async (public_token, metadata) => {
+  const onSuccess = async (public_token: string, metadata: any) => {
     console.log('Plaid onSuccess – public_token:', public_token);
     try {
       // Exchange the public_token for an access token on the backend
@@ -47,7 +47,7 @@ export default function Home() {
       const tokenData = await tokenExchangeResponse.json();
       console.log('Token exchange response:', tokenData);
 
-      // Now call the transactions endpoint to fetch transactions
+      // Now call the transactions endpoint (which uses transactionsSync behind the scenes)
       const transactionsResponse = await fetch(
         'http://localhost:5001/api/plaid/transactions',
         {
@@ -65,11 +65,11 @@ export default function Home() {
 
   // Only initialize the Plaid config when we have a valid linkToken
   const config = {
-    token: linkToken,
+    token: linkToken!,
     onSuccess,
   };
 
-  const { open, ready } = usePlaidLink(config);
+  const { open, ready } = usePlaidLink(linkToken ? config : { token: '' });
 
   return (
     <div style={{ padding: '40px' }}>
