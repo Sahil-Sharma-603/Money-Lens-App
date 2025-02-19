@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, FormEvent } from 'react';
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '../app/config/firebase'; // Adjust path to match your file structure
 import styles from './page.module.css';
 
 export default function Home() {
@@ -10,7 +12,25 @@ export default function Home() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Login attempt with:', { email, password, rememberMe });
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (!user.emailVerified) {
+        alert("Please verify your email before logging in.");
+        return;
+      }
+
+      alert("Login successful!");
+      console.log("User logged in:", user);
+
+      // Redirect user to dashboard
+      window.location.href = "/dashboard"; 
+    } catch (error: any) {
+      console.error("Login failed:", error.message);
+      alert("Login failed: " + error.message);
+    }
   };
 
   return (
