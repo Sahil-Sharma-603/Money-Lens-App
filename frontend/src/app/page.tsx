@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, FormEvent } from 'react';
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from '../app/config/firebase'; // Adjust path to match your file structure
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '../app/config/firebase';
 import styles from './page.module.css';
+import Link from 'next/link';
+import { FirebaseError } from 'firebase/app';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -27,9 +29,14 @@ export default function Home() {
 
       // Redirect user to dashboard
       window.location.href = "/dashboard"; 
-    } catch (error: any) {
-      console.error("Login failed:", error.message);
-      alert("Login failed: " + error.message);
+    } catch (error) {
+      // Type guard for Firebase errors
+      const errorMessage = error instanceof FirebaseError 
+        ? error.message 
+        : 'An unknown error occurred';
+      
+      console.error("Login failed:", errorMessage);
+      alert("Login failed: " + errorMessage);
     }
   };
 
@@ -84,9 +91,9 @@ export default function Home() {
                   />
                   Remember me
                 </label>
-                <a href="/forgot-password" className={styles.forgotPassword}>
+                <Link href="/forgot-password" className={styles.forgotPassword}>
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <button type="submit" className={styles.signInButton}>
@@ -96,7 +103,7 @@ export default function Home() {
 
             <p className={styles.signUpPrompt}>
               Don&apos;t have an account?{' '}
-              <a href="/signup" className={styles.signUpLink}>Sign Up</a>
+              <Link href="/signup" className={styles.signUpLink}>Sign Up</Link>
             </p>
           </div>
         </div>

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../config/firebase.js';
 import styles from '../page.module.css';
+import Link from 'next/link';
+import { FirebaseError } from 'firebase/app';
 
 export default function SignupPage() {
   const [name, setName] = useState('');
@@ -22,14 +24,20 @@ export default function SignupPage() {
     }
 
     try {
-      // Create user in Firebase Authentication
-      const responser = await fetch('http://localhost:5001/api/users/signup', {
+      // Create user in backend
+      const backendResponse = await fetch('http://localhost:5001/api/users/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ name, lastName, email, password }),
       });
+
+      if (!backendResponse.ok) {
+        throw new Error('Failed to create user in backend');
+      }
+
+      // Create user in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
@@ -72,9 +80,15 @@ export default function SignupPage() {
       
       // Redirect to login page
       router.push('/');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Signup error:', error);
-      alert('Signup failed: ' + error.message);
+      const errorMessage = error instanceof FirebaseError 
+        ? error.message 
+        : error instanceof Error 
+          ? error.message 
+          : 'An unknown error occurred';
+      
+      alert('Signup failed: ' + errorMessage);
     }
   };
 
@@ -148,7 +162,7 @@ export default function SignupPage() {
             </form>
 
             <p className={styles.signUpPrompt}>
-              Already have an account? <a href="/" className={styles.signUpLink}>Log in</a>
+              Already have an account? <Link href="/" className={styles.signUpLink}>Log in</Link>
             </p>
           </div>
         </div>
