@@ -117,49 +117,107 @@ router.get('/auth', async (req, res) => {
   }
 });
 
-// Retrieve Transactions for an Item using transactionsSync
+
+
+// //Retrieve Transactions for an Item using transactionsSync
+// router.get('/transactions', async (req, res) => {
+//   try {
+//     const client = req.app.locals.plaidClient;
+//     let cursor = null;
+//     let added = [];
+//     let modified = [];
+//     let removed = [];
+//     let hasMore = true;
+
+//     // Iterate through each page of new transaction updates
+//     while (hasMore) {
+//       const syncResponse = await client.transactionsSync({
+//         access_token: ACCESS_TOKEN,
+//         cursor: cursor,
+//       });
+//       const data = syncResponse.data;
+//       cursor = data.next_cursor;
+//       // If no new transactions yet, wait and poll again
+//       if (cursor === '') {
+//         await sleep(2000);
+//         continue;
+//       }
+//       // Aggregate results
+//       added = added.concat(data.added);
+//       modified = modified.concat(data.modified);
+//       removed = removed.concat(data.removed);
+//       hasMore = data.has_more;
+
+//       prettyPrintResponse(syncResponse);
+//     }
+
+//     // Sort and return the 8 most recent transactions
+//     const compareTxnsByDateAscending = (a, b) =>
+//       (a.date > b.date) - (a.date < b.date);
+//     const recently_added = [...added]
+//       .sort(compareTxnsByDateAscending)
+//       .slice(-8);
+//     res.json({ latest_transactions: recently_added });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: error.toString() });
+//   }
+// });
+
+// Function to get 8 latest transactions and upto 24 months data 
 router.get('/transactions', async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     let cursor = null;
-    let added = [];
-    let modified = [];
-    let removed = [];
+    let allTransactions = [];
     let hasMore = true;
 
-    // Iterate through each page of new transaction updates
+    // Paginate through all available transactions
     while (hasMore) {
       const syncResponse = await client.transactionsSync({
         access_token: ACCESS_TOKEN,
         cursor: cursor,
       });
       const data = syncResponse.data;
+      // Aggregate new transactions from the "added" array
+      allTransactions = allTransactions.concat(data.added);
       cursor = data.next_cursor;
-      // If no new transactions yet, wait and poll again
-      if (cursor === '') {
-        await sleep(2000);
-        continue;
-      }
-      // Aggregate results
-      added = added.concat(data.added);
-      modified = modified.concat(data.modified);
-      removed = removed.concat(data.removed);
       hasMore = data.has_more;
 
+      // Optional: log each sync response for debugging
       prettyPrintResponse(syncResponse);
     }
 
-    // Sort and return the 8 most recent transactions
+    // Filter transactions to include only those from the last 24 months
+    const twentyFourMonthsAgo = moment().subtract(24, 'months');
+    const filteredTransactions = allTransactions.filter((single_transaction) =>
+      moment(single_transaction.date).isAfter(twentyFourMonthsAgo)
+    );
+
+    // Sort the filtered transactions by date in ascending order
+    // const sortedTransactions = filteredTransactions.sort((a, b) =>
+    //   (a.date > b.date) ? 1 : (a.date < b.date) ? -1 : 0
+    // );
     const compareTxnsByDateAscending = (a, b) =>
       (a.date > b.date) - (a.date < b.date);
-    const recently_added = [...added]
-      .sort(compareTxnsByDateAscending)
-      .slice(-8);
-    res.json({ latest_transactions: recently_added });
+    
+    const sortedTransactions = filteredTransactions.sort(compareTxnsByDateAscending);
+    
+
+    // Get the 8 most recent transactions
+    const latest_transactions = sortedTransactions.slice(-8);
+
+    // Return both the full 24-month history and the latest 8 transactions
+    res.json({
+      full_transactions: filteredTransactions,
+      latest_transactions: latest_transactions,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.toString() });
   }
 });
+
+
 
 module.exports = router;
