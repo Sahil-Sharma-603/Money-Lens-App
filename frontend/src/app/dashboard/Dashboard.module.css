@@ -1,0 +1,10 @@
+.dashboard {
+    position: relative;
+    margin-left: 200px;
+    margin-right:10px;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+  }

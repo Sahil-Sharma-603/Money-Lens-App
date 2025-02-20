@@ -1,8 +1,10 @@
+import Card from '../components/Card';
+import styles from '../components/Card.module.css';
+
 export default function Dashboard() {
-    return (
-      <div>
-        {/* <h1>Dashboard</h1> */}
-      </div>
-    );
+  return (
+    <div className={styles.dashboard}>
+      <Card className={styles.fullPageCard} />
+    </div>
+  );
 }
-  
