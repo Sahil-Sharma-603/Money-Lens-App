@@ -35,6 +35,7 @@ export default function Home() {
   const onSuccess = async (public_token: string, metadata: any) => {
     console.log('Plaid onSuccess – public_token:', public_token);
     try {
+
       // Exchange the public_token for an access token on the backend
       const tokenExchangeResponse = await fetch(
         'http://localhost:5001/api/plaid/set_access_token',
@@ -44,9 +45,19 @@ export default function Home() {
           body: JSON.stringify({ public_token }),
         }
       );
+
       const tokenData = await tokenExchangeResponse.json();
       console.log('Token exchange response:', tokenData);
 
+      // const historicalResponse = await fetch(
+      //   'http://localhost:5001/api/plaid/transactions/historical',
+      //   {
+      //     method: 'GET',
+      //   }
+      // );
+      //   const historicalData = await historicalResponse.json();
+      //   console.log('Historical transactions:', historicalData);
+  
       // Now call the transactions endpoint (which uses transactionsSync behind the scenes)
       const transactionsResponse = await fetch(
         'http://localhost:5001/api/plaid/transactions',

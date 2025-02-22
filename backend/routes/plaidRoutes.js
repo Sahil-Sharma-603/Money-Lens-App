@@ -52,8 +52,13 @@ router.post('/create_link_token', async (req, res) => {
     if (PLAID_PRODUCTS.includes(Products.Statements)) {
       // Optionally include statements configuration.
       configs.statements = {
-        start_date: moment().subtract(30, 'days').format('YYYY-MM-DD'),
+        start_date: moment().subtract(730, 'days').format('YYYY-MM-DD'),
         end_date: moment().format('YYYY-MM-DD'),
+      };
+    }
+    if (PLAID_PRODUCTS.includes(Products.Transactions)) {
+      configs.transactions = {
+        days_requested: 730,
       };
     }
 
@@ -119,104 +124,110 @@ router.get('/auth', async (req, res) => {
 
 
 
-// //Retrieve Transactions for an Item using transactionsSync
-// router.get('/transactions', async (req, res) => {
-//   try {
-//     const client = req.app.locals.plaidClient;
-//     let cursor = null;
-//     let added = [];
-//     let modified = [];
-//     let removed = [];
-//     let hasMore = true;
-
-//     // Iterate through each page of new transaction updates
-//     while (hasMore) {
-//       const syncResponse = await client.transactionsSync({
-//         access_token: ACCESS_TOKEN,
-//         cursor: cursor,
-//       });
-//       const data = syncResponse.data;
-//       cursor = data.next_cursor;
-//       // If no new transactions yet, wait and poll again
-//       if (cursor === '') {
-//         await sleep(2000);
-//         continue;
-//       }
-//       // Aggregate results
-//       added = added.concat(data.added);
-//       modified = modified.concat(data.modified);
-//       removed = removed.concat(data.removed);
-//       hasMore = data.has_more;
-
-//       prettyPrintResponse(syncResponse);
-//     }
-
-//     // Sort and return the 8 most recent transactions
-//     const compareTxnsByDateAscending = (a, b) =>
-//       (a.date > b.date) - (a.date < b.date);
-//     const recently_added = [...added]
-//       .sort(compareTxnsByDateAscending)
-//       .slice(-8);
-//     res.json({ latest_transactions: recently_added });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: error.toString() });
-//   }
-// });
-
-// Function to get 8 latest transactions and upto 24 months data 
+//Retrieve Transactions for an Item using transactionsSync
 router.get('/transactions', async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     let cursor = null;
-    let allTransactions = [];
+    let added = [];
+    let modified = [];
+    let removed = [];
     let hasMore = true;
 
-    // Paginate through all available transactions
+    // Iterate through each page of new transaction updates
     while (hasMore) {
       const syncResponse = await client.transactionsSync({
         access_token: ACCESS_TOKEN,
         cursor: cursor,
       });
       const data = syncResponse.data;
-      // Aggregate new transactions from the "added" array
-      allTransactions = allTransactions.concat(data.added);
       cursor = data.next_cursor;
+      // If no new transactions yet, wait and poll again
+      if (cursor === '') {
+        await sleep(2000);
+        continue;
+      }
+      // Aggregate results
+      added = added.concat(data.added);
+      modified = modified.concat(data.modified);
+      removed = removed.concat(data.removed);
       hasMore = data.has_more;
 
-      // Optional: log each sync response for debugging
       prettyPrintResponse(syncResponse);
     }
 
-    // Filter transactions to include only those from the last 24 months
-    const twentyFourMonthsAgo = moment().subtract(24, 'months');
-    const filteredTransactions = allTransactions.filter((single_transaction) =>
-      moment(single_transaction.date).isAfter(twentyFourMonthsAgo)
-    );
-
-    // Sort the filtered transactions by date in ascending order
-    // const sortedTransactions = filteredTransactions.sort((a, b) =>
-    //   (a.date > b.date) ? 1 : (a.date < b.date) ? -1 : 0
-    // );
+    // Sort and return the 8 most recent transactions
     const compareTxnsByDateAscending = (a, b) =>
-      (a.date > b.date) - (a.date < b.date);
-    
-    const sortedTransactions = filteredTransactions.sort(compareTxnsByDateAscending);
-    
-
-    // Get the 8 most recent transactions
-    const latest_transactions = sortedTransactions.slice(-8);
-
-    // Return both the full 24-month history and the latest 8 transactions
-    res.json({
-      full_transactions: filteredTransactions,
-      latest_transactions: latest_transactions,
-    });
+      (a.date < b.date) - (a.date > b.date);
+    const recently_added = [...added]
+      .sort(compareTxnsByDateAscending)
+      
+    res.json({ latest_transactions: recently_added });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.toString() });
   }
 });
+
+
+// // Fetch historical transactions using transactionsGet
+// router.get('/transactions/historical', async (req, res) => {
+//   try {
+//     const client = req.app.locals.plaidClient;
+
+//     // Define the date range for historical transactions (up to 24 months)
+//     const startDate = moment().subtract(24, 'months').format('YYYY-MM-DD');
+//     const endDate = moment().format('YYYY-MM-DD');
+
+
+//     // Fetch historical transactions
+//     const historicalResponse = await client.transactionsGet({
+//       access_token: ACCESS_TOKEN,
+//       start_date: startDate,
+//       end_date: endDate,
+//     });
+
+//         // Log the values for debugging
+//       console.log('ACCESS_TOKEN:', ACCESS_TOKEN);
+//       console.log('startDate:', startDate, 'endDate:', endDate);
+        
+
+//     prettyPrintResponse(historicalResponse);
+//     res.json(historicalResponse.data);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: error.toString() });
+//   }
+// });
+
+
+// // Webhook to handle SYNC_UPDATES_AVAILABLE
+router.post('/webhook', async (req, res) => {
+  try {
+    const { webhook_type, webhook_code, item_id } = req.body;
+
+    if (webhook_type === 'TRANSACTIONS' && webhook_code === 'SYNC_UPDATES_AVAILABLE') {
+      console.log(`New transactions available for item: ${item_id}`);
+
+      // Fetch new transactions
+      const transactionsResponse = await fetch(
+        'http://localhost:5001/api/plaid/transactions',
+        {
+          method: 'GET',
+        }
+      );
+      const transactionsData = await transactionsResponse.json();
+      console.log('New transactions:', transactionsData);
+    }
+
+    res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
+
 
 
 
