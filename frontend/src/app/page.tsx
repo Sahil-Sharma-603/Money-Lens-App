@@ -1,76 +1,47 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, FormEvent } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../app/config/firebase';
+import styles from './page.module.css';
 import Link from 'next/link';
-import { usePlaidLink } from 'react-plaid-link';
+import { FirebaseError } from 'firebase/app';
 
 export default function Home() {
-  const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
 
-  // Fetch a link token from the backend on component mount
-  useEffect(() => {
-    const fetchLinkToken = async () => {
-      try {
-        const res = await fetch(
-          'http://localhost:5001/api/plaid/create_link_token',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-          }
-        );
-        const data = await res.json();
-        if (data.link_token) {
-          setLinkToken(data.link_token);
-          console.log('Received link token:', data.link_token);
-        } else {
-          console.error('No link token in response:', data);
-        }
-      } catch (error) {
-        console.error('Error fetching link token:', error);
-      }
-    };
-    fetchLinkToken();
-  }, []);
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  const onSuccess = async (public_token: string, metadata: any) => {
-    console.log('Plaid onSuccess – public_token:', public_token);
     try {
-
-      // Exchange the public_token for an access token on the backend
-      const tokenExchangeResponse = await fetch(
-        'http://localhost:5001/api/plaid/set_access_token',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ public_token }),
-        }
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
       );
+      const user = userCredential.user;
 
-      const tokenData = await tokenExchangeResponse.json();
-      console.log('Token exchange response:', tokenData);
+      if (!user.emailVerified) {
+        alert('Please verify your email before logging in.');
+        return;
+      }
 
-      // const historicalResponse = await fetch(
-      //   'http://localhost:5001/api/plaid/transactions/historical',
-      //   {
-      //     method: 'GET',
-      //   }
-      // );
-      //   const historicalData = await historicalResponse.json();
-      //   console.log('Historical transactions:', historicalData);
-  
-      // Now call the transactions endpoint (which uses transactionsSync behind the scenes)
-      const transactionsResponse = await fetch(
-        'http://localhost:5001/api/plaid/transactions',
-        {
-          method: 'GET',
-        }
-      );
-      const transactionsData = await transactionsResponse.json();
-      console.log('Transactions received:', transactionsData);
-      alert('Transactions loaded! Check the console for details.');
+      alert('Login successful!');
+      console.log('User logged in:', user);
+
+      // Redirect user to dashboard
+      window.location.href = '/dashboard';
     } catch (error) {
-      console.error('Error during Plaid flow:', error);
-      alert('There was an error connecting your bank account.');
+      // Type guard for Firebase errors
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : 'An unknown error occurred';
+
+      console.error('Login failed:', errorMessage);
+      alert('Login failed: ' + errorMessage);
     }
   };
 
@@ -83,43 +54,75 @@ export default function Home() {
   const { open, ready } = usePlaidLink(linkToken ? config : { token: '' });
 
   return (
-    <div style={{ padding: '40px' }}>
-      <h1>Welcome to Money-Lens App</h1>
+    <div className={styles.page}>
+      <div className={styles.container}>
+        {/* Left Side */}
+        <div className={styles.sidebar}>
+          <div className={styles.brandContent}>
+            <h1>MoneyLens</h1>
+            <p>We solve all your money problems...</p>
+          </div>
+        </div>
 
-      {/* Button to launch Plaid Link */}
-      <button
-        style={{
-          backgroundColor: 'green',
-          color: 'white',
-          padding: '10px 20px',
-          border: 'none',
-          borderRadius: '5px',
-          cursor: linkToken && ready ? 'pointer' : 'not-allowed',
-          marginBottom: '10px',
-        }}
-        onClick={() => open()}
-        disabled={!linkToken || !ready}
-      >
-        Connect a bank account
-      </button>
+        {/* Right Side */}
+        <div className={styles.formSection}>
+          <div className={styles.formContainer}>
+            <h2>Welcome!</h2>
+            <p>Enter your email and password to login</p>
 
-      <br />
+            <form onSubmit={handleSubmit}>
+              <div className={styles.inputGroup}>
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
 
-      {/* Navigation button to Dashboard */}
-      <Link href="/dashboard">
-        <button
-          style={{
-            backgroundColor: 'blue',
-            color: 'white',
-            padding: '10px 20px',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-          }}
-        >
-          Go to Dashboard
-        </button>
-      </Link>
+              <div className={styles.inputGroup}>
+                <label htmlFor="password">Password</label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              <div className={styles.options}>
+                <label className={styles.rememberMe}>
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  Remember me
+                </label>
+                <Link href="/forgot-password" className={styles.forgotPassword}>
+                  Forgot password?
+                </Link>
+              </div>
+
+              <button type="submit" className={styles.signInButton}>
+                Sign In
+              </button>
+            </form>
+
+            <p className={styles.signUpPrompt}>
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" className={styles.signUpLink}>
+                Sign Up
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
