@@ -2,6 +2,8 @@ const express = require('express');
 const moment = require('moment');
 const { v4: uuidv4 } = require('uuid');
 const { Products } = require('plaid');
+const { saveTransaction } = require('../models/transaction.model');
+const auth = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
@@ -19,7 +21,7 @@ const prettyPrintResponse = (response) => {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Create a link token configuration endpoint
-router.post('/create_link_token', async (req, res) => {
+router.post('/create_link_token', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     const PLAID_PRODUCTS = (
@@ -72,7 +74,7 @@ router.post('/create_link_token', async (req, res) => {
 });
 
 // Exchange a public token for an access token
-router.post('/set_access_token', async (req, res) => {
+router.post('/set_access_token', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     PUBLIC_TOKEN = req.body.public_token;
@@ -93,7 +95,7 @@ router.post('/set_access_token', async (req, res) => {
 });
 
 // Retrieve Item's accounts
-router.get('/accounts', async (req, res) => {
+router.get('/accounts', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     const accountsResponse = await client.accountsGet({
@@ -108,7 +110,7 @@ router.get('/accounts', async (req, res) => {
 });
 
 // Retrieve ACH or ETF Auth data for an Item's accounts
-router.get('/auth', async (req, res) => {
+router.get('/auth', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     const authResponse = await client.authGet({
@@ -122,10 +124,8 @@ router.get('/auth', async (req, res) => {
   }
 });
 
-
-
-//Retrieve Transactions for an Item using transactionsSync
-router.get('/transactions', async (req, res) => {
+//Retrieve Transacstions for an Item using transactionsSync
+router.get('/transactions', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     let cursor = null;
@@ -156,29 +156,37 @@ router.get('/transactions', async (req, res) => {
       prettyPrintResponse(syncResponse);
     }
 
-    // Sort and return the 8 most recent transactions
+    // Sort transactions by date
     const compareTxnsByDateAscending = (a, b) =>
       (a.date < b.date) - (a.date > b.date);
-    const recently_added = [...added]
-      .sort(compareTxnsByDateAscending)
-      
-    res.json({ latest_transactions: recently_added });
+    const recently_added = [...added].sort(compareTxnsByDateAscending);
+
+    // Save all transactions to database
+    const savePromises = recently_added.map((transaction) =>
+      saveTransaction(transaction, req.user._id)
+    );
+    await Promise.all(savePromises);
+
+    console.log(`Successfully saved ${recently_added.length} transactions`);
+
+    res.json({
+      latest_transactions: recently_added,
+      message: `${recently_added.length} transactions saved to database`,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.toString() });
   }
 });
 
-
 // // Fetch historical transactions using transactionsGet
-// router.get('/transactions/historical', async (req, res) => {
+// router.get('/transactions/historical', auth, async (req, res) => {
 //   try {
 //     const client = req.app.locals.plaidClient;
 
 //     // Define the date range for historical transactions (up to 24 months)
 //     const startDate = moment().subtract(24, 'months').format('YYYY-MM-DD');
 //     const endDate = moment().format('YYYY-MM-DD');
-
 
 //     // Fetch historical transactions
 //     const historicalResponse = await client.transactionsGet({
@@ -190,7 +198,6 @@ router.get('/transactions', async (req, res) => {
 //         // Log the values for debugging
 //       console.log('ACCESS_TOKEN:', ACCESS_TOKEN);
 //       console.log('startDate:', startDate, 'endDate:', endDate);
-        
 
 //     prettyPrintResponse(historicalResponse);
 //     res.json(historicalResponse.data);
@@ -200,13 +207,15 @@ router.get('/transactions', async (req, res) => {
 //   }
 // });
 
-
 // // Webhook to handle SYNC_UPDATES_AVAILABLE
-router.post('/webhook', async (req, res) => {
+router.post('/webhook', auth, async (req, res) => {
   try {
     const { webhook_type, webhook_code, item_id } = req.body;
 
-    if (webhook_type === 'TRANSACTIONS' && webhook_code === 'SYNC_UPDATES_AVAILABLE') {
+    if (
+      webhook_type === 'TRANSACTIONS' &&
+      webhook_code === 'SYNC_UPDATES_AVAILABLE'
+    ) {
       console.log(`New transactions available for item: ${item_id}`);
 
       // Fetch new transactions
@@ -226,9 +235,5 @@ router.post('/webhook', async (req, res) => {
     res.status(500).json({ error: error.toString() });
   }
 });
-
-
-
-
 
 module.exports = router;

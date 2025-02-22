@@ -6,14 +6,17 @@ import { auth } from '../app/config/firebase';
 import styles from './page.module.css';
 import Link from 'next/link';
 import { FirebaseError } from 'firebase/app';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -28,20 +31,42 @@ export default function Home() {
         return;
       }
 
-      alert('Login successful!');
-      console.log('User logged in:', user);
+      // Send Firebase user data to your backend
+      const response = await fetch('http://localhost:5001/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: user.email,
+          firebaseUid: user.uid,
+          name: user.displayName?.split(' ')[0] || 'User',
+          lastName: user.displayName?.split(' ')[1] || 'Unknown',
+        }),
+      });
 
-      // Redirect user to dashboard
-      window.location.href = '/dashboard';
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
+
+      const data = await response.json();
+
+      if (true) {
+        localStorage.setItem('token', data.token);
+      } else {
+        sessionStorage.setItem('token', data.token);
+      }
+      router.push('/dashboard');
     } catch (error) {
-      // Type guard for Firebase errors
       const errorMessage =
         error instanceof FirebaseError
           ? error.message
           : 'An unknown error occurred';
-
       console.error('Login failed:', errorMessage);
       alert('Login failed: ' + errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -88,14 +113,6 @@ export default function Home() {
               </div>
 
               <div className={styles.options}>
-                <label className={styles.rememberMe}>
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  Remember me
-                </label>
                 <Link href="/forgot-password" className={styles.forgotPassword}>
                   Forgot password?
                 </Link>

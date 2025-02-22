@@ -15,7 +15,10 @@ export default function Home() {
           'http://localhost:5001/api/plaid/create_link_token',
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
           }
         );
         const data = await res.json();
@@ -41,7 +44,10 @@ export default function Home() {
         'http://localhost:5001/api/plaid/set_access_token',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({ public_token }),
         }
       );
@@ -59,10 +65,16 @@ export default function Home() {
       //   console.log('Historical transactions:', historicalData);
 
       // Now call the transactions endpoint (which uses transactionsSync behind the scenes)
+
+      const jwtToken = localStorage.getItem('token');
       const transactionsResponse = await fetch(
         'http://localhost:5001/api/plaid/transactions',
         {
           method: 'GET',
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            'Content-Type': 'application/json',
+          },
         }
       );
       const transactionsData = await transactionsResponse.json();

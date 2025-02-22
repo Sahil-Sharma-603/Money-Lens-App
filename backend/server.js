@@ -4,11 +4,13 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const plaidRoutes = require('./routes/plaidRoutes');
 require('dotenv').config({ path: '.env' });
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser());
 
 // MongoDB Connection
 mongoose
