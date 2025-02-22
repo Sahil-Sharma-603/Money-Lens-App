@@ -61,6 +61,7 @@ feature - a branch for each feature
 
 - cd backend
 - `npm install`
-- Once in backend directory, run `node server.js`
+- Once in backend directory, run `node server.js`. Note: Won't reload by itself.
+- Once in backend directory, run `npm start` for auto-reload.
 - Node: you must .env file that has MONGO_URI=mongodb+srv://<username>:<password>@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority
 - Note: Replace `username` & `password` with actual credentials.
