@@ -45,14 +45,6 @@ export default function Home() {
     }
   };
 
-  // Only initialize the Plaid config when we have a valid linkToken
-  const config = {
-    token: linkToken!,
-    onSuccess,
-  };
-
-  const { open, ready } = usePlaidLink(linkToken ? config : { token: '' });
-
   return (
     <div className={styles.page}>
       <div className={styles.container}>
