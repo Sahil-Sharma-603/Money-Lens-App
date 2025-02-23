@@ -1,26 +1,17 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { apiRequest, SignupResponse } from '@/app/assets/utilities/API_HANDLER';
+import { FirebaseError } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
 } from 'firebase/auth';
-import { auth } from '../config/firebase.js';
-import styles from '../page.module.css';
 import Link from 'next/link';
-import { FirebaseError } from 'firebase/app';
-
-type BackendResponse = {
-  message: string;
-  user: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    firebaseUid: string;
-  };
-};
+import { useRouter } from 'next/navigation';
+import { FormEvent, useState } from 'react';
+import styles from '../../assets/styles/page.module.css';
+import { auth } from '../../config/firebase.js';
+import { log } from 'console';
 
 export default function SignupPage() {
   const [firstName, setName] = useState('');
@@ -68,31 +59,27 @@ export default function SignupPage() {
       // Send email verification
       await sendEmailVerification(user);
 
-      // Create user in backend with Firebase UID
-      const backendResponse = await fetch(
-        'http://localhost:5001/api/users/signup',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            firstName,
-            lastName,
-            email,
-            firebaseUid: user.uid,
-          }),
-        }
-      );
+      // Create user in backend with Firebase UID using apiRequest
+      const response = await apiRequest<SignupResponse>('/users/signup', {
+        method: 'POST',
+        body: {
+          firstName,
+          lastName,
+          email,
+          firebaseUid: user.uid,
+        },
+      });
 
-      if (!backendResponse.ok) {
+      console.log(response);
+
+      if (response && response.message) {
+        alert(
+          'Signup successful! Please check your email for verification link.'
+        );
+        router.push('/');
+      } else {
         throw new Error('Failed to create user in backend');
       }
-
-      alert(
-        'Signup successful! Please check your email for verification link.'
-      );
-      router.push('/');
     } catch (error) {
       console.error('Signup error:', error);
       const errorMessage =

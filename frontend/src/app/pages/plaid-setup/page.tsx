@@ -3,34 +3,32 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePlaidLink } from 'react-plaid-link';
+import {
+  apiRequest,
+  PlaidLinkResponse,
+  Transaction,
+  TransactionsResponse,
+} from '@/app/assets/utilities/API_HANDLER';
 
 export default function Home() {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  // Fetch a link token from the backend on component mount
   useEffect(() => {
     const fetchLinkToken = async () => {
       try {
-        const res = await fetch(
-          'http://localhost:5001/api/plaid/create_link_token',
+        const data = await apiRequest<PlaidLinkResponse>(
+          '/plaid/create_link_token',
           {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-              'Content-Type': 'application/json',
-            },
           }
         );
-        const data = await res.json();
         if (data.link_token) {
           setLinkToken(data.link_token);
           console.log('Received link token:', data.link_token);
-        } else {
-          console.error('No link token in response:', data);
         }
       } catch (error) {
         console.error('Error fetching link token:', error);
@@ -42,24 +40,21 @@ export default function Home() {
   const fetchStoredTransactions = async () => {
     setIsLoading(true);
     try {
-      const queryParams = new URLSearchParams();
-      if (fromDate) queryParams.append('fromDate', fromDate);
-      if (toDate) queryParams.append('toDate', toDate);
+      const params: Record<string, string> = {};
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
 
-      const response = await fetch(
-        `http://localhost:5001/api/transactions/stored?${queryParams}`,
+      const data = await apiRequest<TransactionsResponse>(
+        '/transactions/stored',
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
+          params,
         }
       );
 
-      const data = await response.json();
-      setTransactions(data.transactions); // Store the transactions
+      setTransactions(data.transactions);
+      if (data.count === 0)
+        alert('No transaction found, connect a bank account');
       console.log('Stored transactions:', data);
-      alert(`Successfully fetched ${data.count} transactions!`);
     } catch (error) {
       console.error('Error fetching stored transactions:', error);
       alert('Failed to fetch transactions');
@@ -71,35 +66,17 @@ export default function Home() {
   const onSuccess = async (public_token: string, metadata: any) => {
     console.log('Plaid onSuccess – public_token:', public_token);
     try {
-      const tokenExchangeResponse = await fetch(
-        'http://localhost:5001/api/plaid/set_access_token',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ public_token }),
-        }
-      );
+      await apiRequest('/plaid/set_access_token', {
+        method: 'POST',
+        body: { public_token },
+      });
 
-      const tokenData = await tokenExchangeResponse.json();
-      console.log('Token exchange response:', tokenData);
-
-      const jwtToken = localStorage.getItem('token');
-      const transactionsResponse = await fetch(
-        'http://localhost:5001/api/plaid/transactions',
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
+      alert(
+        "[Don't Refresh] You will get a success message when all the transactions has loaded. "
       );
-      const transactionsData = await transactionsResponse.json();
+      const transactionsData = await apiRequest('/plaid/transactions');
       console.log('Transactions received:', transactionsData);
-      alert('Transactions loaded! Check the console for details.');
+      alert('Transactions loaded! Click View Transactions Button');
     } catch (error) {
       console.error('Error during Plaid flow:', error);
       alert('There was an error connecting your bank account.');

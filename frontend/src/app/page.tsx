@@ -3,10 +3,11 @@
 import React, { useState, FormEvent } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../app/config/firebase';
-import styles from './page.module.css';
+import styles from './assets/styles/page.module.css';
 import Link from 'next/link';
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'next/navigation';
+import { apiRequest, LoginResponse } from './assets/utilities/API_HANDLER';
 
 export default function Home() {
   const router = useRouter();
@@ -31,36 +32,23 @@ export default function Home() {
         return;
       }
 
-      // Send Firebase user data to your backend
-      const response = await fetch('http://localhost:5001/api/users/login', {
+      const data = await apiRequest<LoginResponse>('/users/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+        body: {
           email: user.email,
           firebaseUid: user.uid,
           name: user.displayName?.split(' ')[0] || 'User',
           lastName: user.displayName?.split(' ')[1] || 'Unknown',
-        }),
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed');
-      }
-
-      const data = await response.json();
-
-      if (true) {
-        localStorage.setItem('token', data.token);
-      } else {
-        sessionStorage.setItem('token', data.token);
-      }
-      router.push('/dashboard');
+      localStorage.setItem('token', data.token);
+      router.push('/pages/dashboard');
     } catch (error) {
       const errorMessage =
         error instanceof FirebaseError
+          ? error.message
+          : error instanceof Error
           ? error.message
           : 'An unknown error occurred';
       console.error('Login failed:', errorMessage);
@@ -113,7 +101,10 @@ export default function Home() {
               </div>
 
               <div className={styles.options}>
-                <Link href="/forgot-password" className={styles.forgotPassword}>
+                <Link
+                  href="/pages/forgot-password"
+                  className={styles.forgotPassword}
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -125,7 +116,7 @@ export default function Home() {
 
             <p className={styles.signUpPrompt}>
               Don&apos;t have an account?{' '}
-              <Link href="/signup" className={styles.signUpLink}>
+              <Link href="/pages/signup" className={styles.signUpLink}>
                 Sign Up
               </Link>
             </p>

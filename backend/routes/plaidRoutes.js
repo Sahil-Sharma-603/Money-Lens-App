@@ -3,14 +3,10 @@ const moment = require('moment');
 const { v4: uuidv4 } = require('uuid');
 const { Products } = require('plaid');
 const { saveTransaction } = require('../models/transaction.model');
+const User = require('../models/User.model');
 const auth = require('../middleware/auth.middleware');
 
 const router = express.Router();
-
-// TODO: "FIX THIS"
-let ACCESS_TOKEN = null;
-let ITEM_ID = null;
-let PUBLIC_TOKEN = null;
 
 // Helper for logging responses
 const prettyPrintResponse = (response) => {
@@ -77,16 +73,24 @@ router.post('/create_link_token', auth, async (req, res) => {
 router.post('/set_access_token', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
-    PUBLIC_TOKEN = req.body.public_token;
+    const publicToken = req.body.public_token;
+
     const tokenResponse = await client.itemPublicTokenExchange({
-      public_token: PUBLIC_TOKEN,
+      public_token: publicToken,
     });
-    prettyPrintResponse(tokenResponse);
-    ACCESS_TOKEN = tokenResponse.data.access_token;
-    ITEM_ID = tokenResponse.data.item_id;
+
+    const accessToken = tokenResponse.data.access_token;
+    const itemId = tokenResponse.data.item_id;
+
+    // Store tokens in user document
+    await User.findByIdAndUpdate(req.user._id, {
+      plaidAccessToken: accessToken,
+      plaidItemId: itemId,
+    });
+
     res.json({
-      access_token: ACCESS_TOKEN,
-      item_id: ITEM_ID,
+      status: 'success',
+      message: 'Access token stored successfully',
     });
   } catch (error) {
     console.error(error);
@@ -94,14 +98,20 @@ router.post('/set_access_token', auth, async (req, res) => {
   }
 });
 
-// Retrieve Item's accounts
+// Update accounts route
 router.get('/accounts', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
+    const user = await User.findById(req.user._id);
+
+    if (!user?.plaidAccessToken) {
+      return res.status(400).json({ error: 'No Plaid access token found' });
+    }
+
     const accountsResponse = await client.accountsGet({
-      access_token: ACCESS_TOKEN,
+      access_token: user.plaidAccessToken,
     });
-    prettyPrintResponse(accountsResponse);
+
     res.json(accountsResponse.data);
   } catch (error) {
     console.error(error);
@@ -109,14 +119,20 @@ router.get('/accounts', auth, async (req, res) => {
   }
 });
 
-// Retrieve ACH or ETF Auth data for an Item's accounts
+// Update auth route similarly
 router.get('/auth', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
+    const user = await User.findById(req.user._id);
+
+    if (!user?.plaidAccessToken) {
+      return res.status(400).json({ error: 'No Plaid access token found' });
+    }
+
     const authResponse = await client.authGet({
-      access_token: ACCESS_TOKEN,
+      access_token: user.plaidAccessToken,
     });
-    prettyPrintResponse(authResponse);
+
     res.json(authResponse.data);
   } catch (error) {
     console.error(error);
@@ -128,6 +144,13 @@ router.get('/auth', auth, async (req, res) => {
 router.get('/transactions', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
+
+    // Get user's access token
+    const user = await User.findById(req.user._id);
+    if (!user?.plaidAccessToken) {
+      return res.status(400).json({ error: 'No Plaid access token found' });
+    }
+
     let cursor = null;
     let added = [];
     let modified = [];
@@ -137,7 +160,7 @@ router.get('/transactions', auth, async (req, res) => {
     // Iterate through each page of new transaction updates
     while (hasMore) {
       const syncResponse = await client.transactionsSync({
-        access_token: ACCESS_TOKEN,
+        access_token: user.plaidAccessToken,
         cursor: cursor,
       });
       const data = syncResponse.data;
