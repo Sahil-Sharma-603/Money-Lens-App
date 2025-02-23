@@ -1,94 +1,97 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { auth } from '../config/firebase.js';
-import styles from '../page.module.css';
-import Link from 'next/link';
+import { apiRequest, SignupResponse } from '@/app/assets/utilities/API_HANDLER';
 import { FirebaseError } from 'firebase/app';
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from 'firebase/auth';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FormEvent, useState } from 'react';
+import styles from '../../assets/styles/page.module.css';
+import { auth } from '../../config/firebase.js';
+import { log } from 'console';
 
 export default function SignupPage() {
-  const [name, setName] = useState('');
+  const [firstName, setName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  const validateForm = () => {
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      alert('Passwords do not match!');
+      return false;
+    }
+    if (!email.includes('@')) {
+      alert('Please enter a valid email address');
+      return false;
+    }
+    if (!firstName || !lastName) {
+      alert('Please fill in all fields');
+      return false;
+    }
+    return true;
+  };
 
   const handleSignup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert('Passwords do not match!');
-      return;
-    }
+    if (!validateForm()) return;
+    setIsLoading(true);
 
     try {
-      // Create user in backend
-      const backendResponse = await fetch('http://localhost:5001/api/users/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, lastName, email, password }),
-      });
-
-      if (!backendResponse.ok) {
-        throw new Error('Failed to create user in backend');
-      }
-
-      // Create user in Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Create user in Firebase Authentication first
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       // Send email verification
       await sendEmailVerification(user);
-      console.log('Verification email sent');
-      alert('Signup successful! Please verify your email.');
 
-      // Wait for email verification (max retries: 30)
-      let isVerified = user.emailVerified;
-      let attempts = 0;
-      while (!isVerified && attempts < 30) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        await user.reload();
-        isVerified = user.emailVerified;
-        attempts++;
-      }
-
-      if (!isVerified) {
-        alert('Please verify your email before logging in.');
-        return;
-      }
-
-      // Save user details in MongoDB
-      const response = await fetch('/api/users/register', {
+      // Create user in backend with Firebase UID using apiRequest
+      const response = await apiRequest<SignupResponse>('/users/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          uid: user.uid,
-          name,
+        body: {
+          firstName,
           lastName,
           email,
-        }),
+          firebaseUid: user.uid,
+        },
       });
 
-      if (!response.ok) throw new Error('Failed to store user in database');
+      console.log(response);
 
-      console.log('User registered:', user);
-      alert('Signup successful! You can now log in.');
-      
-      // Redirect to login page
-      router.push('/');
+      if (response && response.message) {
+        alert(
+          'Signup successful! Please check your email for verification link.'
+        );
+        router.push('/');
+      } else {
+        throw new Error('Failed to create user in backend');
+      }
     } catch (error) {
       console.error('Signup error:', error);
-      const errorMessage = error instanceof FirebaseError 
-        ? error.message 
-        : error instanceof Error 
-          ? error.message 
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : error instanceof Error
+          ? error.message
           : 'An unknown error occurred';
-      
+
       alert('Signup failed: ' + errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -112,9 +115,10 @@ export default function SignupPage() {
                 <label>First Name</label>
                 <input
                   type="text"
-                  value={name}
+                  value={firstName}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -125,6 +129,7 @@ export default function SignupPage() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -135,6 +140,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -145,6 +151,7 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -155,14 +162,24 @@ export default function SignupPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
               </div>
 
-              <button type="submit" className={styles.signInButton}>Sign Up</button>
+              <button
+                type="submit"
+                className={styles.signInButton}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Creating Account...' : 'Sign Up'}
+              </button>
             </form>
 
             <p className={styles.signUpPrompt}>
-              Already have an account? <Link href="/" className={styles.signUpLink}>Log in</Link>
+              Already have an account?{' '}
+              <Link href="/" className={styles.signUpLink}>
+                Log in
+              </Link>
             </p>
           </div>
         </div>

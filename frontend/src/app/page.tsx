@@ -1,42 +1,60 @@
 'use client';
 
 import React, { useState, FormEvent } from 'react';
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../app/config/firebase';
-import styles from './page.module.css';
+import styles from './assets/styles/page.module.css';
 import Link from 'next/link';
 import { FirebaseError } from 'firebase/app';
+import { useRouter } from 'next/navigation';
+import { apiRequest, LoginResponse } from './assets/utilities/API_HANDLER';
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       if (!user.emailVerified) {
-        alert("Please verify your email before logging in.");
+        alert('Please verify your email before logging in.');
         return;
       }
 
-      alert("Login successful!");
-      console.log("User logged in:", user);
+      const data = await apiRequest<LoginResponse>('/users/login', {
+        method: 'POST',
+        body: {
+          email: user.email,
+          firebaseUid: user.uid,
+          name: user.displayName?.split(' ')[0] || 'User',
+          lastName: user.displayName?.split(' ')[1] || 'Unknown',
+        },
+      });
 
-      // Redirect user to dashboard
-      window.location.href = "/dashboard"; 
+      localStorage.setItem('token', data.token);
+      router.push('/pages/dashboard');
     } catch (error) {
-      // Type guard for Firebase errors
-      const errorMessage = error instanceof FirebaseError 
-        ? error.message 
-        : 'An unknown error occurred';
-      
-      console.error("Login failed:", errorMessage);
-      alert("Login failed: " + errorMessage);
+      const errorMessage =
+        error instanceof FirebaseError
+          ? error.message
+          : error instanceof Error
+          ? error.message
+          : 'An unknown error occurred';
+      console.error('Login failed:', errorMessage);
+      alert('Login failed: ' + errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -83,15 +101,10 @@ export default function Home() {
               </div>
 
               <div className={styles.options}>
-                <label className={styles.rememberMe}>
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  Remember me
-                </label>
-                <Link href="/forgot-password" className={styles.forgotPassword}>
+                <Link
+                  href="/pages/forgot-password"
+                  className={styles.forgotPassword}
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -103,7 +116,9 @@ export default function Home() {
 
             <p className={styles.signUpPrompt}>
               Don&apos;t have an account?{' '}
-              <Link href="/signup" className={styles.signUpLink}>Sign Up</Link>
+              <Link href="/pages/signup" className={styles.signUpLink}>
+                Sign Up
+              </Link>
             </p>
           </div>
         </div>

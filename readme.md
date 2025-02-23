@@ -50,12 +50,18 @@ feature - a branch for each feature
 - The frontend runs on "localhost:3000"
 - The backend runs on "localhost:5001"
 
-### Running Frontend
+### Installation & Running Frontend
 
+- cd frontend
+- `npm install --legacy-peer-dep`
 - Once in frontend directory, run `npm run dev`
+- Note (Important): please use "--legacy-peer-dep" flag with npm install as shown above.
 
 ### Running Backend
 
-- Once in backend directory, run `node server.js`
+- cd backend
+- `npm install`
+- Once in backend directory, run `node server.js`. Note: Won't reload by itself.
+- Once in backend directory, run `npm start` for auto-reload.
 - Node: you must .env file that has MONGO_URI=mongodb+srv://<username>:<password>@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority
 - Note: Replace `username` & `password` with actual credentials.
