@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePlaidLink } from 'react-plaid-link';
+import { PlaidAccount, usePlaidLink } from 'react-plaid-link';
 import {
   apiRequest,
+  PlaidAccountsResponse,
   PlaidLinkResponse,
   Transaction,
   TransactionsResponse,
@@ -16,6 +17,26 @@ export default function Home() {
   const [toDate, setToDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  const [connectedAccounts, setConnectedAccounts] = useState<PlaidAccount[]>(
+    []
+  );
+  const [hasPlaidConnection, setHasPlaidConnection] = useState(false);
+
+  useEffect(() => {
+    const checkExistingAccounts = async () => {
+      try {
+        const data = await apiRequest<PlaidAccountsResponse>('/plaid/accounts');
+        setConnectedAccounts(data.accounts);
+        setHasPlaidConnection(data.accounts.length > 0);
+      } catch (error) {
+        console.error('Error checking existing accounts:', error);
+        setHasPlaidConnection(false);
+      }
+    };
+
+    checkExistingAccounts();
+  }, []);
 
   useEffect(() => {
     const fetchLinkToken = async () => {
@@ -97,14 +118,37 @@ export default function Home() {
       <h1 style={styles.title}>Bank Account Connection</h1>
 
       <div style={styles.section}>
-        <h2 style={styles.subtitle}>Connect Bank Account</h2>
-        <button
-          style={styles.plaidButton}
-          onClick={() => open()}
-          disabled={!linkToken || !ready}
-        >
-          Connect a bank account
-        </button>
+        {hasPlaidConnection ? (
+          <>
+            <h2 style={styles.subtitle}>Connected Accounts</h2>
+            <div style={styles.accountsList}>
+              {connectedAccounts.map((account) => (
+                <div key={account.account_id} style={styles.accountItem}>
+                  <strong>{account.official_name || account.name}</strong>
+                  <span>•••• {account.mask}</span>
+                  <span>{account.subtype}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              style={styles.reconnectButton}
+            >
+              Connect Another Account
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 style={styles.subtitle}>Connect Bank Account</h2>
+            <button
+              style={styles.plaidButton}
+              onClick={() => open()}
+              disabled={!linkToken || !ready}
+            >
+              Connect a bank account
+            </button>
+          </>
+        )}
       </div>
 
       <div style={styles.section}>
@@ -264,5 +308,28 @@ const styles = {
     padding: '12px',
     borderBottom: '1px solid #dee2e6',
     color: '#212529',
+  },
+  accountsList: {
+    marginBottom: '20px',
+  },
+  accountItem: {
+    padding: '12px',
+    backgroundColor: 'white',
+    borderRadius: '4px',
+    marginBottom: '8px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+  },
+  reconnectButton: {
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    padding: '12px 24px',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    marginTop: '16px',
   },
 };
