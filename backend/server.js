@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const plaidRoutes = require('./routes/plaidRoutes');
+const transactionsRoutes = require('./routes/transactionsRoutes');
+
 require('dotenv').config({ path: '.env' });
 const cookieParser = require('cookie-parser');
 
@@ -47,6 +49,7 @@ app.locals.plaidClient = client;
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/plaid', plaidRoutes);
+app.use('/api/transactions', transactionsRoutes);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
