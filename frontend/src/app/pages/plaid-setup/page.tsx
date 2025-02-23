@@ -58,6 +58,31 @@ export default function Home() {
     fetchLinkToken();
   }, []);
 
+  const handleDisconnect = async () => {
+    if (!confirm('Are you sure you want to disconnect your bank account?')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await apiRequest('/plaid/disconnect', {
+        method: 'POST',
+      });
+
+      // Reset states
+      setConnectedAccounts([]);
+      setHasPlaidConnection(false);
+      setTransactions([]);
+
+      alert('Bank account disconnected successfully');
+    } catch (error) {
+      console.error('Error disconnecting account:', error);
+      alert('Failed to disconnect bank account');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const fetchStoredTransactions = async () => {
     setIsLoading(true);
     try {
@@ -130,12 +155,21 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button
-              onClick={() => window.location.reload()}
-              style={styles.reconnectButton}
-            >
-              Connect Another Account
-            </button>
+            <div style={styles.buttonGroup}>
+              <button
+                onClick={() => window.location.reload()}
+                style={styles.reconnectButton}
+              >
+                Connect Another Account
+              </button>
+              <button
+                onClick={handleDisconnect}
+                style={styles.disconnectButton}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Disconnecting...' : 'Disconnect Account'}
+              </button>
+            </div>
           </>
         ) : (
           <>
@@ -331,5 +365,19 @@ const styles = {
     cursor: 'pointer',
     fontSize: '16px',
     marginTop: '16px',
+  },
+  buttonGroup: {
+    display: 'flex',
+    gap: '10px',
+    marginTop: '16px',
+  },
+  disconnectButton: {
+    backgroundColor: '#dc3545',
+    color: 'white',
+    padding: '0px 24px',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px',
   },
 };

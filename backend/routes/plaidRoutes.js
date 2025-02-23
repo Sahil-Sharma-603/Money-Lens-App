@@ -259,4 +259,36 @@ router.post('/webhook', auth, async (req, res) => {
   }
 });
 
+router.post('/disconnect', auth, async (req, res) => {
+  try {
+    const client = req.app.locals.plaidClient;
+    const user = await User.findById(req.user._id);
+
+    if (!user?.plaidAccessToken) {
+      return res.status(400).json({ error: 'No Plaid access token found' });
+    }
+
+    // Remove the Item from Plaid
+    await client.itemRemove({
+      access_token: user.plaidAccessToken,
+    });
+
+    // Clear Plaid credentials from user document
+    await User.findByIdAndUpdate(req.user._id, {
+      $unset: {
+        plaidAccessToken: 1,
+        plaidItemId: 1,
+      },
+    });
+
+    res.json({
+      status: 'success',
+      message: 'Account disconnected successfully',
+    });
+  } catch (error) {
+    console.error('Error disconnecting account:', error);
+    res.status(500).json({ error: error.toString() });
+  }
+});
+
 module.exports = router;
