@@ -1,0 +1,207 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  padding: 20px;
+}
+
+.container {
+  display: flex;
+  width: 100%;
+  max-width: 900px;
+  height: 600px;
+  background: var(--background);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar {
+  width: 40%;
+  background: #f0f7ff; /*light blue background*/
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  display: flex;
+  align-items: flex-start;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sidebar {
+    background: #1a1a1a;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+.brandContent {
+  margin-top: 40px;
+}
+
+.brandContent h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+
+.brandContent p {
+  color: var(--foreground);
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.formSection {
+  width: 60%;
+  padding: 40px;
+  background: var(--background);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 360px;
+}
+
+.formContainer h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+
+.formContainer > p {
+  color: var(--foreground);
+  opacity: 0.7;
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+.inputGroup {
+  margin-bottom: 20px;
+}
+
+.inputGroup label {
+  display: block;
+  font-size: 14px;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+
+.inputGroup input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--foreground);
+  opacity: 0.2;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+.inputGroup input::placeholder {
+  color: var(--foreground);
+  opacity: 0.5;
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-color: #2563EB;
+  opacity: 1;
+  box-shadow: 0 0 0 1px #2563EB;
+}
+
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.rememberMe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--foreground);
+  opacity: 0.7;
+}
+
+.rememberMe input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--foreground);
+  opacity: 0.2;
+  cursor: pointer;
+}
+
+.forgotPassword {
+  font-size: 14px;
+  color: var(--foreground);
+  opacity: 0.7;
+  text-decoration: none;
+}
+
+.signInButton {
+  width: 100%;
+  padding: 12px;
+  background: #2563EB;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.signInButton:hover {
+  background: #1D4ED8;
+}
+
+.signUpPrompt {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--foreground);
+  opacity: 0.7;
+}
+
+.signUpLink {
+  color: #2563EB;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 24px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .sidebar {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .formSection {
+    width: 100%;
+    padding: 24px;
+  }
+
+  .brandContent {
+    margin-top: 0;
+    text-align: center;
+  }
+}
