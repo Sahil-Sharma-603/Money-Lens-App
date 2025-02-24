@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { Transaction } = require('./transaction.model');
 
 const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
@@ -10,6 +11,7 @@ const userSchema = new mongoose.Schema({
   // Plaid-related fields
   plaidAccessToken: { type: String },
   plaidItemId: { type: String },
+  transactions: [ {type: Transaction, ref: 'transactions'} ],
 });
 
 const User = mongoose.model('User', userSchema);

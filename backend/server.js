@@ -23,6 +23,8 @@ mongoose
   .then(() => console.log('✅ MongoDB Connected'))
   .catch((err) => console.error('❌ MongoDB Connection Error:', err));
 
+export {mongoose as mongo}
+
 const {
   Configuration,
   PlaidApi,
@@ -55,3 +57,5 @@ const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+
+export {mongoose as mongo}; 
