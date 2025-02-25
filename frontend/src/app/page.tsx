@@ -40,6 +40,7 @@ export default function Home() {
           name: user.displayName?.split(' ')[0] || 'User',
           lastName: user.displayName?.split(' ')[1] || 'Unknown',
         },
+        requireAuth: false,
       });
 
       localStorage.setItem('token', data.token);
