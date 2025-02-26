@@ -10,11 +10,11 @@ export default function NavBar() {
 
   // Sidebar menu items
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
-    { name: 'Transactions', path: '/transactions', icon: <CreditCard size={20} /> },
-    { name: 'Analytics', path: '/analytics', icon: <BarChart size={20} /> },
-    { name: 'Goals', path: '/goals', icon: <Target size={20} /> },
-    { name: 'Settings', path: '/settings', icon: <Settings size={20} />, isBottom: true }, // Settings is moved to bottom
+    { name: 'Dashboard', path: '/pages/dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'Transactions', path: '/pages/transactions', icon: <CreditCard size={20} /> },
+    { name: 'Analytics', path: '/pages/analytics', icon: <BarChart size={20} /> },
+    { name: 'Goals', path: '/pages/goals', icon: <Target size={20} /> },
+    { name: 'Settings', path: '/pages/settings', icon: <Settings size={20} />, isBottom: true },
   ];
 
   return (

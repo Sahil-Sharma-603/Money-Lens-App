@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Jost } from "next/font/google";
-import "./globals.css";
+import "./assets/globals.css";
 import LayoutWrapper from "./components/LayoutWrapper";
 
 const jost = Jost({
