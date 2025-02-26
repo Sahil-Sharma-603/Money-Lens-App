@@ -1,3 +1,5 @@
+import { getDashboardAccountBalance as balance, getDashboardMonthlySpending as monthly, getDashboardRecentTransactions as recent, getDashboardTodaysSpending as today  } from "..dashboardLogic.js"
+
 const express = require('express'); 
 
 const router = express.Router(); 
@@ -6,7 +8,14 @@ const router = express.Router();
 // get /dashboard
 router.get('/dashboard', auth, async (req, res) => {
     try {
-      res.render('/dashboard');
+        res.send(balance); 
+        res.send(monthly); 
+        res.send(recent); 
+        res.send(today); 
+        res.status(200).json("dashboard ok");
+        console.log("dashboard route"); 
+        
+        res.render('/dashboard');
     } catch (error) {
       res.status(500).json({ message: error.message });
     }

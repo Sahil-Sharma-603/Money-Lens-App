@@ -33,6 +33,7 @@ if (user != null) {
                 todaySpending =+ element.amount; 
             });
         }
+        todaySpending = {"today": todaySpending}; 
 
         // take transaction details for recent list
         recentTransactions.forEach(element => {
@@ -95,17 +96,24 @@ const formatDateISO = (date) => {
 };
 
 function getDashboardRecentTransactions(){
-    return recentList; 
+    return JSON.stringify(recentList); 
 }; 
 
 function getDashboardMonthlySpending(){
-    return monthlySpending; 
+    return JSON.stringify(monthlySpending); 
 }
 
 function getDashboardTodaysSpending(){
-    return todaySpending; 
+    return JSON.stringify(todaySpending); 
 }
 
 function getDashboardAccountBalance(){
-    return balance; 
+    return JSON.stringify(balance); 
+}
+
+module.exports = {
+    getDashboardAccountBalance, 
+    getDashboardMonthlySpending,
+    getDashboardRecentTransactions,
+    getDashboardTodaysSpending
 }

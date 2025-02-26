@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
   // Plaid-related fields
   plaidAccessToken: { type: String },
   plaidItemId: { type: String },
-  transactions: [ {type: Transaction, ref: 'transactions'} ],
+  // transactions: [ {type: Transaction, ref: 'transactions'} ],
 });
 
 const User = mongoose.model('User', userSchema);
