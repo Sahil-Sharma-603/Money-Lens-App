@@ -170,9 +170,9 @@ a.secondary {
 .card {
   background: rgba(255, 255, 255, 0.58);
   border: 1px solid white;
-  border-radius: 1px; 
-  /* padding: 20px;  */
-  /* margin: 20px; */
+  border-radius: 5px; 
+  padding: 10px; 
+  /* margin: 5px; */
   width: 100%;
 }
 
@@ -195,4 +195,27 @@ a.secondary {
   min-height: 100vh;
   display: flex;
   overflow: hidden; 
+}
+
+/* Transactions */
+.transactionsCard {
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.transactionsTitle {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.transactionList {
+  list-style: none;
+  padding: 0;
+}
+
+.transactionItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
 }
