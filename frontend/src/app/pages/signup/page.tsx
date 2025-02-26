@@ -68,6 +68,7 @@ export default function SignupPage() {
           email,
           firebaseUid: user.uid,
         },
+        requireAuth: false,
       });
 
       console.log(response);
