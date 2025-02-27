@@ -213,7 +213,7 @@ export default function Home() {
           style={styles.fetchButton}
         >
           {isLoading ? 'Loading...' : 'Get Transactions'}
-        </button>
+	</button>
       </div>
 
       <Link href="/pages/dashboard">

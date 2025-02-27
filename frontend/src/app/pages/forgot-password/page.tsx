@@ -2,16 +2,13 @@
 
 import React, { useState, FormEvent } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
-// Try this if previous import doesn't work
-import { auth } from '@/app/config/firebase';
-// Alternative imports if the above doesn't work:
-// import { auth } from '../../config/firebase';
-// import { auth } from '../../../config/firebase';
-// import { auth } from '../../../../config/firebase';
+
 import styles from '../../assets/styles/page.module.css';
+
 import Link from 'next/link';
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'next/navigation';
+import { auth } from '../../config/firebase'; // Also update this path as needed
 
 export default function ForgotPassword() {
   const router = useRouter();

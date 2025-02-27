@@ -57,3 +57,26 @@
 .bottomItem {
     margin-top: auto;
 }
+
+/* Logout button styling */
+.logoutButton {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 16px;
+    color: #f44336; /* Red color for logout */
+    gap: 12px;
+    text-align: left;
+}
+
+.logoutItem {
+    margin-top: 10px; /* Space between settings and logout */
+}
+
+.logoutItem:hover {
+    background: rgba(244, 67, 54, 0.1); /* Light red background on hover */
+}

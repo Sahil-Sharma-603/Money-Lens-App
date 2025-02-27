@@ -1,20 +1,24 @@
 import type { Metadata } from "next";
-import "./assets/styles/globals.css";
+import { Jost } from "next/font/google";
+import "./assets/globals.css";
+import LayoutWrapper from "./components/LayoutWrapper";
+
+const jost = Jost({
+  variable: "--font-jost",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "MoneyLens",
-  description: "Your financial management platform",
+  description: "Simplify your finances",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body className={jost.variable}>
+        <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
   );
