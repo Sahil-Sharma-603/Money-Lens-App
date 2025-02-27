@@ -216,7 +216,7 @@ export default function Home() {
         </button>
       </div>
 
-      <Link href="/dashboard">
+      <Link href="/pages/dashboard">
         <button style={styles.dashboardButton}>Go to Dashboard</button>
       </Link>
 
