@@ -39,8 +39,21 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Auto assign reviewers
-        uses: kentaro-m/auto-assign-action@v1.2.0
+      - name: Request Reviewers using GitHub Script
+        uses: actions/github-script@v6
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          configuration-path: .github/auto_assign.yml
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              reviewers: [
+                "Jashann", 
+                "Aakash812", 
+                "FilipKaramanov", 
+                "ginellego", 
+                "Sahil-Sharma-603", 
+                "una-may"
+              ]
+            });
