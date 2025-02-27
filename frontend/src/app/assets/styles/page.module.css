@@ -6,7 +6,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #E6F0FF;
+  background: linear-gradient(to bottom, var(--gradient-start), var(--gradient-end));
   overflow: hidden;
   margin-left: 10px;
   margin-right: 10px;
@@ -18,7 +18,7 @@
   max-width: 900px;
   height: 600px;
   background: #FFFFFF;
-  border-radius: 4px;
+  border-radius: 25px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   margin: 0 auto;
@@ -26,14 +26,12 @@
 
 .sidebar {
   width: 40%;
-  background: #E6F0FF;
+  background: var(--gradient-start);
   border-right: 1px solid rgba(0, 0, 0, 0.05);
   padding: 20px;
   display: flex;
   align-items: flex-start;
 }
-
-/* Removed dark mode styling */
 
 .brandContent {
   margin-top: 20px;
@@ -42,12 +40,13 @@
 .brandContent h1 {
   font-size: 24px;
   font-weight: 600;
-  color: #4A5568;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .brandContent p {
-  color: #718096;
+  color: var(--text);
+  opacity: 0.8;
   font-size: 14px;
 }
 
@@ -68,12 +67,13 @@
 .formContainer h2 {
   font-size: 24px;
   font-weight: 600;
-  color: #4A5568;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .formContainer > p {
-  color: #718096;
+  color: var(--text);
+  opacity: 0.8;
   font-size: 14px;
   margin-bottom: 20px;
 }
@@ -85,7 +85,7 @@
 .inputGroup label {
   display: block;
   font-size: 14px;
-  color: #4A5568;
+  color: var(--text);
   margin-bottom: 8px;
   font-weight: 500;
 }
@@ -96,18 +96,19 @@
   border: 1px solid #E2E8F0;
   border-radius: 4px;
   font-size: 14px;
-  color: #4A5568;
+  color: var(--text);
   background: #FFFFFF;
 }
 
 .inputGroup input::placeholder {
-  color: #A0AEC0;
+  color: var(--text);
+  opacity: 0.5;
 }
 
 .inputGroup input:focus {
   outline: none;
-  border-color: #3182CE;
-  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+  border-color: var(--positive);
+  box-shadow: 0 0 0 2px rgba(7, 7, 226, 0.2);
 }
 
 .options {
@@ -122,7 +123,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #4A5568;
+  color: var(--text);
   opacity: 0.7;
 }
 
@@ -136,7 +137,7 @@
 
 .forgotPassword {
   font-size: 14px;
-  color: #4A5568;
+  color: var(--text);
   opacity: 0.7;
   text-decoration: none;
 }
@@ -144,7 +145,7 @@
 .signInButton {
   width: 100%;
   padding: 8px 16px;
-  background-color: #3182CE;
+  background-color: var(--positive);
   color: white;
   border: none;
   border-radius: 4px;
@@ -156,19 +157,19 @@
 }
 
 .signInButton:hover {
-  background-color: #2C5282;
+  background-color: #0606b5;
 }
 
 .signUpPrompt {
   margin-top: 20px;
   text-align: center;
   font-size: 14px;
-  color: var(--foreground);
+  color: var(--text);
   opacity: 0.7;
 }
 
 .signUpLink {
-  color: #3182CE;
+  color: var(--positive);
   text-decoration: none;
   font-weight: 500;
 }
@@ -185,8 +186,6 @@
     border-right: none;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
-
-  /* Removed dark mode styling */
 
   .formSection {
     width: 100%;
