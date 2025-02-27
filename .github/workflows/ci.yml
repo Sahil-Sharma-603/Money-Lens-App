@@ -7,14 +7,13 @@ on:
   pull_request:
     branches:
       - develop
-  push:
-    branches:
-      - develop
+  push:# trigger on all branches
+    # (No branch filter so all branch pushes fire this workflow)
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/develop' # only run build on develop
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -39,7 +38,7 @@ jobs:
           npm run build
 
   assign-reviewers:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.base_ref == 'develop'
     runs-on: ubuntu-latest
     steps:
       - name: Request Reviewers using GitHub Script
