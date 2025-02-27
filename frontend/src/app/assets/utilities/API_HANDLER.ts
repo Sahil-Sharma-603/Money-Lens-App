@@ -56,6 +56,13 @@ export type TransactionsResponse = {
   count: number;
 };
 
+export type UserResponse = {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 // Update apiRequest function
 export async function apiRequest<T>(
   endpoint: string,

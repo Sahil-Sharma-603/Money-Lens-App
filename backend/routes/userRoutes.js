@@ -104,4 +104,18 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get information about logged in user
+router.get('/user', auth, async (req, res) => {
+  console.log("GETTING USER INFO");
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
