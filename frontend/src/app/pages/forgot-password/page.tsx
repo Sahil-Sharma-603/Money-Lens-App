@@ -71,16 +71,18 @@ export default function ForgotPassword() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} autoComplete="off">
               <div className={styles.inputGroup}>
-                <label htmlFor="email">Email</label>
+                <label htmlFor="reset-email">Email</label>
                 <input
                   type="email"
-                  id="email"
+                  id="reset-email"
+                  name="reset-email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
+                  autoComplete="new-email" // Prevents browser autofill
                 />
               </div>
 

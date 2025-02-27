@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, FormEvent, useEffect, useRef } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../app/config/firebase';
 import styles from './assets/styles/page.module.css';
@@ -16,6 +16,7 @@ export default function Home() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Check if user is already logged in or has saved credentials
   useEffect(() => {
@@ -33,6 +34,19 @@ export default function Home() {
       setIsCheckingAuth(false);
     }
   }, [router]);
+
+  // Reset password field when form is mounted
+  useEffect(() => {
+    // Clear form browser autocomplete data
+    if (formRef.current) {
+      const inputs = formRef.current.querySelectorAll('input');
+      inputs.forEach(input => {
+        if (input.type === 'password') {
+          input.value = '';
+        }
+      });
+    }
+  }, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -75,6 +89,9 @@ export default function Home() {
         localStorage.removeItem('rememberMe');
       }
       
+      // Clear password field before redirecting
+      setPassword('');
+      
       router.push('/pages/dashboard');
     } catch (error) {
       const errorMessage =
@@ -85,6 +102,8 @@ export default function Home() {
           : 'An unknown error occurred';
       console.error('Login failed:', errorMessage);
       alert('Login failed: ' + errorMessage);
+      // Clear password on error
+      setPassword('');
     } finally {
       setIsLoading(false);
     }
@@ -122,28 +141,47 @@ export default function Home() {
             <h2>Welcome!</h2>
             <p>Enter your email and password to login</p>
 
-            <form onSubmit={handleSubmit}>
+            {/* Hidden form to trick browser autofill */}
+            <div style={{ display: 'none' }}>
+              <input type="text" id="fake-email" name="fake-email" tabIndex={-1} />
+              <input type="password" id="fake-password" name="fake-password" tabIndex={-1} />
+            </div>
+
+            <form 
+              ref={formRef}
+              onSubmit={handleSubmit} 
+              autoComplete="off" 
+              spellCheck="false"
+            >
               <div className={styles.inputGroup}>
-                <label htmlFor="email">Email</label>
+                <label htmlFor="ml-email">Email</label>
                 <input
                   type="email"
-                  id="email"
+                  id="ml-email"
+                  name="ml-email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
                 />
               </div>
 
               <div className={styles.inputGroup}>
-                <label htmlFor="password">Password</label>
+                <label htmlFor="ml-password">Password</label>
                 <input
                   type="password"
-                  id="password"
+                  id="ml-password"
+                  name="ml-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
                 />
               </div>
 
