@@ -47,16 +47,23 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            await github.rest.pulls.requestReviewers({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              reviewers: [
-                "Jashann", 
-                "Aakash812", 
-                "FilipKaramanov", 
-                "ginellego", 
-                "Sahil-Sharma-603", 
-                "una-may"
-              ]
-            });
+            const prAuthor = context.payload.pull_request.user.login;
+            const reviewers = [
+              "Jashann",
+              "Aakash812",
+              "FilipKaramanov",
+              "ginellego",
+              "Sahil-Sharma-603",
+              "una-may"
+            ].filter(user => user !== prAuthor);
+
+            if (reviewers.length) {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                reviewers: reviewers
+              });
+            } else {
+              console.log("No reviewers to assign after filtering PR author.");
+            }
