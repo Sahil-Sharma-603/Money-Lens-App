@@ -6,7 +6,6 @@ import Balance from './components/Balance';
 import Summary from './components/Summary';
 import Transactions from './components/Transactions';
 import BarChartComponent from './components/BarChartComponent';
-import Link from 'next/link';
 
 export default function Dashboard() {
   return (
@@ -33,10 +32,6 @@ export default function Dashboard() {
 
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>
           <Transactions />
-          {/* This should be moved elsewhere */}
-          <Link className="btn" href="/pages/plaid-setup">
-            Go to Plaid Setup
-          </Link>
         </div>
       </Card>
     </div>
