@@ -20,6 +20,11 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm install
+
       - name: Install Frontend Dependencies
         run: |
           cd frontend
@@ -29,3 +34,12 @@ jobs:
         run: |
           cd frontend
           npm run build
+
+  assign-reviewers:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto assign reviewers
+        uses: kentaro-m/auto-assign-action@v1
+        with:
+          reviewers: 'Jashann,Aakash812,FilipKaramanov,ginellego,Sahil-Sharma-603,una-may'
