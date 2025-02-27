@@ -1,52 +1,24 @@
-import { getDashboardAccountBalance as balance, getDashboardMonthlySpending as monthly, getDashboardRecentTransactions as recent, getDashboardTodaysSpending as today  } from "..dashboardLogic.js"
+const express = require("express");
+const auth = require("../middleware/auth.middleware");
+const { getDashboardData } = require("../logic/dashboardLogic");
 
-const express = require('express'); 
+const router = express.Router();
 
-const router = express.Router(); 
+router.get("/dashboard", auth, async (req, res) => {
+  console.log("GETTING DASHBOARD DATA");
+  try {
+    const authToken = req.headers.authorization;
+    const dashboardData = await getDashboardData(req.user._id, authToken);
 
-
-// get /dashboard
-router.get('/dashboard', auth, async (req, res) => {
-    try {
-        res.send(balance); 
-        res.send(monthly); 
-        res.send(recent); 
-        res.send(today); 
-        res.status(200).json("dashboard ok");
-        console.log("dashboard route"); 
-        
-        res.render('/dashboard');
-    } catch (error) {
-      res.status(500).json({ message: error.message });
+    if (dashboardData.error) {
+      return res.status(404).json({ error: dashboardData.error });
     }
-  });
 
-// get /transactions
-router.get('/transactions', auth,  async (req, res) => {
-    try {
-      res.render('/transactions');
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-// get /analytics
-router.get('/analytics', auth, async (req, res) => {
-    try {
-      res.send('/analytics');
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-// get /goals
-router.get('/goals', auth, async (req, res) => {
-    try {
-      res.send('/goals');
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
+    res.status(200).json(dashboardData);
+  } catch (error) {
+    console.error("Dashboard route error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 module.exports = router;

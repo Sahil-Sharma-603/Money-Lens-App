@@ -3,10 +3,17 @@ type GreetingProps = {
 };
 
 export default function Greeting({ userName }: GreetingProps) {
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
     <div>
-      <h2>Welcome back, {userName}!</h2>
-      <p>date</p>
+      <h2>Hello {userName}!</h2>
+      <p>{today}</p>
     </div>
   );
 }

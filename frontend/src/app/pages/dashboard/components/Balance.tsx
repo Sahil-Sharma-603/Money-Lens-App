@@ -1,5 +1,6 @@
 import Card from '../../../components/Card';
 
+// Balance is hardcoded until we figure out a way to import it or calculate it ourselves..
 const Balance = () => {
   return (
     <Card>

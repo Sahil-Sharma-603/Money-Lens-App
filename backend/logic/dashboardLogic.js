@@ -1,119 +1,89 @@
-import { mongo } from "./backend/server.js"; 
-import { getAuth } from "firebase/auth";
+const User = require("../models/User.model.js");
+const { Transaction } = require("../models/transaction.model");
 
-const User =  "./models/User.model.js"
-const Transactions =  "./models/transaction.model.js"
-
-
-
-// get user and transactions from db 
-const auth = getAuth(); 
-const user = auth.currentUser; 
-var todaySpending = 0; 
-var recentList; 
-var balance = 0; 
-var monthlySpending; 
-var oneYearAgo; 
-
-if (user != null) {
-    const dbUser = await User.findOne({'firebaseUid': user.uid}).exec(); 
-    if ( dbUser != null ) {
-        const transactions = await dbUser.select('transactions').exec(); 
-        const recentTransactions = await transactions.sort('datetime', 'asc').limit(20).exec();
-        const todayTransactions = await transactions.where('date').equals(formatDateISO(Date.now())).exec(); 
-        
-        oneYearAgo = Date.now().getFullYear() - 1; 
-        oneYearAgo =+ "-" + (Date.now().getUTCMonth() + 1) + "-" + Date.now().getDate(); 
-
-        const yearTransactions = await transactions.where('date').gte(oneYearAgo).lte(formatDateISO(Date.now())).exec(); 
-
-        //sum today's transactions
-        if (todayTransactions){
-            todayTransactions.forEach(element => {
-                todaySpending =+ element.amount; 
-            });
+/**
+ * Fetches transaction-related data for the dashboard.
+ */
+async function getDashboardData(userId) {
+    try {
+        // ensure the user exists
+        const dbUser = await User.findById(userId);
+        if (!dbUser) {
+        return { error: "User not found" };
         }
-        todaySpending = {"today": todaySpending}; 
 
-        // take transaction details for recent list
-        recentTransactions.forEach(element => {
-            recentList =+ {
-                "amount": element.amount, 
-                "name": element.name, 
-                "category": element.category[1]
+        // Fetch transactions for this user
+        const transactions = await Transaction.find({ user_id: userId });
+
+        console.log("Fetched transactions:", transactions); // ✅ Debugging
+
+        // Get today's transactions
+        const todayDate = new Date().toISOString().split("T")[0];
+        const todaySpending = transactions
+        .filter((t) => {
+            if (!t.date) return false;
+            const transactionDate = new Date(t.date).toISOString().split("T")[0];
+            return transactionDate === todayDate;
+        })
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+        // get recent transactions (last 20)
+        const recentTransactions = transactions
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 20)
+        .map((t) => ({
+            amount: parseFloat(t.amount),
+            name: t.name,
+            category: t.category?.[1] || "Unknown",
+        }));
+
+        // calculate balance
+        const balance = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+        let monthlySpending = [];
+        for (let i = 0; i < 12; i++) {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const monthKey = `${year}-${month}`;
+            
+            // Filter transactions for this month
+            const monthTransactions = transactions.filter(t => {
+                if (!t.date) return false;
+                return t.date.startsWith(monthKey);
+            });
+            
+            // Separate spent (positive) from earned (negative) (why did plaid set up - to be positive??)
+            const spent = monthTransactions
+                .filter(t => t.amount > 0)
+                .reduce((sum, t) => sum + t.amount, 0);
                 
-            }
-        }); 
-
-        // finding monthly spending totals
-        var monthAmount = 0; 
-        var currentMonth; 
-        var currentYear; 
-        var start; 
-        var end; 
-        var monthlyTransactions; 
-
-        // getUTCMonth is month-1 => 11 is December
-        // start getting spending in the previous year first
-        currentMonth = Date.now().getUTCMonth(); 
-        currentYear = Date.now().getFullYear() -1;
-        for (var i = 0; i<12; i++){
-            monthAmount = 0; 
-            //set date range
-            start = currentYear + "-" + (currentMonth+1) + "-" + 1; 
-            currentMonth = (currentMonth+1)%12; 
-            if(currentMonth%12 ==0){
-                currentYear++; 
-            }
-            end = currentYear + "-" + (currentMonth+1) + "-" + 1;
-
-            //get month of transactions
-            monthlyTransactions = await transactions.where('date').gte(start).lt(end).exec();  
-            monthlyTransactions.forEach(element => {
-                monthAmount =+ element.amount; 
+            const earned = monthTransactions
+                .filter(t => t.amount < 0)
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            // Round to 2 decimal places
+            monthlySpending.push({ 
+                month: monthKey, 
+                spent: parseFloat(spent.toFixed(2)),
+                earned: parseFloat(earned.toFixed(2)),
+                net: parseFloat((spent + earned).toFixed(2))
             });
-
-            //add monthly data
-            monthlySpending =+ {"month": currentMonth, "amount": monthAmount}; 
-             
         }
-        
 
-    } else {
-        console.log('no user in db'); 
+        console.log("Monthly Spending Data:", monthlySpending);
+
+        return {
+            todaySpending,
+            recentTransactions,
+            balance,
+            monthlySpending,
+        };
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        return { error: error.message };
     }
-
-} else {
-    console.log('no current user'); 
 }
 
-const formatDateISO = (date) => {
-    // Convert the date to ISO string
-    const isoString = date.toISOString();
-    // Split at the "T" character to get the date part
-    const formattedDate = isoString.split("T")[0];
-    return formattedDate;
-};
-
-function getDashboardRecentTransactions(){
-    return JSON.stringify(recentList); 
-}; 
-
-function getDashboardMonthlySpending(){
-    return JSON.stringify(monthlySpending); 
-}
-
-function getDashboardTodaysSpending(){
-    return JSON.stringify(todaySpending); 
-}
-
-function getDashboardAccountBalance(){
-    return JSON.stringify(balance); 
-}
-
-module.exports = {
-    getDashboardAccountBalance, 
-    getDashboardMonthlySpending,
-    getDashboardRecentTransactions,
-    getDashboardTodaysSpending
-}
+module.exports = { getDashboardData };

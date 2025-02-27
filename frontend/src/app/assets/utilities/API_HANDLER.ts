@@ -63,6 +63,13 @@ export type UserResponse = {
   email: string;
 };
 
+export type DashboardResponse = {
+  todaySpending: number;
+  recentTransactions: { amount: number; name: string; category: string }[];
+  balance: number;
+  monthlySpending: { month: string; amount: number }[];
+};
+
 // Update apiRequest function
 export async function apiRequest<T>(
   endpoint: string,
