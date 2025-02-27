@@ -40,6 +40,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Auto assign reviewers
-        uses: kentaro-m/auto-assign-action@v1
+        uses: kentaro-m/auto-assign-action@v1.2.0
         with:
           reviewers: 'Jashann,Aakash812,FilipKaramanov,ginellego,Sahil-Sharma-603,una-may'
