@@ -5,13 +5,26 @@ import Card from '../../components/Card';
 import styles from '../../components/Card.module.css';
 import dashboardStyles from './Dashboard.module.css';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // No token found, redirect to homepage
+      router.push('/');
+    } else {
+      setIsLoading(false);
+    }
+  }, [router]);
 
   const handleLogout = () => {
     try {
-      // Simply clear the token from localStorage
+      // Clear the token from localStorage
       localStorage.removeItem('token');
       
       // Redirect to login page
@@ -21,6 +34,11 @@ export default function Dashboard() {
       alert('Failed to log out. Please try again.');
     }
   };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className={dashboardStyles.dashboard}>
