@@ -1,10 +1,15 @@
 .page {
+  position: relative;
   min-height: 100vh;
+  padding: 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--background);
-  padding: 20px;
+  background-color: #E6F0FF;
+  overflow: hidden;
+  margin-left: 200px;
+  margin-right: 10px;
 }
 
 .container {
@@ -12,49 +17,44 @@
   width: 100%;
   max-width: 900px;
   height: 600px;
-  background: var(--background);
-  border-radius: 12px;
+  background: #FFFFFF;
+  border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin: 0 auto;
 }
 
 .sidebar {
   width: 40%;
-  background: #f0f7ff; /*light blue background*/
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
-  padding: 40px;
+  background: #E6F0FF;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 20px;
   display: flex;
   align-items: flex-start;
 }
 
-@media (prefers-color-scheme: dark) {
-  .sidebar {
-    background: #1a1a1a;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-  }
-}
+/* Removed dark mode styling */
 
 .brandContent {
-  margin-top: 40px;
+  margin-top: 20px;
 }
 
 .brandContent h1 {
   font-size: 24px;
   font-weight: 600;
-  color: var(--foreground);
+  color: #4A5568;
   margin-bottom: 8px;
 }
 
 .brandContent p {
-  color: var(--foreground);
-  opacity: 0.7;
+  color: #718096;
   font-size: 14px;
 }
 
 .formSection {
   width: 60%;
-  padding: 40px;
-  background: var(--background);
+  padding: 20px;
+  background: #FFFFFF;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -68,15 +68,14 @@
 .formContainer h2 {
   font-size: 24px;
   font-weight: 600;
-  color: var(--foreground);
+  color: #4A5568;
   margin-bottom: 8px;
 }
 
 .formContainer > p {
-  color: var(--foreground);
-  opacity: 0.7;
+  color: #718096;
   font-size: 14px;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .inputGroup {
@@ -86,38 +85,36 @@
 .inputGroup label {
   display: block;
   font-size: 14px;
-  color: var(--foreground);
+  color: #4A5568;
   margin-bottom: 8px;
+  font-weight: 500;
 }
 
 .inputGroup input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid var(--foreground);
-  opacity: 0.2;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border: 1px solid #E2E8F0;
+  border-radius: 4px;
   font-size: 14px;
-  color: var(--foreground);
-  background: var(--background);
+  color: #4A5568;
+  background: #FFFFFF;
 }
 
 .inputGroup input::placeholder {
-  color: var(--foreground);
-  opacity: 0.5;
+  color: #A0AEC0;
 }
 
 .inputGroup input:focus {
   outline: none;
-  border-color: #2563EB;
-  opacity: 1;
-  box-shadow: 0 0 0 1px #2563EB;
+  border-color: #3182CE;
+  box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
 }
 
 .options {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .rememberMe {
@@ -125,7 +122,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: var(--foreground);
+  color: #4A5568;
   opacity: 0.7;
 }
 
@@ -133,37 +130,37 @@
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 1px solid var(--foreground);
-  opacity: 0.2;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   cursor: pointer;
 }
 
 .forgotPassword {
   font-size: 14px;
-  color: var(--foreground);
+  color: #4A5568;
   opacity: 0.7;
   text-decoration: none;
 }
 
 .signInButton {
   width: 100%;
-  padding: 12px;
-  background: #2563EB;
+  padding: 8px 16px;
+  background-color: #3182CE;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 4px;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.3s;
+  margin-top: 10px;
 }
 
 .signInButton:hover {
-  background: #1D4ED8;
+  background-color: #2C5282;
 }
 
 .signUpPrompt {
-  margin-top: 24px;
+  margin-top: 20px;
   text-align: center;
   font-size: 14px;
   color: var(--foreground);
@@ -171,7 +168,7 @@
 }
 
 .signUpLink {
-  color: #2563EB;
+  color: #3182CE;
   text-decoration: none;
   font-weight: 500;
 }
@@ -184,20 +181,16 @@
 
   .sidebar {
     width: 100%;
-    padding: 24px;
+    padding: 20px;
     border-right: none;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
 
-  @media (prefers-color-scheme: dark) {
-    .sidebar {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-  }
+  /* Removed dark mode styling */
 
   .formSection {
     width: 100%;
-    padding: 24px;
+    padding: 20px;
   }
 
   .brandContent {
