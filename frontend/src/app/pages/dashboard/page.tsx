@@ -1,4 +1,4 @@
-'use client';
+"use client"; 
 
 import { useEffect, useState } from 'react';
 import Card from '../../components/Card';
@@ -18,29 +18,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      console.log("here");
       try {
-        const data = await apiRequest<UserResponse>('/users/user', {
-          method: 'GET',
-        });
-  
-        console.log(data.firstName);
+        const data = await apiRequest<UserResponse>('/users/user', { method: 'GET' });
         setUser(data);
       } catch (error) {
         console.error('Error fetching user info:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
     const fetchData = async () => {
-      console.log("here");
       try {
-        const data = await apiRequest<DashboardResponse>('/dashboard/dashboard', {
-          method: 'GET',
-        });
-  
-        console.log(data);
+        const data = await apiRequest<DashboardResponse>('/dashboard/dashboard', { method: 'GET' });
         setDashboardData(data);
       } catch (error) {
         console.error('Error fetching transaction info:', error);
@@ -48,21 +36,16 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
-  
+
     fetchUser();
     fetchData();
   }, []);
-  
 
   return (
     <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
         <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {loading ? (
-            <p>Loading...</p>
-          ) : (
-            <Greeting userName={user ? user.firstName : 'User'} />
-          )}
+          {loading ? <p>Loading...</p> : <Greeting userName={user ? user.firstName : 'User'} />}
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: '1' }}>
@@ -78,7 +61,8 @@ export default function Dashboard() {
         </div>
 
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>
-          <Transactions />
+          {/* Pass real transaction data */}
+          <Transactions transactions={dashboardData?.recentTransactions || []} />
         </div>
       </Card>
     </div>
