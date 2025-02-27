@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../app/config/firebase';
 import styles from './assets/styles/page.module.css';
@@ -14,6 +14,17 @@ export default function Home() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      router.push('/pages/dashboard');
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,6 +69,21 @@ export default function Home() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          <div className={styles.formSection}>
+            <div className={styles.formContainer}>
+              <p>Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -110,8 +136,12 @@ export default function Home() {
                 </Link>
               </div>
 
-              <button type="submit" className={styles.signInButton}>
-                Sign In
+              <button 
+                type="submit" 
+                className={styles.signInButton}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
 
