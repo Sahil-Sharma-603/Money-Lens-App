@@ -67,7 +67,7 @@ export type DashboardResponse = {
   todaySpending: number;
   recentTransactions: { amount: number; name: string; category: string }[];
   balance: number;
-  monthlySpending: { month: string; amount: number }[];
+  monthlySpending: { month: string; spent: number; earned: number }[];
 };
 
 // Update apiRequest function

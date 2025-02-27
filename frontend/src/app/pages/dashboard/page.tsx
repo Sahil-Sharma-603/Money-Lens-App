@@ -14,7 +14,6 @@ import { apiRequest, UserResponse, DashboardResponse } from '@/app/assets/utilit
 export default function Dashboard() {
   const [user, setUser] = useState<UserResponse | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -32,8 +31,6 @@ export default function Dashboard() {
         setDashboardData(data);
       } catch (error) {
         console.error('Error fetching transaction info:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -45,7 +42,7 @@ export default function Dashboard() {
     <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
         <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {loading ? <p>Loading...</p> : <Greeting userName={user ? user.firstName : 'User'} />}
+          <Greeting userName={user ? user.firstName : ''} />
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: '1' }}>
@@ -57,11 +54,10 @@ export default function Dashboard() {
           </div>
 
           <Summary />
-          <BarChartComponent />
+          <BarChartComponent monthlySpending={dashboardData?.monthlySpending || []} />
         </div>
 
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>
-          {/* Pass real transaction data */}
           <Transactions transactions={dashboardData?.recentTransactions || []} />
         </div>
       </Card>

@@ -12,7 +12,7 @@ export default function Greeting({ userName }: GreetingProps) {
 
   return (
     <div>
-      <h2>Hello {userName}!</h2>
+      <h2>Hello {userName}</h2>
       <p>{today}</p>
     </div>
   );
