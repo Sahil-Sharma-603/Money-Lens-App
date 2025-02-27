@@ -19,8 +19,11 @@ export default function NavBar() {
   ];
 
   const handleLogout = () => {
-    // Clear the token from localStorage
+    // Always clear the token to ensure the user is logged out
     localStorage.removeItem('token');
+    
+    // Do NOT clear the rememberedEmail or rememberMe flag
+    // This allows the login page to auto-fill the email field next time
     
     // Redirect to login page
     router.push('/');
@@ -46,7 +49,7 @@ export default function NavBar() {
         <li className={`${styles.navItem} ${styles.bottomItem} ${styles.logoutItem}`}>
           <button onClick={handleLogout} className={styles.logoutButton}>
             <LogOut size={20} />
-            <span>Logout</span>
+            <span className={styles.navText}>Logout</span>
           </button>
         </li>
       </ul>

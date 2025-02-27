@@ -13,15 +13,23 @@ export default function Home() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Check if user is already logged in
+  // Check if user is already logged in or has saved credentials
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    
     if (token) {
       router.push('/pages/dashboard');
     } else {
+      // If we have a saved email, it means "Remember Me" was checked previously
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
+      }
       setIsCheckingAuth(false);
     }
   }, [router]);
@@ -54,7 +62,19 @@ export default function Home() {
         requireAuth: false,
       });
 
+      // Store the token in localStorage
       localStorage.setItem('token', data.token);
+      
+      // If remember me is checked, save the email for future auto-fill
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        // Clear any saved credentials
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberMe');
+      }
+      
       router.push('/pages/dashboard');
     } catch (error) {
       const errorMessage =
@@ -128,6 +148,15 @@ export default function Home() {
               </div>
 
               <div className={styles.options}>
+                <div className={styles.rememberMeContainer}>
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  <label htmlFor="rememberMe">Remember me</label>
+                </div>
                 <Link
                   href="/pages/forgot-password"
                   className={styles.forgotPassword}
