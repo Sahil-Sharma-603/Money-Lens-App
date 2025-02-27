@@ -6,7 +6,7 @@ import NavBar from "./NavBar";
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const isLoginPage = pathname === "/"; // Hide navbar on login
+  const isLoginPage = pathname === "/" || pathname === "/pages/signup"; // Hide navbar on login & signup
 
   return (
     <div className="layout">
