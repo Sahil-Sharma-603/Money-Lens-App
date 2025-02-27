@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PlaidAccount, usePlaidLink } from 'react-plaid-link';
 import {
   apiRequest,
@@ -12,6 +13,9 @@ import {
 } from '@/app/assets/utilities/API_HANDLER';
 
 export default function Home() {
+  const router = useRouter();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
@@ -23,40 +27,63 @@ export default function Home() {
   );
   const [hasPlaidConnection, setHasPlaidConnection] = useState(false);
 
+  // Check authentication first
   useEffect(() => {
-    const checkExistingAccounts = async () => {
-      try {
-        const data = await apiRequest<PlaidAccountsResponse>('/plaid/accounts');
-        setConnectedAccounts(data.accounts);
-        setHasPlaidConnection(data.accounts.length > 0);
-      } catch (error) {
-        console.error('Error checking existing accounts:', error);
-        setHasPlaidConnection(false);
+    // Check if token exists in localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      
+      // If no token is found, redirect to login page
+      if (!token) {
+        router.push('/');
+      } else {
+        // Only set checking to false if we have a token
+        // This prevents flashing of content before redirect
+        setIsCheckingAuth(false);
       }
-    };
-
-    checkExistingAccounts();
-  }, []);
+    }
+  }, [router]);
 
   useEffect(() => {
-    const fetchLinkToken = async () => {
-      try {
-        const data = await apiRequest<PlaidLinkResponse>(
-          '/plaid/create_link_token',
-          {
-            method: 'POST',
-          }
-        );
-        if (data.link_token) {
-          setLinkToken(data.link_token);
-          console.log('Received link token:', data.link_token);
+    // Only fetch Plaid data if the user is authenticated
+    if (!isCheckingAuth) {
+      const checkExistingAccounts = async () => {
+        try {
+          const data = await apiRequest<PlaidAccountsResponse>('/plaid/accounts');
+          setConnectedAccounts(data.accounts);
+          setHasPlaidConnection(data.accounts.length > 0);
+        } catch (error) {
+          console.error('Error checking existing accounts:', error);
+          setHasPlaidConnection(false);
         }
-      } catch (error) {
-        console.error('Error fetching link token:', error);
-      }
-    };
-    fetchLinkToken();
-  }, []);
+      };
+
+      checkExistingAccounts();
+    }
+  }, [isCheckingAuth]);
+
+  useEffect(() => {
+    // Only fetch link token if the user is authenticated
+    if (!isCheckingAuth) {
+      const fetchLinkToken = async () => {
+        try {
+          const data = await apiRequest<PlaidLinkResponse>(
+            '/plaid/create_link_token',
+            {
+              method: 'POST',
+            }
+          );
+          if (data.link_token) {
+            setLinkToken(data.link_token);
+            console.log('Received link token:', data.link_token);
+          }
+        } catch (error) {
+          console.error('Error fetching link token:', error);
+        }
+      };
+      fetchLinkToken();
+    }
+  }, [isCheckingAuth]);
 
   const handleDisconnect = async () => {
     if (!confirm('Are you sure you want to disconnect your bank account?')) {
@@ -137,6 +164,17 @@ export default function Home() {
   const { open, ready } = usePlaidLink(
     linkToken ? config : { token: '', onSuccess: () => {} }
   );
+
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div style={styles.container}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
