@@ -27,12 +27,19 @@
         "jest": "^29.7.0",
         "mongodb-memory-server": "^10.1.4",
         "nodemon": "^3.1.9",
+        "supertest": "^7.0.0",
         "ts-jest": "^29.2.6"
     },
     "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "testMatch": ["**/*.test.ts", "**/*.test.tsx"],
-    "testPathIgnorePatterns": ["/node_modules/"]
-  }
+        "preset": "ts-jest",
+        "testEnvironment": "node",
+        "testMatch": [
+            "**/*.test.ts",
+            "**/*.test.tsx"
+        ],
+        "testPathIgnorePatterns": [
+            "/node_modules/"
+        ],
+        "resetMocks": true
+    }
 }
