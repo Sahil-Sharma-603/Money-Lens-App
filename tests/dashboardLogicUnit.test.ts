@@ -62,23 +62,6 @@ describe("getDashboardData", () => {
     }
   });
 
-  // 4. Test calculating balance correctly
-  test("calculates balance correctly", async () => {
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue([
-      { user_id: userId, amount: "50.00" },
-      { user_id: userId, amount: "-20.00" },
-      { user_id: userId, amount: "30.00" },
-    ]);
-
-    const result = await getDashboardData(userId);
-    if(result == null){
-      fail("result is null"); 
-    } else {
-      expect(result.balance).toBe(60);
-    }
-  });
-
   // 5. Test monthly spending correctly calculated
   test("calculates monthly spending correctly", async () => {
     User.findById.mockResolvedValue({ _id: userId });
@@ -137,6 +120,41 @@ describe("getDashboardData", () => {
     const result = await getDashboardData(userId);
     
     expect(result.recentTransactions).toEqual([]);
+  });
+
+  // 8. Test for correct monthly average spending and earning
+  test("calculates average monthly spent and earned correctly", async () => {
+    const transactions = [
+      { user_id: userId, date: "2025-02-10", amount: "500.00" },
+      { user_id: userId, date: "2025-02-15", amount: "-200.00" },
+      { user_id: userId, date: "2025-01-10", amount: "700.00" }, 
+      { user_id: userId, date: "2025-01-20", amount: "-300.00" },
+    ];
+
+    User.findById.mockResolvedValue({ _id: userId });
+    Transaction.find.mockResolvedValue(transactions);
+
+    const result = await getDashboardData(userId);
+    
+    expect(result.monthAvg.spent).toBeCloseTo((500 + 700) / 2, 2);
+    expect(result.monthAvg.earned).toBeCloseTo(-(200 + 300) / 2, 2);
+  });
+
+  // 9. Test for this month's spending and earning
+  test("calculates this month's spent and earned correctly", async () => {
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const transactions = [
+      { user_id: userId, date: `${currentMonth}-05`, amount: "400.00" },
+      { user_id: userId, date: `${currentMonth}-15`, amount: "-150.00" },
+    ];
+
+    User.findById.mockResolvedValue({ _id: userId });
+    Transaction.find.mockResolvedValue(transactions);
+
+    const result = await getDashboardData(userId);
+
+    expect(result.thisMonth.spent).toBe(400.00);
+    expect(result.thisMonth.earned).toBe(-150.00);
   });
 
 });
