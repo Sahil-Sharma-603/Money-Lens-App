@@ -19,6 +19,7 @@ export default function Home() {
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>(''); // Added search state
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -116,6 +117,7 @@ export default function Home() {
       const params: Record<string, string> = {};
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
+      if (searchTerm) params.search = searchTerm; // Include search term in params
 
       const data = await apiRequest<TransactionsResponse>(
         '/transactions/stored',
@@ -126,7 +128,7 @@ export default function Home() {
 
       setTransactions(data.transactions);
       if (data.count === 0)
-        alert('No transaction found, connect a bank account');
+        alert('No transactions found for your search criteria');
       console.log('Stored transactions:', data);
     } catch (error) {
       console.error('Error fetching stored transactions:', error);
@@ -225,6 +227,19 @@ export default function Home() {
 
       <div style={styles.section}>
         <h2 style={styles.subtitle}>View Transactions</h2>
+
+        {/* Search input */}
+        <div style={styles.searchContainer}>
+          <label style={styles.label}>Search Transactions:</label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name or merchant"
+            style={styles.searchInput}
+          />
+        </div>
+
         <div style={styles.datePickerContainer}>
           <div style={styles.datePickerGroup}>
             <label style={styles.label}>From Date:</label>
@@ -309,6 +324,17 @@ const styles = {
     padding: '20px',
     backgroundColor: '#f5f5f5',
     borderRadius: '8px',
+  },
+  searchContainer: {
+    marginBottom: '20px',
+  },
+  searchInput: {
+    padding: '8px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    fontSize: '16px',
+    width: '100%',
+    marginTop: '5px',
   },
   datePickerContainer: {
     display: 'flex',
