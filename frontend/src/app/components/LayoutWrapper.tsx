@@ -38,15 +38,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }, [pathname]);
 
   return (
-    <div style={{ display: 'flex' }}>
+    <div className="layout">
       {showNavBar && <NavBar />}
-      <main style={{ 
-        flexGrow: 1, 
-        marginLeft: showNavBar ? '250px' : '0', 
-        transition: 'margin-left 0.3s ease'
-      }}>
-        {children}
-      </main>
+      <main className={showNavBar ? "noNav" : "content"}>{children}</main>
     </div>
   );
 }
