@@ -85,19 +85,32 @@ async function getDashboardData(userId) {
        const thisMonthData = monthlySpending.find(m => m.month === currentMonthKey) || { spent: 0, earned: 0 };
 
        // calculate Monthly Averages
-       const monthsCount = monthlySpending.length;
-       const monthAvg = {
-           spent: monthsCount > 0 ? parseFloat((totalSpent / monthsCount).toFixed(2)) : 0,
-           earned: monthsCount > 0 ? parseFloat((totalEarned / monthsCount).toFixed(2)) : 0
-       };
+    //    const monthsCount = monthlySpending.length;
+    //    const monthAvg = {
+    //        spent: monthsCount > 0 ? parseFloat((totalSpent / monthsCount).toFixed(2)) : 0,
+    //        earned: monthsCount > 0 ? parseFloat((totalEarned / monthsCount).toFixed(2)) : 0
+    //    };
 
-        // calculate average spend per day
+        // Get the date of the oldest transaction (for averages)
         let oldestTransactionDate = transactions.length > 0 
             ? new Date(Math.min(...transactions.map(t => new Date(t.date).getTime())))
             : new Date();
 
-        // Calculate number of days since the oldest transaction (for finding daily avg.)
+        // Get the current date
         const today = new Date();
+
+        // Calculate the number of months between the first transaction and today
+        const totalMonths = (today.getFullYear() - oldestTransactionDate.getFullYear()) * 12 
+            + (today.getMonth() - oldestTransactionDate.getMonth()) + 1;
+        const monthsCount = Math.max(totalMonths, 1); // ensure this is at least 1
+
+        // Calculate Monthly Averages
+        const monthAvg = {
+            spent: monthsCount > 0 ? parseFloat((totalSpent / monthsCount).toFixed(2)) : 0,
+            earned: monthsCount > 0 ? parseFloat((totalEarned / monthsCount).toFixed(2)) : 0
+        };
+
+        // Calculate number of days since the oldest transaction (for finding daily avg.)
         const timeDiff = today.getTime() - oldestTransactionDate.getTime();
         const totalDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)); // Convert milliseconds to days
         const dailyAvg = totalDays > 0 ? parseFloat((totalSpent / totalDays).toFixed(2)) : 0;
