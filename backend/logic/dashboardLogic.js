@@ -66,9 +66,9 @@ async function getDashboardData(userId) {
             // Round to 2 decimal places
             monthlySpending.push({ 
                 month: monthKey, 
-                spent: parseFloat(spent.toFixed(2)),
-                earned: parseFloat(earned.toFixed(2)),
-                net: parseFloat((spent + earned).toFixed(2))
+                spent: parseFloat((Number)(spent).toFixed(2)),
+                earned: parseFloat((Number)(earned).toFixed(2)),
+                net: parseFloat((Number)(spent + earned).toFixed(2))
             });
         }
 
