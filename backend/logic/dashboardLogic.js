@@ -119,7 +119,6 @@ async function getDashboardData(userId) {
             thisMonth: thisMonthData,
             monthAvg,
             dailyAvg
-            transactions
         };
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
