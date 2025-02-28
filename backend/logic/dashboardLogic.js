@@ -53,17 +53,20 @@ async function getDashboardData(userId) {
             // Filter transactions for this month
             const monthTransactions = transactions.filter(t => {
                 if (!t.date) return false;
-                return t.date.startsWith(monthKey);
+                const transactionMonth = new Date(t.date).toISOString().slice(0, 7); // "YYYY-MM"
+                return transactionMonth === monthKey;
             });
             
             // Separate spent (positive) from earned (negative) (why did plaid set up - to be positive??)
             const spent = monthTransactions
-                .filter(t => t.amount > 0)
-                .reduce((sum, t) => sum + t.amount, 0);
+                .filter(t => !isNaN(parseFloat(t.amount)) && parseFloat(t.amount) > 0)
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+        
                 
-            const earned = monthTransactions
-                .filter(t => t.amount < 0)
-                .reduce((sum, t) => sum + t.amount, 0);
+            const earned = (monthTransactions || [])
+                .filter(t => !isNaN(parseFloat(t.amount)) && parseFloat(t.amount) < 0)
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
             totalSpent += spent;
             totalEarned += earned;
@@ -71,9 +74,9 @@ async function getDashboardData(userId) {
             // Round to 2 decimal places
             monthlySpending.push({ 
                 month: monthKey, 
-                spent: parseFloat(spent.toFixed(2)),
-                earned: parseFloat(earned.toFixed(2)),
-                net: parseFloat((spent + earned).toFixed(2))
+                spent: isNaN(spent) ? 0 : parseFloat(spent.toFixed(2)),
+                earned: isNaN(earned) ? 0 : parseFloat(earned.toFixed(2)),
+                net: isNaN(spent + earned) ? 0 : parseFloat((spent + earned).toFixed(2))
             });
         }
 
@@ -116,6 +119,7 @@ async function getDashboardData(userId) {
             thisMonth: thisMonthData,
             monthAvg,
             dailyAvg
+            transactions
         };
     } catch (error) {
         console.error("Error fetching dashboard data:", error);

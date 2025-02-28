@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CreditCard, BarChart, Target, Settings } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { LayoutDashboard, CreditCard, BarChart, Target, Settings, LogOut } from 'lucide-react';
 import styles from './NavBar.module.css';
 
 export default function NavBar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   // Sidebar menu items
   const menuItems = [
@@ -16,6 +17,17 @@ export default function NavBar() {
     { name: 'Goals', path: '/pages/goals', icon: <Target size={20} /> },
     { name: 'Settings', path: '/pages/plaid-setup', icon: <Settings size={20} />, isBottom: true },
   ];
+
+  const handleLogout = () => {
+    // Always clear the token to ensure the user is logged out
+    localStorage.removeItem('token');
+    
+    // Do NOT clear the rememberedEmail or rememberMe flag
+    // This allows the login page to auto-fill the email field next time
+    
+    // Redirect to login page
+    router.push('/');
+  };
 
   return (
     <aside className={styles.sidebar}>
@@ -32,6 +44,14 @@ export default function NavBar() {
             </Link>
           </li>
         ))}
+        
+        {/* Logout Button */}
+        <li className={`${styles.navItem} ${styles.bottomItem} ${styles.logoutItem}`}>
+          <button onClick={handleLogout} className={styles.logoutButton}>
+            <LogOut size={20} />
+            <span className={styles.navText}>Logout</span>
+          </button>
+        </li>
       </ul>
     </aside>
   );
