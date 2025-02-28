@@ -1,9 +1,9 @@
 const request1 = require("supertest");
-const express2 = require("express");
+const express1 = require("express");
 const navBarRoutes = require("../backend/routes/navBarRoutes");
 
-const app1 = express2();
-app1.use(express2.json());
+const app1 = express1();
+app1.use(express1.json());
 app1.use("/api", navBarRoutes);
 
 describe("NavBar API Integration Tests", () => {

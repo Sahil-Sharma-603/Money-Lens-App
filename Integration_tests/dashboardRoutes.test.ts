@@ -6,7 +6,7 @@ const auth = require("../backend/middleware/auth.middleware");
 
 jest.mock("../backend/logic/dashboardLogic");
 jest.mock("../backend/middleware/auth.middleware", () => (req, res, next) => {
-  req.user = { _id: "user123" };
+  req.user = { _id: "IAM_FAKE" };
   next();
 });
 
@@ -37,7 +37,7 @@ describe("Dashboard API Integration Tests", () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual(mockDashboardData);
-      expect(getDashboardData).toHaveBeenCalledWith("user123", "Bearer mocktoken");
+      expect(getDashboardData).toHaveBeenCalledWith("IAM_FAKE", "Bearer mocktoken");
     });
 
     it("should return 404 if user data is not found", async () => {
