@@ -1,8 +1,12 @@
 import Card from '../../../components/Card';
-type DailyProps = { todaySpending: number };
 
+type DailyProps = { 
+  todaySpending: number;
+  dailyAvg: number;
+};
 
-export default function Daily({ todaySpending }: DailyProps) {  return (
+export default function Daily({ todaySpending, dailyAvg }: DailyProps) {  
+  return (
     <Card>
       <h4 style={{ color: 'var(--text-secondary)', fontWeight: '600', fontSize: '0.9rem' }}>
         Spending Today
@@ -11,8 +15,8 @@ export default function Daily({ todaySpending }: DailyProps) {  return (
         ${todaySpending.toFixed(2)}
       </p>
       <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-        On average, you spend <span style={{ color: 'var(--negative)', fontWeight: '600' }}>$23</span> per day
+        On average, you spend <span style={{ color: 'var(--negative)', fontWeight: '600' }}>${dailyAvg.toFixed(2)}</span> per day
       </p>
     </Card>
   );
-};
+}
