@@ -4,6 +4,7 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const plaidRoutes = require('./routes/plaidRoutes');
 const transactionsRoutes = require('./routes/transactionsRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 require('dotenv').config({ path: '.env' });
 const cookieParser = require('cookie-parser');
@@ -16,13 +17,13 @@ app.use(cookieParser());
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    'mongodb+srv://jashangill3592:4GQyPIRwT6lm5IiE@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority',
+    { useNewUrlParser: true, useUnifiedTopology: true }
+  )
   .then(() => console.log('✅ MongoDB Connected'))
   .catch((err) => console.error('❌ MongoDB Connection Error:', err));
-
+  
 const {
   Configuration,
   PlaidApi,
@@ -50,6 +51,7 @@ app.locals.plaidClient = client;
 app.use('/api/users', userRoutes);
 app.use('/api/plaid', plaidRoutes);
 app.use('/api/transactions', transactionsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
