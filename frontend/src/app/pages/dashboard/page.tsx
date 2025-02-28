@@ -1,13 +1,6 @@
-<<<<<<< HEAD
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-=======
-"use client"; 
-
-import { useEffect, useState } from 'react';
->>>>>>> origin/develop
 import Card from '../../components/Card';
 import styles from '../../assets/page.module.css';
 import Greeting from './components/Greeting';
@@ -19,9 +12,10 @@ import BarChartComponent from './components/BarChartComponent';
 import { apiRequest, UserResponse, DashboardResponse } from '@/app/assets/utilities/API_HANDLER';
 
 export default function Dashboard() {
-<<<<<<< HEAD
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [user, setUser] = useState<UserResponse | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
   
   useEffect(() => {
     // Check if token exists in localStorage
@@ -39,6 +33,31 @@ export default function Dashboard() {
     }
   }, [router]);
 
+  useEffect(() => {
+    if (!isCheckingAuth) {
+      const fetchUser = async () => {
+        try {
+          const data = await apiRequest<UserResponse>('/users/user', { method: 'GET' });
+          setUser(data);
+        } catch (error) {
+          console.error('Error fetching user info:', error);
+        }
+      };
+      
+      const fetchData = async () => {
+        try {
+          const data = await apiRequest<DashboardResponse>('/dashboard/dashboard', { method: 'GET' });
+          setDashboardData(data);
+        } catch (error) {
+          console.error('Error fetching transaction info:', error);
+        }
+      };
+      
+      fetchUser();
+      fetchData();
+    }
+  }, [isCheckingAuth]);
+  
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
@@ -52,45 +71,11 @@ export default function Dashboard() {
     );
   }
 
-  // Only render dashboard content when not checking auth
-=======
-  const [user, setUser] = useState<UserResponse | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const data = await apiRequest<UserResponse>('/users/user', { method: 'GET' });
-        setUser(data);
-      } catch (error) {
-        console.error('Error fetching user info:', error);
-      }
-    };
-
-    const fetchData = async () => {
-      try {
-        const data = await apiRequest<DashboardResponse>('/dashboard/dashboard', { method: 'GET' });
-        setDashboardData(data);
-      } catch (error) {
-        console.error('Error fetching transaction info:', error);
-      }
-    };
-
-    fetchUser();
-    fetchData();
-  }, []);
-
->>>>>>> origin/develop
   return (
     <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
         <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-<<<<<<< HEAD
-          <Greeting />
-=======
           <Greeting userName={user ? user.firstName : ''} />
->>>>>>> origin/develop
-
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: '1' }}>
               <Daily todaySpending={dashboardData?.todaySpending ?? 0} />
@@ -99,11 +84,9 @@ export default function Dashboard() {
               <Balance />
             </div>
           </div>
-
           <Summary />
           <BarChartComponent monthlySpending={dashboardData?.monthlySpending || []} />
         </div>
-
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>
           <Transactions transactions={dashboardData?.recentTransactions || []} />
         </div>
