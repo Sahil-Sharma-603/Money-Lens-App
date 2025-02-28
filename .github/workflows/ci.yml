@@ -1,0 +1,69 @@
+name: Continuous Integration
+
+permissions:
+  pull-requests: write
+
+on:
+  pull_request:
+    branches:
+      - develop
+  push:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install --legacy-peer-dep
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+
+  assign-reviewers:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Reviewers using GitHub Script
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prAuthor = context.payload.pull_request.user.login;
+            const reviewers = [
+              "Jashann",
+              "Aakash812",
+              "FilipKaramanov",
+              "ginellego",
+              "Sahil-Sharma-603",
+              "una-may"
+            ].filter(user => user !== prAuthor);
+
+            if (reviewers.length) {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                reviewers: reviewers
+              });
+            } else {
+              console.log("No reviewers to assign after filtering PR author.");
+            }

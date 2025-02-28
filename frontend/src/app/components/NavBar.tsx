@@ -15,7 +15,7 @@ export default function NavBar() {
     { name: 'Transactions', path: '/pages/transactions', icon: <CreditCard size={20} /> },
     { name: 'Analytics', path: '/pages/analytics', icon: <BarChart size={20} /> },
     { name: 'Goals', path: '/pages/goals', icon: <Target size={20} /> },
-    { name: 'Settings', path: '/pages/settings', icon: <Settings size={20} />, isBottom: true },
+    { name: 'Settings', path: '/pages/plaid-setup', icon: <Settings size={20} />, isBottom: true },
   ];
 
   const handleLogout = () => {

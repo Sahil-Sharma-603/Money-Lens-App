@@ -22,6 +22,7 @@ const UNAUTHENTICATED_ROUTES = [
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+<<<<<<< HEAD
   const [showNavBar, setShowNavBar] = useState(false);
   
   useEffect(() => {
@@ -36,6 +37,10 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     // 2. It's not explicitly an unauthenticated route AND the user has a token
     setShowNavBar((isAuthenticatedRoute && hasToken) || (!isUnauthenticatedRoute && hasToken));
   }, [pathname]);
+=======
+
+  const isLoginPage = pathname === "/" || pathname === "/pages/signup"; // Hide navbar on login & signup
+>>>>>>> origin/develop
 
   return (
     <div style={{ display: 'flex' }}>
