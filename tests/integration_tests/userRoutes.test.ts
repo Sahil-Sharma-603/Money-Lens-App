@@ -9,6 +9,7 @@ app.use('/api/users', userRoutes);
 
 jest.mock('../../backend/models/User.model');
 
+
 describe('User Signup API Integration Tests', () => {
   afterEach(() => {
     jest.clearAllMocks();
@@ -36,6 +37,7 @@ describe('User Signup API Integration Tests', () => {
 
   it('should not create a user with an existing email', async () => {
     const existingUser = {
+      _id: '1',
       firstName: 'testuserfirstName',
       lastName:  'testuserLastName',
       email: 'testUser2@gmail.com',
@@ -108,4 +110,5 @@ describe('GET /api/users', () => {
       expect(response.status).toBe(500);
       expect(response.body.message).toBe('Test error');
     });
-  });
+  }); // end of describe
+
