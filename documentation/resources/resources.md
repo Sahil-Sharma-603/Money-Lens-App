@@ -17,14 +17,26 @@
 
 ## Node.js
 
-![placeholder](link)
+![Node](https://nodejs.org/docs/latest/api/)
+
+![Mongoose](https://mongoosejs.com/docs/guides.html)
+
+
 
 ## React
 
-![placeholder](link)
+![React](https://react.dev/reference/react)
 
 ## Express
 
-![placeholder](link)
+![Express](https://expressjs.com/en/guide/routing.html)
 
 ## APIs
+
+
+## Testing 
+
+![Jest](https://jestjs.io/docs/getting-started)
+
+![Cypress](https://docs.cypress.io/app/get-started/why-cypress)
+
