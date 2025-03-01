@@ -54,8 +54,6 @@ describe('GET /api/transactions/stored', () => {
     expect(Transaction.find).toHaveBeenCalledWith({ user_id: '507f191e810c19729de860ea' });
   });
 
-  // Uncomment and adjust additional tests as needed:
-
 
   it('should apply date range filter', async () => {
     const sampleTransactions: any[] = [];
