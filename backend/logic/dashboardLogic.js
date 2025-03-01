@@ -1,5 +1,5 @@
 const User = require("../models/User.model.js");
-const { Transaction } = require("../models/transaction.model");
+const { Transaction } = require("../models/Transaction.model.js");
 
 /**
  * Fetches transaction-related data for the dashboard.
