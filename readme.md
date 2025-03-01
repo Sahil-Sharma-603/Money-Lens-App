@@ -29,35 +29,65 @@ develop - working branch
 
 feature - a branch for each feature
 
-### File architecture:
+### Project Structure
 
-/front end
+```bash
+Money-Lens-App/
+├── backend/
+│   ├── logic/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│
+├── /documentation
+│   ├── architecture/
+│   │   ├── sequence-diagrams/
+│   ├── meeting-minutes/
+│   ├── resources/
+│
+├── frontend/
+│   ├── public/
+│   ├── src/app/
+│   │   ├── assets/
+│   │   │   ├── styles/
+│   │   │   ├── utilities
+│   │   ├── components/
+│   │   ├── config/
+│   │   ├── pages/
+│   │   │   ├── analytics/
+│   │   │   ├── dashboard/
+│   │   │   │   ├── components/
+│   │   │   ├── forgot-password/
+│   │   │   ├── goals/
+│   │   │   ├── plaid-setup/
+│   │   │   ├── signup/
+│   │   │   ├── transactions/
+│
+└── tests/
+    ├── unit/
+    ├── integration/
+    ├── acceptance/
+```
 
-/backend
+### Running the App
 
-/config
-
-/scripts
-
-/docs
-
-/tests
-
-### Using Docker Containers
+#### 1: Using Docker Containers
 
 - First build the containers with the command `docker-compose up --build -d`
 - When finished using the containers, close them with the command `docker-compose down`
 - The frontend runs on "localhost:3000"
 - The backend runs on "localhost:5001"
 
-### Installation & Running Frontend
+#### 2: Running Manually
+
+##### Installation & Running Frontend
 
 - cd frontend
 - `npm install --legacy-peer-dep`
 - Once in frontend directory, run `npm run dev`
 - Note (Important): please use "--legacy-peer-dep" flag with npm install as shown above.
 
-### Running Backend
+##### Running Backend
 
 - cd backend
 - `npm install`
@@ -66,14 +96,23 @@ feature - a branch for each feature
 - Node: you must .env file that has MONGO_URI=mongodb+srv://<username>:<password>@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority
 - Note: Replace `username` & `password` with actual credentials.
 
+##### Running Tests
 
-### Test Sign ins
+See our ![test plan](/documentation/architecture/Money-Lens_Test-Plan.pdf) for more details. 
+
+Unit and Integration: 
+- cd tests
+- `npm install --save-dev jest supertest @jest/globals`
+- `npx jest --coverage` to show coverage or `npx jest` for just test suite summary
+
+
+### Test Account for Sign ins
 
 For the Money Lens app: 
 
-user: 
+user: ginelletemull@gmail.com
 
-password: 
+password: test123
 
 For Plaid account connection: 
 
