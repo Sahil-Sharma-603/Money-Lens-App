@@ -79,3 +79,33 @@ describe('User Signup API Integration Tests', () => {
   });
 }); // end of describe
 
+
+describe('GET /api/users', () => {
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+  
+    it('should fetch all users successfully', async () => {
+      const users = [
+        { _id: '1', firstName: 'Sahil', lastName: 'Sharma', email: 'SahilSharma@example.com' },
+        { _id: '2', firstName: 'test', lastName: 'user', email: 'testuser@example.com' },
+      ];
+  
+      User.find.mockResolvedValue(users);
+  
+      const response = await request(app).get('/api/users');
+  
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual(users);
+    });
+  
+    it('should handle errors when fetching users', async () => { User.find.mockImplementation(() => {
+        throw new Error('Test error');
+      });
+  
+      const response = await request(app).get('/api/users');
+  
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Test error');
+    });
+  });
