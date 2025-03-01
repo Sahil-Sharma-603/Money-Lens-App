@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PlaidAccount, usePlaidLink } from 'react-plaid-link';
 import {
   apiRequest,
@@ -12,9 +13,13 @@ import {
 } from '@/app/assets/utilities/API_HANDLER';
 
 export default function Home() {
+  const router = useRouter();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>(''); // Added search state
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
@@ -23,40 +28,63 @@ export default function Home() {
   );
   const [hasPlaidConnection, setHasPlaidConnection] = useState(false);
 
+  // Check authentication first
   useEffect(() => {
-    const checkExistingAccounts = async () => {
-      try {
-        const data = await apiRequest<PlaidAccountsResponse>('/plaid/accounts');
-        setConnectedAccounts(data.accounts);
-        setHasPlaidConnection(data.accounts.length > 0);
-      } catch (error) {
-        console.error('Error checking existing accounts:', error);
-        setHasPlaidConnection(false);
+    // Check if token exists in localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      
+      // If no token is found, redirect to login page
+      if (!token) {
+        router.push('/');
+      } else {
+        // Only set checking to false if we have a token
+        // This prevents flashing of content before redirect
+        setIsCheckingAuth(false);
       }
-    };
-
-    checkExistingAccounts();
-  }, []);
+    }
+  }, [router]);
 
   useEffect(() => {
-    const fetchLinkToken = async () => {
-      try {
-        const data = await apiRequest<PlaidLinkResponse>(
-          '/plaid/create_link_token',
-          {
-            method: 'POST',
-          }
-        );
-        if (data.link_token) {
-          setLinkToken(data.link_token);
-          console.log('Received link token:', data.link_token);
+    // Only fetch Plaid data if the user is authenticated
+    if (!isCheckingAuth) {
+      const checkExistingAccounts = async () => {
+        try {
+          const data = await apiRequest<PlaidAccountsResponse>('/plaid/accounts');
+          setConnectedAccounts(data.accounts);
+          setHasPlaidConnection(data.accounts.length > 0);
+        } catch (error) {
+          console.error('Error checking existing accounts:', error);
+          setHasPlaidConnection(false);
         }
-      } catch (error) {
-        console.error('Error fetching link token:', error);
-      }
-    };
-    fetchLinkToken();
-  }, []);
+      };
+
+      checkExistingAccounts();
+    }
+  }, [isCheckingAuth]);
+
+  useEffect(() => {
+    // Only fetch link token if the user is authenticated
+    if (!isCheckingAuth) {
+      const fetchLinkToken = async () => {
+        try {
+          const data = await apiRequest<PlaidLinkResponse>(
+            '/plaid/create_link_token',
+            {
+              method: 'POST',
+            }
+          );
+          if (data.link_token) {
+            setLinkToken(data.link_token);
+            console.log('Received link token:', data.link_token);
+          }
+        } catch (error) {
+          console.error('Error fetching link token:', error);
+        }
+      };
+      fetchLinkToken();
+    }
+  }, [isCheckingAuth]);
 
   const handleDisconnect = async () => {
     if (!confirm('Are you sure you want to disconnect your bank account?')) {
@@ -89,6 +117,7 @@ export default function Home() {
       const params: Record<string, string> = {};
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
+      if (searchTerm) params.search = searchTerm; // Include search term in params
 
       const data = await apiRequest<TransactionsResponse>(
         '/transactions/stored',
@@ -99,7 +128,7 @@ export default function Home() {
 
       setTransactions(data.transactions);
       if (data.count === 0)
-        alert('No transaction found, connect a bank account');
+        alert('No transactions found for your search criteria');
       console.log('Stored transactions:', data);
     } catch (error) {
       console.error('Error fetching stored transactions:', error);
@@ -137,6 +166,17 @@ export default function Home() {
   const { open, ready } = usePlaidLink(
     linkToken ? config : { token: '', onSuccess: () => {} }
   );
+
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div style={styles.container}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -187,6 +227,19 @@ export default function Home() {
 
       <div style={styles.section}>
         <h2 style={styles.subtitle}>View Transactions</h2>
+
+        {/* Search input */}
+        <div style={styles.searchContainer}>
+          <label style={styles.label}>Search Transactions:</label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name or merchant"
+            style={styles.searchInput}
+          />
+        </div>
+
         <div style={styles.datePickerContainer}>
           <div style={styles.datePickerGroup}>
             <label style={styles.label}>From Date:</label>
@@ -213,10 +266,10 @@ export default function Home() {
           style={styles.fetchButton}
         >
           {isLoading ? 'Loading...' : 'Get Transactions'}
-        </button>
+	</button>
       </div>
 
-      <Link href="/dashboard">
+      <Link href="/pages/dashboard">
         <button style={styles.dashboardButton}>Go to Dashboard</button>
       </Link>
 
@@ -271,6 +324,17 @@ const styles = {
     padding: '20px',
     backgroundColor: '#f5f5f5',
     borderRadius: '8px',
+  },
+  searchContainer: {
+    marginBottom: '20px',
+  },
+  searchInput: {
+    padding: '8px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    fontSize: '16px',
+    width: '100%',
+    marginTop: '5px',
   },
   datePickerContainer: {
     display: 'flex',

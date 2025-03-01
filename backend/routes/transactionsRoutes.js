@@ -7,12 +7,12 @@ const router = express.Router();
 
 /**
  * @route GET /api/transactions/stored
- * @description Get stored transactions with optional date range filtering
+ * @description Get stored transactions with optional date range filtering and search
  * @access Private
  */
 router.get('/stored', auth, async (req, res) => {
   try {
-    const { fromDate, toDate } = req.query;
+    const { fromDate, toDate, search } = req.query;
     const userId = req.user._id;
 
     // Build query object
@@ -29,6 +29,12 @@ router.get('/stored', auth, async (req, res) => {
       if (toDate) {
         query.date.$lte = moment(toDate).format('YYYY-MM-DD');
       }
+    }
+
+    // Add search functionality if provided
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i'); // 'i' for case-insensitive
+      query.$or = [{ merchant_name: searchRegex }, { name: searchRegex }];
     }
 
     // Fetch transactions

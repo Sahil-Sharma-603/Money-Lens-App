@@ -56,6 +56,23 @@ export type TransactionsResponse = {
   count: number;
 };
 
+export type UserResponse = {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+export type DashboardResponse = {
+  todaySpending: number;
+  recentTransactions: { amount: number; name: string; category: string }[];
+  balance: number;
+  monthlySpending: { month: string; spent: number; earned: number }[];
+  dailyAvg: number; 
+  monthAvg: { spent: number; earned: number };
+  thisMonth: { spent: number; earned: number };
+};
+
 // Update apiRequest function
 export async function apiRequest<T>(
   endpoint: string,
