@@ -1,6 +1,6 @@
 const request1 = require("supertest");
 const express1 = require("express");
-const navBarRoutes = require("../backend/routes/navBarRoutes");
+const navBarRoutes = require('../../backend/routes/navBarRoutes');
 
 const app1 = express1();
 app1.use(express1.json());

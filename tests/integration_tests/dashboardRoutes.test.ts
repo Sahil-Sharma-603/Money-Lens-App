@@ -1,11 +1,11 @@
 const request = require("supertest");
 const express = require("express");
-const dashboardRoutes = require("../backend/routes/dashboardRoutes");
-const { getDashboardData } = require("../backend/logic/dashboardLogic");
-const auth = require("../backend/middleware/auth.middleware");
+const dashboardRoutes = require("../../backend/routes/dashboardRoutes");
+const { getDashboardData } = require("../../backend/logic/dashboardLogic");
+const auth = require("../../backend/middleware/auth.middleware");
 
-jest.mock("../backend/logic/dashboardLogic");
-jest.mock("../backend/middleware/auth.middleware", () => (req, res, next) => {
+jest.mock("../../backend/logic/dashboardLogic");
+jest.mock("../../backend/middleware/auth.middleware", () => (req, res, next) => {
   req.user = { _id: "IAM_FAKE" };
   next();
 });
