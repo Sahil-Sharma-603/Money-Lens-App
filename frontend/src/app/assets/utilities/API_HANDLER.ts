@@ -4,6 +4,7 @@ export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   params?: Record<string, string>;
+  requireAuth?: boolean; // Add this line
 };
 
 export type PlaidAccount = {
