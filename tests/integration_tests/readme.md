@@ -9,7 +9,3 @@ Steps to run the tests
 3) npm test
 
 
-<!-- 3) `npm install --save-dev jest-mock-extended`
-`npm install --save-dev supertest @types/supertest`
-
-4) `npm test` -->
