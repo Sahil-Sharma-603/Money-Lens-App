@@ -82,10 +82,15 @@ Plaid:
 Add to your designated slides with content on the process and what we can do in the future. We will meet tomorrow to discuss if more content is required and confirm the presenatation structure. 
 
 Intro, what is plaid - Una
+
 How plaid works - Ginelle
+
 Setting up Plaid - Sahil
+
 Authentication - Aakash
+
 Storing in DB - Jashan
+
 Lessons Learns/tips - Filip
 
 
