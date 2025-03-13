@@ -112,7 +112,7 @@ const transactionSchema = new mongoose.Schema({
 });
 
 // Create the Transaction model
-const Transaction = mongoose.model('Transaction', transactionSchema);
+const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);
 
 // Internal function to save transaction data
 const saveTransaction = async (transactionData, userId) => {

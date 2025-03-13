@@ -187,14 +187,15 @@ export default function Home() {
           <>
             <h2 style={styles.subtitle}>Connected Accounts</h2>
             <div style={styles.accountsList}>
-              {connectedAccounts.map((account) => (
-                <div key={account.account_id} style={styles.accountItem}>
-                  <strong>{account.official_name || account.name}</strong>
+              {connectedAccounts.map((account, index) => (
+                <div key={`${account.id}-${index}`} style={styles.accountItem}>
+                  <strong>{account.name}</strong>
                   <span>•••• {account.mask}</span>
                   <span>{account.subtype}</span>
                 </div>
               ))}
             </div>
+
             <div style={styles.buttonGroup}>
               <button
                 onClick={() => window.location.reload()}
@@ -223,84 +224,14 @@ export default function Home() {
             </button>
           </>
         )}
+    
+          
+        
       </div>
 
-      <div style={styles.section}>
-        <h2 style={styles.subtitle}>View Transactions</h2>
-
-        {/* Search input */}
-        <div style={styles.searchContainer}>
-          <label style={styles.label}>Search Transactions:</label>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name or merchant"
-            style={styles.searchInput}
-          />
-        </div>
-
-        <div style={styles.datePickerContainer}>
-          <div style={styles.datePickerGroup}>
-            <label style={styles.label}>From Date:</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              style={styles.input}
-            />
-          </div>
-          <div style={styles.datePickerGroup}>
-            <label style={styles.label}>To Date:</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              style={styles.input}
-            />
-          </div>
-        </div>
-        <button
-          onClick={fetchStoredTransactions}
-          disabled={isLoading}
-          style={styles.fetchButton}
-        >
-          {isLoading ? 'Loading...' : 'Get Transactions'}
-	</button>
-      </div>
-
-      <Link href="/pages/dashboard">
-        <button style={styles.dashboardButton}>Go to Dashboard</button>
-      </Link>
-
-      {transactions.length > 0 && (
-        <div style={styles.tableContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Date</th>
-                <th style={styles.th}>Name</th>
-                <th style={styles.th}>Amount</th>
-                <th style={styles.th}>Category</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((transaction) => (
-                <tr key={transaction.transaction_id}>
-                  <td style={styles.td}>{transaction.date}</td>
-                  <td style={styles.td}>{transaction.name}</td>
-                  <td style={styles.td}>
-                    ${Math.abs(transaction.amount).toFixed(2)}
-                  </td>
-                  <td style={styles.td}>{transaction.category.join(', ')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+    
     </div>
-  );
+   );
 }
 
 const styles = {
@@ -379,7 +310,7 @@ const styles = {
   dashboardButton: {
     backgroundColor: '#666',
     color: 'white',
-    padding: '12px 24px',
+    padding: '12px 24px 12px 24px',
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
@@ -428,17 +359,19 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
-    marginTop: '16px',
+    
   },
   buttonGroup: {
     display: 'flex',
+    // justifyContent: 'space-between',
     gap: '10px',
     marginTop: '16px',
+    marginBottom: '16px'
   },
   disconnectButton: {
     backgroundColor: '#dc3545',
     color: 'white',
-    padding: '0px 24px',
+    padding: '12px 24px',
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',

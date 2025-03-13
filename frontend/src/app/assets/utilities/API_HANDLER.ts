@@ -4,16 +4,27 @@ export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   params?: Record<string, string>;
+  requireAuth?: boolean; // Add this line
 };
 
-export type PlaidAccount = {
-  account_id: string;
+// export type PlaidAccount = {
+//   account_id: string;
+//   name: string;
+//   official_name: string;
+//   type: string;
+//   subtype: string;
+//   mask: string;
+// };
+
+export interface PlaidAccount {
+  id: string;
   name: string;
-  official_name: string;
+  mask: string;
   type: string;
   subtype: string;
-  mask: string;
-};
+  verification_status: string;
+}
+
 
 export type PlaidAccountsResponse = {
   accounts: PlaidAccount[];

@@ -1,12 +1,11 @@
 const express = require('express'); 
-
 const router = express.Router(); 
 
 
 // get /dashboard
 router.get('/dashboard', async (req, res) => {
     try {
-      res.render('/dashboard');
+      res.send('/dashboard');
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
@@ -15,7 +14,7 @@ router.get('/dashboard', async (req, res) => {
 // get /transactions
 router.get('/transactions', async (req, res) => {
     try {
-      res.render('/transactions');
+      res.send('/transactions');
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
