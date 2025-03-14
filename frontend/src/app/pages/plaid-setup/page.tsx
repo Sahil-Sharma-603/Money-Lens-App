@@ -6,22 +6,26 @@ import { useRouter } from 'next/navigation';
 import { PlaidAccount, usePlaidLink } from 'react-plaid-link';
 import {
   apiRequest,
+  uploadFile,
   PlaidAccountsResponse,
   PlaidLinkResponse,
   Transaction,
   TransactionsResponse,
+  CSVImportResponse,
 } from '@/app/assets/utilities/API_HANDLER';
+import CSVImportForm from '@/app/components/file-import/CSVImportForm';
 
 export default function Home() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  
+
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>(''); // Added search state
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [showCSVImport, setShowCSVImport] = useState(false);
 
   const [connectedAccounts, setConnectedAccounts] = useState<PlaidAccount[]>(
     []
@@ -33,7 +37,7 @@ export default function Home() {
     // Check if token exists in localStorage
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
-      
+
       // If no token is found, redirect to login page
       if (!token) {
         router.push('/');
@@ -50,7 +54,9 @@ export default function Home() {
     if (!isCheckingAuth) {
       const checkExistingAccounts = async () => {
         try {
-          const data = await apiRequest<PlaidAccountsResponse>('/plaid/accounts');
+          const data = await apiRequest<PlaidAccountsResponse>(
+            '/plaid/accounts'
+          );
           setConnectedAccounts(data.accounts);
           setHasPlaidConnection(data.accounts.length > 0);
         } catch (error) {
@@ -167,11 +173,25 @@ export default function Home() {
     linkToken ? config : { token: '', onSuccess: () => {} }
   );
 
+  const handleCSVImportSuccess = () => {
+    setShowCSVImport(false);
+    alert('Transactions imported successfully');
+    // Optionally refresh the transactions list
+    fetchStoredTransactions();
+  };
+
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
       <div style={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+        >
           <p>Loading...</p>
         </div>
       </div>
@@ -181,6 +201,20 @@ export default function Home() {
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Bank Account Connection</h1>
+
+      <button
+        style={styles.importButton}
+        onClick={() => setShowCSVImport(!showCSVImport)}
+      >
+        {showCSVImport ? 'Hide Import' : 'Show Import'}
+      </button>
+
+      {showCSVImport && (
+        <CSVImportForm
+          onClose={() => setShowCSVImport(false)}
+          onSuccess={handleCSVImportSuccess}
+        />
+      )}
 
       <div style={styles.section}>
         {hasPlaidConnection ? (
@@ -215,23 +249,20 @@ export default function Home() {
         ) : (
           <>
             <h2 style={styles.subtitle}>Connect Bank Account</h2>
-            <button
-              style={styles.plaidButton}
-              onClick={() => open()}
-              disabled={!linkToken || !ready}
-            >
-              Connect a bank account
-            </button>
+            <div style={styles.buttonGroup}>
+              <button
+                style={styles.plaidButton}
+                onClick={() => open()}
+                disabled={!linkToken || !ready}
+              >
+                Connect a bank account
+              </button>
+            </div>
           </>
         )}
-    
-          
-        
       </div>
-
-    
     </div>
-   );
+  );
 }
 
 const styles = {
@@ -297,6 +328,16 @@ const styles = {
     fontSize: '16px',
     opacity: 1,
   },
+  importButton: {
+    backgroundColor: '#0066cc',
+    color: 'white',
+    padding: '12px 24px',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    marginBottom: '16px',
+  },
   fetchButton: {
     backgroundColor: '#0066cc',
     color: 'white',
@@ -359,14 +400,13 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
-    
   },
   buttonGroup: {
     display: 'flex',
     // justifyContent: 'space-between',
     gap: '10px',
     marginTop: '16px',
-    marginBottom: '16px'
+    marginBottom: '16px',
   },
   disconnectButton: {
     backgroundColor: '#dc3545',

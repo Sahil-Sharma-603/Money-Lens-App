@@ -84,6 +84,14 @@ export type DashboardResponse = {
   thisMonth: { spent: number; earned: number };
 };
 
+// CSV Import response type
+export type CSVImportResponse = {
+  success: boolean;
+  count: number;
+  errors: number;
+  errorDetails?: any[];
+};
+
 // Update apiRequest function
 export async function apiRequest<T>(
   endpoint: string,
@@ -124,6 +132,39 @@ export async function apiRequest<T>(
     return response.json();
   } catch (error) {
     console.error(`API ${method} ${endpoint} failed:`, error);
+    throw error;
+  }
+}
+
+// Function for uploading files (like CSV)
+export async function uploadFile<T>(
+  endpoint: string,
+  formData: FormData,
+): Promise<T> {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  let url = `${BASE_URL}${endpoint}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'File upload failed');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`File upload to ${endpoint} failed:`, error);
     throw error;
   }
 }
