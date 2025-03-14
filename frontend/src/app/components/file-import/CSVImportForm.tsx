@@ -41,10 +41,20 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         return;
       }
 
+      // To Show to users only
       const headers = lines[0].split(',').map((h) => h.trim());
+
+      // Extract data rows for preview (all rows are data, not headers)
       const data = lines
-        .slice(1, Math.min(lines.length, 6))
+        .slice(0, Math.min(lines.length, 6))
         .map((line) => line.split(',').map((cell) => cell.trim()));
+
+      // Create column numbers as headers for display
+      const columnCount = data[0]?.length || 0;
+      const columnHeaders = Array.from(
+        { length: columnCount },
+        (_, i) => `${headers[i]} (Column ${i + 1})`
+      );
 
       setPreview([headers, ...data]);
     };
@@ -168,11 +178,11 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         </div>
       ) : (
         <div>
-          <h4>Map CSV Columns to Transaction Fields</h4>
           <p>
             Please tell us which column in your CSV contains each transaction
             property:
           </p>
+          <br />
 
           {preview.length > 0 && (
             <>
@@ -181,9 +191,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                   <thead>
                     <tr>
                       {preview[0].map((header, i) => (
-                        <th key={i} style={styles.th}>
+                        <td key={i} style={styles.td}>
                           {header}
-                        </th>
+                        </td>
                       ))}
                     </tr>
                   </thead>

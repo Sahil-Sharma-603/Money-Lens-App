@@ -122,7 +122,7 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const lines = fileContent.split('\n').filter(line => line.trim() !== '');
     
-    if (lines.length < 2) {
+    if (lines.length < 1) {
       fs.unlinkSync(filePath);
       return res.status(400).json({
         success: false,
@@ -130,9 +130,8 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
       });
     }
     
-    // Process rows
-    const headerRow = lines[0].split(',').map(h => h.trim());
-    const dataRows = lines.slice(1);
+    // Process all rows as data (no header)
+    const dataRows = lines;
     
     const results = [];
     const errors = [];
