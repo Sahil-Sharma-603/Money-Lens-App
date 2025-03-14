@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import {
-  apiRequest,
-  uploadFile,
   CSVImportResponse,
+  uploadFile,
 } from '@/app/assets/utilities/API_HANDLER';
+import React, { useEffect, useState } from 'react';
 
 interface CSVImportFormProps {
   onClose: () => void;
@@ -22,15 +21,21 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
-  // Required transaction fields from the model
-  const requiredFields = ['date', 'amount', 'name', 'category'];
+  // Transaction fields
+  const requiredFields = ['date', 'name', 'category'];
+  const [hasSeparateAmountColumns, setHasSeparateAmountColumns] =
+    useState(false);
+  const [showAllRows, setShowAllRows] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
     setFile(selectedFile);
+    processFile(selectedFile);
+  };
 
+  const processFile = (selectedFile: File) => {
     // Read and parse CSV for preview
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -44,19 +49,24 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       // To Show to users only
       const headers = lines[0].split(',').map((h) => h.trim());
 
-      // Extract data rows for preview (all rows are data, not headers)
-      const data = lines
-        .slice(0, Math.min(lines.length, 6))
-        .map((line) => line.split(',').map((cell) => cell.trim()));
+      // Extract data rows for preview
+      const data = lines.map((line) =>
+        line.split(',').map((cell) => cell.trim())
+      );
+
+      // By default, show first 6 rows, but allow showing all
+      const previewData = showAllRows
+        ? data
+        : data.slice(0, Math.min(6, data.length));
 
       // Create column numbers as headers for display
       const columnCount = data[0]?.length || 0;
       const columnHeaders = Array.from(
         { length: columnCount },
-        (_, i) => `${headers[i]} (Column ${i + 1})`
+        (_, i) => `Column ${i + 1}`
       );
 
-      setPreview([headers, ...data]);
+      setPreview([headers, ...previewData]);
     };
     reader.readAsText(selectedFile);
   };
@@ -70,6 +80,16 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
     const missingFields = requiredFields.filter(
       (field) => mapping[field] === undefined
     );
+
+    // Validate amount fields based on selection
+    if (hasSeparateAmountColumns) {
+      if (mapping.credit === undefined && mapping.debit === undefined) {
+        missingFields.push('credit or debit');
+      }
+    } else if (mapping.amount === undefined) {
+      missingFields.push('amount');
+    }
+
     if (missingFields.length > 0) {
       setError(`Please map these required fields: ${missingFields.join(', ')}`);
       return;
@@ -86,6 +106,12 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       Object.entries(mapping).forEach(([field, columnIndex]) => {
         formData.append(`mapping[${field}]`, columnIndex.toString());
       });
+
+      // Add flag for separate amount columns
+      formData.append(
+        'hasSeparateAmountColumns',
+        hasSeparateAmountColumns.toString()
+      );
 
       // Use our uploadFile function to send to backend
       const result = await uploadFile<CSVImportResponse>(
@@ -129,30 +155,19 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         droppedFile.name.endsWith('.csv')
       ) {
         setFile(droppedFile);
-
-        // Read and parse the file
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const text = event.target?.result as string;
-          const lines = text.split('\n').filter((line) => line.trim() !== '');
-          if (lines.length === 0) {
-            setError('CSV file appears to be empty');
-            return;
-          }
-
-          const headers = lines[0].split(',').map((h) => h.trim());
-          const data = lines
-            .slice(1, Math.min(lines.length, 6))
-            .map((line) => line.split(',').map((cell) => cell.trim()));
-
-          setPreview([headers, ...data]);
-        };
-        reader.readAsText(droppedFile);
+        processFile(droppedFile);
       } else {
         setError('Please upload a CSV file');
       }
     }
   };
+
+  // When user toggles showing all rows, reprocess the file
+  useEffect(() => {
+    if (file) {
+      processFile(file);
+    }
+  }, [showAllRows]);
 
   return (
     <div style={styles.container}>
@@ -211,6 +226,32 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                 </table>
               </div>
 
+              <button
+                onClick={() => setShowAllRows(!showAllRows)}
+                style={styles.toggleButton}
+              >
+                {showAllRows ? 'Show Fewer Rows' : 'Show All Rows'}
+              </button>
+
+              <div style={styles.amountToggle}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={hasSeparateAmountColumns}
+                    onChange={(e) => {
+                      setHasSeparateAmountColumns(e.target.checked);
+                      // Clear amount mappings when toggling
+                      const newMapping = { ...mapping };
+                      delete newMapping.amount;
+                      delete newMapping.credit;
+                      delete newMapping.debit;
+                      setMapping(newMapping);
+                    }}
+                  />
+                  My CSV has separate columns for credits and debits
+                </label>
+              </div>
+
               <div style={styles.mappingContainer}>
                 {requiredFields.map((field) => (
                   <div key={field} style={styles.mappingItem}>
@@ -240,6 +281,91 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                     </select>
                   </div>
                 ))}
+
+                {/* Conditional amount fields based on user selection */}
+                {hasSeparateAmountColumns ? (
+                  <>
+                    <div style={styles.mappingItem}>
+                      <label style={styles.label}>credit: </label>
+                      <select
+                        value={
+                          mapping.credit !== undefined
+                            ? mapping.credit.toString()
+                            : ''
+                        }
+                        onChange={(e) =>
+                          setMapping({
+                            ...mapping,
+                            credit: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          })
+                        }
+                        style={styles.select}
+                      >
+                        <option value="">Select column</option>
+                        {preview[0].map((header, i) => (
+                          <option key={i} value={i}>
+                            {header}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={styles.mappingItem}>
+                      <label style={styles.label}>debit: </label>
+                      <select
+                        value={
+                          mapping.debit !== undefined
+                            ? mapping.debit.toString()
+                            : ''
+                        }
+                        onChange={(e) =>
+                          setMapping({
+                            ...mapping,
+                            debit: e.target.value
+                              ? parseInt(e.target.value)
+                              : undefined,
+                          })
+                        }
+                        style={styles.select}
+                      >
+                        <option value="">Select column</option>
+                        {preview[0].map((header, i) => (
+                          <option key={i} value={i}>
+                            {header}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <div style={styles.mappingItem}>
+                    <label style={styles.label}>amount*: </label>
+                    <select
+                      value={
+                        mapping.amount !== undefined
+                          ? mapping.amount.toString()
+                          : ''
+                      }
+                      onChange={(e) =>
+                        setMapping({
+                          ...mapping,
+                          amount: e.target.value
+                            ? parseInt(e.target.value)
+                            : undefined,
+                        })
+                      }
+                      style={styles.select}
+                    >
+                      <option value="">Select column</option>
+                      {preview[0].map((header, i) => (
+                        <option key={i} value={i}>
+                          {header}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -294,28 +420,38 @@ const styles = {
   },
   previewTable: {
     overflowX: 'auto' as const,
-    marginBottom: '20px',
+    overflowY: 'auto' as const,
+    maxHeight: '300px',
+    marginBottom: '10px',
+    border: '1px solid #ddd',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse' as const,
-    border: '1px solid #ddd',
   },
   th: {
     backgroundColor: '#f8f9fa',
     padding: '8px',
     textAlign: 'left' as const,
     borderBottom: '2px solid #ddd',
+    position: 'sticky' as const,
+    top: 0,
+    zIndex: 1,
   },
   td: {
     padding: '8px',
     borderBottom: '1px solid #ddd',
+    maxWidth: '150px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
   },
   mappingContainer: {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: '10px',
     marginBottom: '20px',
+    marginTop: '20px',
   },
   mappingItem: {
     display: 'flex',
@@ -330,6 +466,20 @@ const styles = {
     borderRadius: '4px',
     border: '1px solid #ddd',
     flex: 1,
+  },
+  amountToggle: {
+    marginTop: '15px',
+    padding: '10px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '4px',
+  },
+  toggleButton: {
+    backgroundColor: '#f0f0f0',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    padding: '6px 12px',
+    cursor: 'pointer',
+    marginTop: '5px',
   },
   buttonGroup: {
     display: 'flex',
