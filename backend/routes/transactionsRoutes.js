@@ -21,10 +21,10 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
-  },
+  }
 });
 
-const upload = multer({
+const upload = multer({ 
   storage,
   fileFilter: (req, file, cb) => {
     // Accept only csv files
@@ -33,7 +33,7 @@ const upload = multer({
     } else {
       cb(new Error('Only CSV files are allowed'));
     }
-  },
+  }
 });
 
 /**
@@ -94,20 +94,21 @@ router.get('/stored', auth, async (req, res) => {
  */
 router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
   if (!req.file) {
-    return res.status(400).json({
+    return res.status(400).json({ 
       success: false,
-      error: 'No file uploaded',
+      error: 'No file uploaded' 
     });
   }
 
   try {
     const filePath = req.file.path;
     const mapping = req.body.mapping || {};
-
+    const hasSeparateAmountColumns = req.body.hasSeparateAmountColumns === 'true';
+    
     // Validate required mappings
     const requiredFields = ['date', 'name', 'category'];
-    const missingFields = requiredFields.filter((field) => !mapping[field]);
-
+    const missingFields = requiredFields.filter(field => !mapping[field]);
+    
     // Check amount fields based on user selection
     if (hasSeparateAmountColumns) {
       if (!mapping.credit && !mapping.debit) {
@@ -116,105 +117,119 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
     } else if (!mapping.amount) {
       missingFields.push('amount');
     }
-
+    
     if (missingFields.length > 0) {
       // Delete the uploaded file
       fs.unlinkSync(filePath);
-
+      
       return res.status(400).json({
         success: false,
-        error: `Missing required column mappings: ${missingFields.join(', ')}`,
+        error: `Missing required column mappings: ${missingFields.join(', ')}`
       });
     }
-
+    
     // Read and parse CSV file
     const fileContent = fs.readFileSync(filePath, 'utf8');
-    const lines = fileContent.split('\n').filter((line) => line.trim() !== '');
-
+    const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+    
     if (lines.length < 1) {
       fs.unlinkSync(filePath);
       return res.status(400).json({
         success: false,
-        error: 'CSV file is empty or invalid',
+        error: 'CSV file is empty or invalid'
       });
     }
-
+    
     // Process all rows as data (no header)
     const dataRows = lines;
-
+    
     const results = [];
     const errors = [];
     let importedCount = 0;
-
+    let skippedCount = 0;
+    
     for (let i = 0; i < dataRows.length; i++) {
       try {
-        const row = dataRows[i].split(',').map((cell) => cell.trim());
-
+        const row = dataRows[i].split(',').map(cell => cell.trim());
+        
         // Skip empty rows
-        if (row.length <= 1) continue;
-
+        if (row.length <= 1) {
+          skippedCount++;
+          continue;
+        }
+        
         // Map CSV columns to transaction model fields based on user selection
         const dateValue = row[mapping.date];
         const nameValue = row[mapping.name];
         const categoryValue = row[mapping.category];
-
+        
+        // Skip row if required fields are missing or empty
+        if (!dateValue || dateValue.trim() === '' || 
+            !nameValue || nameValue.trim() === '') {
+          console.log(`Skipping row ${i+1} due to missing required fields`);
+          skippedCount++;
+          continue;
+        }
+        
         // Handle amount based on if separate columns are used
         let amount = 0;
-
+        let hasValidAmount = false;
+        
         if (hasSeparateAmountColumns) {
           // Handle credit column (positive amount)
-          if (
-            mapping.credit !== undefined &&
-            row[mapping.credit] &&
-            row[mapping.credit].trim() !== ''
-          ) {
+          if (mapping.credit !== undefined && row[mapping.credit] && row[mapping.credit].trim() !== '') {
             const creditValue = row[mapping.credit].replace(/[$,]/g, ''); // Remove $ and commas
             const creditAmount = parseFloat(creditValue);
             if (!isNaN(creditAmount) && creditAmount > 0) {
               amount = creditAmount;
+              hasValidAmount = true;
             }
           }
-
+          
           // Handle debit column (negative amount)
-          if (
-            mapping.debit !== undefined &&
-            row[mapping.debit] &&
-            row[mapping.debit].trim() !== ''
-          ) {
+          if (mapping.debit !== undefined && row[mapping.debit] && row[mapping.debit].trim() !== '') {
             const debitValue = row[mapping.debit].replace(/[$,]/g, ''); // Remove $ and commas
             const debitAmount = parseFloat(debitValue);
             if (!isNaN(debitAmount) && debitAmount > 0) {
               // Debit is positive in the CSV but should be negative in our system
               amount = -debitAmount;
+              hasValidAmount = true;
             }
           }
         } else {
           // Single amount column
-          const amountValue = row[mapping.amount].replace(/[$,]/g, ''); // Remove $ and commas
-          amount = parseFloat(amountValue);
+          if (row[mapping.amount] && row[mapping.amount].trim() !== '') {
+            const amountValue = row[mapping.amount].replace(/[$,]/g, ''); // Remove $ and commas
+            amount = parseFloat(amountValue);
+            hasValidAmount = !isNaN(amount);
+          }
         }
-
+        
+        // Skip row if no valid amount was found
+        if (!hasValidAmount) {
+          console.log(`Skipping row ${i+1} due to missing or invalid amount`);
+          skippedCount++;
+          continue;
+        }
+        
         // Generate a transaction object
         const transaction = {
           user_id: req.user._id,
           account_id: 'csv-import', // Default account ID for imported transactions
-          amount: isNaN(amount) ? 0 : amount,
-          date: moment(dateValue).isValid()
-            ? moment(dateValue).format('YYYY-MM-DD')
-            : moment().format('YYYY-MM-DD'),
-          name: nameValue || 'Unnamed Transaction',
+          amount: amount,
+          date: moment(dateValue).isValid() ? 
+            moment(dateValue).format('YYYY-MM-DD') : 
+            moment().format('YYYY-MM-DD'),
+          name: nameValue,
           category: categoryValue ? [categoryValue] : ['Uncategorized'],
           transaction_id: `csv-${uuidv4()}`, // Generate a unique ID
           iso_currency_code: 'USD', // Default currency
-          transaction_type: amount < 0 ? 'DEBIT' : 'CREDIT',
+          transaction_type: (amount < 0) ? 'DEBIT' : 'CREDIT',
         };
-
+        
         // Save transaction using the existing helper function
-        const savedTransaction = await saveTransaction(
-          transaction,
-          req.user._id
-        );
-
+        const savedTransaction = await saveTransaction(transaction, req.user._id);
+        
         if (savedTransaction) {
           importedCount++;
           results.push(savedTransaction);
@@ -223,24 +238,26 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
         console.error(`Error processing row ${i + 1}:`, error);
         errors.push({
           row: i + 1,
-          error: error.message,
+          error: error.message
         });
       }
     }
-
+    
     // Delete the uploaded file
     fs.unlinkSync(filePath);
-
+    
     // Return results
     res.json({
       success: true,
       count: importedCount,
+      skipped: skippedCount,
       errors: errors.length,
-      errorDetails: errors.length > 0 ? errors : undefined,
+      errorDetails: errors.length > 0 ? errors : undefined
     });
+    
   } catch (error) {
     console.error('CSV import error:', error);
-
+    
     // Make sure to clean up the file if there's an error
     if (req.file && req.file.path) {
       try {
@@ -249,10 +266,10 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
         console.error('Error deleting file:', unlinkError);
       }
     }
-
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to process CSV file: ' + error.message,
+      error: 'Failed to process CSV file: ' + error.message
     });
   }
 });

@@ -120,9 +120,11 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       );
 
       if (result.success) {
-        if (result.errors > 0) {
+        if (result.errors > 0 || result.skipped > 0) {
           alert(
-            `Imported ${result.count} transactions with ${result.errors} errors.`
+            `Imported ${result.count} transactions.\n` +
+            `${result.skipped > 0 ? `Skipped ${result.skipped} rows (missing required fields).\n` : ''}` +
+            `${result.errors > 0 ? `Encountered ${result.errors} errors during import.` : ''}`
           );
         } else {
           alert(`Successfully imported ${result.count} transactions`);

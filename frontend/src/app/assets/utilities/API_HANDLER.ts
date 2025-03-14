@@ -88,6 +88,7 @@ export type DashboardResponse = {
 export type CSVImportResponse = {
   success: boolean;
   count: number;
+  skipped: number;
   errors: number;
   errorDetails?: any[];
 };
