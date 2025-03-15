@@ -153,11 +153,24 @@ export default function Home() {
       });
 
       alert(
-        "[Don't Refresh] You will get a success message when all the transactions has loaded. "
+        "Loading your transactions, please wait..."
       );
+      
+      // Load the transactions
       const transactionsData = await apiRequest('/plaid/transactions');
       console.log('Transactions received:', transactionsData);
-      alert('Transactions loaded! Click View Transactions Button');
+      
+      // Fetch and update connected accounts immediately
+      try {
+        const accountsData = await apiRequest<PlaidAccountsResponse>(
+          '/plaid/accounts'
+        );
+        setConnectedAccounts(accountsData.accounts);
+        setHasPlaidConnection(accountsData.accounts.length > 0);
+        alert('Your account has been connected successfully and transactions have been loaded!');
+      } catch (error) {
+        console.error('Error updating accounts after connection:', error);
+      }
     } catch (error) {
       console.error('Error during Plaid flow:', error);
       alert('There was an error connecting your bank account.');
