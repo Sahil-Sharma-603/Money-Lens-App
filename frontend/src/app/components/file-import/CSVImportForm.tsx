@@ -20,6 +20,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [mapping, setMapping] = useState<Record<string, number>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   // Transaction fields
   const requiredFields = ['date', 'name', 'category'];
@@ -36,7 +37,6 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   };
 
   const processFile = (selectedFile: File) => {
-    // Read and parse CSV for preview
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
@@ -45,30 +45,48 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         setError('CSV file appears to be empty');
         return;
       }
-
-      // To Show to users only
+      // Extract header row (first line) and data rows (remaining lines)
       const headers = lines[0].split(',').map((h) => h.trim());
-
-      // Extract data rows for preview
-      const data = lines.map((line) =>
-        line.split(',').map((cell) => cell.trim())
-      );
-
-      // By default, show first 6 rows, but allow showing all
+      const data = lines
+        .slice(1)
+        .map((line) => line.split(',').map((cell) => cell.trim()));
       const previewData = showAllRows
         ? data
         : data.slice(0, Math.min(6, data.length));
-
-      // Create column numbers as headers for display
-      const columnCount = data[0]?.length || 0;
-      const columnHeaders = Array.from(
-        { length: columnCount },
-        (_, i) => `Column ${i + 1}`
-      );
-
       setPreview([headers, ...previewData]);
+
+      // Set all preview data rows as selected by default
+      const newSelected = new Set<number>();
+      for (let i = 1; i < previewData.length + 1; i++) {
+        newSelected.add(i);
+      }
+      setSelectedRows(newSelected);
     };
     reader.readAsText(selectedFile);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedRows.size === preview.length - 1) {
+      // All rows are currently selected -> deselect all
+      setSelectedRows(new Set());
+    } else {
+      // Select all data rows
+      const newSelected = new Set<number>();
+      for (let i = 1; i < preview.length; i++) {
+        newSelected.add(i);
+      }
+      setSelectedRows(newSelected);
+    }
+  };
+
+  const toggleRowSelection = (rowIndex: number) => {
+    const newSelected = new Set(selectedRows);
+    if (newSelected.has(rowIndex)) {
+      newSelected.delete(rowIndex);
+    } else {
+      newSelected.add(rowIndex);
+    }
+    setSelectedRows(newSelected);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,7 +99,6 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       (field) => mapping[field] === undefined
     );
 
-    // Validate amount fields based on selection
     if (hasSeparateAmountColumns) {
       if (mapping.credit === undefined && mapping.debit === undefined) {
         missingFields.push('credit or debit');
@@ -98,7 +115,6 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
     setIsProcessing(true);
 
     try {
-      // Create form data for file upload
       const formData = new FormData();
       formData.append('file', file);
 
@@ -107,13 +123,14 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         formData.append(`mapping[${field}]`, columnIndex.toString());
       });
 
-      // Add flag for separate amount columns
       formData.append(
         'hasSeparateAmountColumns',
         hasSeparateAmountColumns.toString()
       );
 
-      // Use our uploadFile function to send to backend
+      // Append the selected row indexes (converted to an array)
+      formData.append('selectedRows', JSON.stringify(Array.from(selectedRows)));
+
       const result = await uploadFile<CSVImportResponse>(
         '/transactions/import-csv',
         formData
@@ -211,27 +228,35 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
 
           {preview.length > 0 && (
             <>
+              {/* Select/Deselect All button */}
+              <button onClick={handleSelectAll} style={styles.toggleButton}>
+                {selectedRows.size === preview.length - 1
+                  ? 'Deselect All'
+                  : 'Select All'}
+              </button>
+
               <div style={styles.previewTable}>
                 <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      {preview[0].map((header, i) => (
-                        <td key={i} style={styles.td}>
-                          {header}
-                        </td>
-                      ))}
-                    </tr>
-                  </thead>
                   <tbody>
-                    {preview.slice(1).map((row, i) => (
-                      <tr key={i}>
-                        {row.map((cell, j) => (
-                          <td key={j} style={styles.td}>
-                            {cell}
+                    {preview.map((row, i) => {
+                      const rowIndex = i; // data rows start at index 1
+                      return (
+                        <tr key={i}>
+                          <td style={styles.td}>
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(rowIndex)}
+                              onChange={() => toggleRowSelection(rowIndex)}
+                            />
                           </td>
-                        ))}
-                      </tr>
-                    ))}
+                          {row.map((cell, j) => (
+                            <td key={j} style={styles.td}>
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
