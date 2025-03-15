@@ -140,15 +140,33 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
       });
     }
     
-    // Process all rows as data (no header)
-    const dataRows = lines;
+    // First line is header, rest are data rows
+    const headerRow = lines[0];
+    const dataRows = lines.slice(1);
+    
+    // Parse selected rows from the request body
+    let selectedRows = [];
+    try {
+      if (req.body.selectedRows) {
+        selectedRows = JSON.parse(req.body.selectedRows);
+        console.log('Selected rows:', selectedRows);
+      }
+    } catch (error) {
+      console.error('Error parsing selectedRows:', error);
+    }
     
     const results = [];
     const errors = [];
     let importedCount = 0;
     let skippedCount = 0;
     
+    // Process only the selected rows from the data rows
     for (let i = 0; i < dataRows.length; i++) {
+      // Skip rows that aren't in the selectedRows array
+      if (selectedRows.length > 0 && !selectedRows.includes(i)) {
+        console.log(`Skipping row ${i} - not selected`);
+        continue;
+      }
       try {
         const row = dataRows[i].split(',').map(cell => cell.trim());
         

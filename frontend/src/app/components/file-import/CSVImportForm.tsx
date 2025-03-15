@@ -21,6 +21,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [mapping, setMapping] = useState<Record<string, number>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  // Track actual data row indices (0-based, relative to the file after header) rather than UI indices
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   // Transaction fields
@@ -56,9 +57,12 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         : data.slice(0, Math.min(6, data.length));
       setPreview([headers, ...previewData]);
 
-      // Set all preview data rows as selected by default
+      // Select all data rows by default (using actual file indices)
       const newSelected = new Set<number>();
-      for (let i = 1; i < previewData.length + 1; i++) {
+      // For each data row in the preview, add its actual file index to selected rows
+      for (let i = 0; i < previewData.length; i++) {
+        // If showing all rows, then preview indices match file indices
+        // If showing limited rows, we're showing the first N rows from the file
         newSelected.add(i);
       }
       setSelectedRows(newSelected);
@@ -67,25 +71,43 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   };
 
   const handleSelectAll = () => {
-    if (selectedRows.size === preview.length) {
-      // All rows are currently selected -> deselect all
+    // Count how many rows we have (excluding the header row)
+    const dataRowsCount = preview.length - 1;
+    
+    // If every displayed data row is selected
+    if (selectedRows.size === dataRowsCount) {
+      // Deselect all rows
       setSelectedRows(new Set());
     } else {
-      // Select all data rows
+      // Select all data rows by their actual file indices
       const newSelected = new Set<number>();
-      for (let i = 0; i < preview.length; i++) {
+      
+      // Add each data row by its file index
+      for (let i = 0; i < dataRowsCount; i++) {
+        // If showing all rows, the preview indices after the header match file indices
+        // If showing limited preview, we need to map preview indices to file indices
         newSelected.add(i);
       }
       setSelectedRows(newSelected);
     }
   };
 
-  const toggleRowSelection = (rowIndex: number) => {
+  const toggleRowSelection = (uiRowIndex: number) => {
+    // Convert UI row index to data row index
+    // UI row 0 is the header
+    // UI rows 1+ are data rows, corresponding to data indices 0+
+    
+    // Skip header row - can't toggle it
+    if (uiRowIndex === 0) return;
+    
+    // Convert to actual file index (0-based)
+    const fileRowIndex = uiRowIndex - 1;
+    
     const newSelected = new Set(selectedRows);
-    if (newSelected.has(rowIndex)) {
-      newSelected.delete(rowIndex);
+    if (newSelected.has(fileRowIndex)) {
+      newSelected.delete(fileRowIndex);
     } else {
-      newSelected.add(rowIndex);
+      newSelected.add(fileRowIndex);
     }
     setSelectedRows(newSelected);
   };
@@ -129,7 +151,8 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         hasSeparateAmountColumns.toString()
       );
 
-      // Append the selected row indexes (converted to an array)
+      // selectedRows already contains the actual file indices of selected rows
+      // so we can send them directly to the backend
       formData.append('selectedRows', JSON.stringify(Array.from(selectedRows)));
 
       const result = await uploadFile<CSVImportResponse>(
@@ -231,24 +254,34 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
             <>
               {/* Select/Deselect All button */}
               <button onClick={handleSelectAll} style={styles.whiteButton}>
-                {selectedRows.size === preview.length
+                {selectedRows.size === preview.length - 1
                   ? 'Deselect All'
-                  : 'Select All'}
+                  : 'Select All Data Rows'}
               </button>
 
               <div style={styles.previewTable}>
                 <table style={styles.table}>
                   <tbody>
                     {preview.map((row, i) => {
-                      const rowIndex = i; // data rows start at index 1
                       return (
                         <tr key={i}>
                           <td style={styles.td}>
-                            <input
-                              type="checkbox"
-                              checked={selectedRows.has(rowIndex)}
-                              onChange={() => toggleRowSelection(rowIndex)}
-                            />
+                            {i === 0 ? (
+                              // Header row checkbox - always disabled
+                              <input
+                                type="checkbox"
+                                disabled
+                                checked={false}
+                                onChange={() => {}}
+                              />
+                            ) : (
+                              // Data row checkbox - checked if the corresponding file row is selected
+                              <input
+                                type="checkbox"
+                                checked={selectedRows.has(i - 1)} // i-1 is the actual file index
+                                onChange={() => toggleRowSelection(i)}
+                              />
+                            )}
                           </td>
                           {row.map((cell, j) => (
                             <td key={j} style={styles.td}>
