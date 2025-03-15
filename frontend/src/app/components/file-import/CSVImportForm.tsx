@@ -123,8 +123,16 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         if (result.errors > 0 || result.skipped > 0) {
           alert(
             `Imported ${result.count} transactions.\n` +
-            `${result.skipped > 0 ? `Skipped ${result.skipped} rows (missing required fields).\n` : ''}` +
-            `${result.errors > 0 ? `Encountered ${result.errors} errors during import.` : ''}`
+              `${
+                result.skipped > 0
+                  ? `Skipped ${result.skipped} rows (missing required fields).\n`
+                  : ''
+              }` +
+              `${
+                result.errors > 0
+                  ? `Encountered ${result.errors} errors during import.`
+                  : ''
+              }`
           );
         } else {
           alert(`Successfully imported ${result.count} transactions`);
@@ -422,7 +430,6 @@ const styles = {
   },
   previewTable: {
     overflowX: 'auto' as const,
-    overflowY: 'auto' as const,
     maxHeight: '300px',
     marginBottom: '10px',
     border: '1px solid #ddd',
@@ -444,7 +451,6 @@ const styles = {
     padding: '8px',
     borderBottom: '1px solid #ddd',
     maxWidth: '150px',
-    overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
   },
