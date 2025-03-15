@@ -140,9 +140,8 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
       });
     }
     
-    // First line is header, rest are data rows
-    const headerRow = lines[0];
-    const dataRows = lines.slice(1);
+    // All lines are data rows (no header)
+    const dataRows = lines;
     
     // Parse selected rows from the request body
     let selectedRows = [];
@@ -153,6 +152,18 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
       }
     } catch (error) {
       console.error('Error parsing selectedRows:', error);
+    }
+    
+    // If no rows are selected, return early with success but count=0
+    if (selectedRows.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.json({
+        success: true,
+        count: 0,
+        skipped: 0,
+        errors: 0,
+        message: "No rows were selected for import"
+      });
     }
     
     const results = [];

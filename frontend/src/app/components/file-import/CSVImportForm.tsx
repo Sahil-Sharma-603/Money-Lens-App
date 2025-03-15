@@ -4,8 +4,7 @@ import {
   CSVImportResponse,
   uploadFile,
 } from '@/app/assets/utilities/API_HANDLER';
-import { transform } from 'next/dist/build/swc/generated-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
 interface CSVImportFormProps {
   onClose: () => void;
@@ -38,76 +37,64 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
     processFile(selectedFile);
   };
 
-  const processFile = (selectedFile: File) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split('\n').filter((line) => line.trim() !== '');
-      if (lines.length === 0) {
-        setError('CSV file appears to be empty');
-        return;
-      }
-      // Extract header row (first line) and data rows (remaining lines)
-      const headers = lines[0].split(',').map((h) => h.trim());
-      const data = lines
-        .slice(1)
-        .map((line) => line.split(',').map((cell) => cell.trim()));
-      const previewData = showAllRows
-        ? data
-        : data.slice(0, Math.min(6, data.length));
-      setPreview([headers, ...previewData]);
+  const processFile = useCallback(
+    (selectedFile: File) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        const lines = text.split('\n').filter((line) => line.trim() !== '');
+        if (lines.length === 0) {
+          setError('CSV file appears to be empty');
+          return;
+        }
+        // All lines are data rows (no header)
+        const data = lines.map((line) =>
+          line.split(',').map((cell) => cell.trim())
+        );
+        const previewData = showAllRows
+          ? data
+          : data.slice(0, Math.min(6, data.length));
+        setPreview(previewData);
 
-      // Select all data rows by default (using actual file indices)
-      const newSelected = new Set<number>();
-      // For each data row in the preview, add its actual file index to selected rows
-      for (let i = 0; i < previewData.length; i++) {
-        // If showing all rows, then preview indices match file indices
-        // If showing limited rows, we're showing the first N rows from the file
-        newSelected.add(i);
-      }
-      setSelectedRows(newSelected);
-    };
-    reader.readAsText(selectedFile);
-  };
+        // Select all rows by default
+        const newSelected = new Set<number>();
+        // For each row in the preview, add its file index to selected rows
+        for (let i = 0; i < previewData.length; i++) {
+          // If showing all rows, then preview indices match file indices
+          // If showing limited rows, we're showing the first N rows from the file
+          newSelected.add(i);
+        }
+        setSelectedRows(newSelected);
+      };
+      reader.readAsText(selectedFile);
+    },
+    [showAllRows]
+  );
 
   const handleSelectAll = () => {
-    // Count how many rows we have (excluding the header row)
-    const dataRowsCount = preview.length - 1;
-    
-    // If every displayed data row is selected
-    if (selectedRows.size === dataRowsCount) {
+    // If all rows are currently selected
+    if (selectedRows.size === preview.length) {
       // Deselect all rows
       setSelectedRows(new Set());
     } else {
-      // Select all data rows by their actual file indices
+      // Select all rows
       const newSelected = new Set<number>();
-      
-      // Add each data row by its file index
-      for (let i = 0; i < dataRowsCount; i++) {
-        // If showing all rows, the preview indices after the header match file indices
-        // If showing limited preview, we need to map preview indices to file indices
+
+      // Add each row by its file index
+      for (let i = 0; i < preview.length; i++) {
         newSelected.add(i);
       }
       setSelectedRows(newSelected);
     }
   };
 
-  const toggleRowSelection = (uiRowIndex: number) => {
-    // Convert UI row index to data row index
-    // UI row 0 is the header
-    // UI rows 1+ are data rows, corresponding to data indices 0+
-    
-    // Skip header row - can't toggle it
-    if (uiRowIndex === 0) return;
-    
-    // Convert to actual file index (0-based)
-    const fileRowIndex = uiRowIndex - 1;
-    
+  const toggleRowSelection = (rowIndex: number) => {
+    // Toggle selection state of the row
     const newSelected = new Set(selectedRows);
-    if (newSelected.has(fileRowIndex)) {
-      newSelected.delete(fileRowIndex);
+    if (newSelected.has(rowIndex)) {
+      newSelected.delete(rowIndex);
     } else {
-      newSelected.add(fileRowIndex);
+      newSelected.add(rowIndex);
     }
     setSelectedRows(newSelected);
   };
@@ -218,7 +205,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
     if (file) {
       processFile(file);
     }
-  }, [showAllRows]);
+  }, [showAllRows, file, processFile]);
 
   return (
     <div style={styles.container}>
@@ -254,9 +241,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
             <>
               {/* Select/Deselect All button */}
               <button onClick={handleSelectAll} style={styles.whiteButton}>
-                {selectedRows.size === preview.length - 1
+                {selectedRows.size === preview.length
                   ? 'Deselect All'
-                  : 'Select All Data Rows'}
+                  : 'Select All Rows'}
               </button>
 
               <div style={styles.previewTable}>
@@ -266,22 +253,11 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       return (
                         <tr key={i}>
                           <td style={styles.td}>
-                            {i === 0 ? (
-                              // Header row checkbox - always disabled
-                              <input
-                                type="checkbox"
-                                disabled
-                                checked={false}
-                                onChange={() => {}}
-                              />
-                            ) : (
-                              // Data row checkbox - checked if the corresponding file row is selected
-                              <input
-                                type="checkbox"
-                                checked={selectedRows.has(i - 1)} // i-1 is the actual file index
-                                onChange={() => toggleRowSelection(i)}
-                              />
-                            )}
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(i)}
+                              onChange={() => toggleRowSelection(i)}
+                            />
                           </td>
                           {row.map((cell, j) => (
                             <td key={j} style={styles.td}>
@@ -342,11 +318,13 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       style={styles.select}
                     >
                       <option value="">Select column</option>
-                      {preview[0].map((header, i) => (
-                        <option key={i} value={i}>
-                          {header}
-                        </option>
-                      ))}
+                      {preview.length > 0 &&
+                        preview[0].map((cell, i) => (
+                          <option key={i} value={i}>
+                            {i + 1}. {cell.substring(0, 20)}
+                            {cell.length > 20 ? '...' : ''}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 ))}
@@ -427,11 +405,13 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       style={styles.select}
                     >
                       <option value="">Select column</option>
-                      {preview[0].map((header, i) => (
-                        <option key={i} value={i}>
-                          {header}
-                        </option>
-                      ))}
+                      {preview.length > 0 &&
+                        preview[0].map((cell, i) => (
+                          <option key={i} value={i}>
+                            {i + 1}. {cell.substring(0, 20)}
+                            {cell.length > 20 ? '...' : ''}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 )}
