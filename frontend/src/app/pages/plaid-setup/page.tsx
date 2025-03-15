@@ -146,20 +146,17 @@ export default function Home() {
 
   const onSuccess = async (public_token: string, metadata: any) => {
     console.log('Plaid onSuccess – public_token:', public_token);
+    setIsLoading(true);
     try {
       await apiRequest('/plaid/set_access_token', {
         method: 'POST',
         body: { public_token },
       });
 
-      alert(
-        "Loading your transactions, please wait..."
-      );
-      
       // Load the transactions
       const transactionsData = await apiRequest('/plaid/transactions');
       console.log('Transactions received:', transactionsData);
-      
+
       // Fetch and update connected accounts immediately
       try {
         const accountsData = await apiRequest<PlaidAccountsResponse>(
@@ -167,13 +164,13 @@ export default function Home() {
         );
         setConnectedAccounts(accountsData.accounts);
         setHasPlaidConnection(accountsData.accounts.length > 0);
-        alert('Your account has been connected successfully and transactions have been loaded!');
       } catch (error) {
         console.error('Error updating accounts after connection:', error);
       }
     } catch (error) {
       console.error('Error during Plaid flow:', error);
-      alert('There was an error connecting your bank account.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -213,22 +210,24 @@ export default function Home() {
 
   return (
     <div style={styles.container}>
+      {isLoading && (
+        <div style={styles.loaderStyle}>
+          Loading your transactions, please wait...
+        </div>
+      )}
       <h1 style={styles.title}>Bank Account Connection</h1>
-
       <button
         style={styles.importButton}
         onClick={() => setShowCSVImport(!showCSVImport)}
       >
         {showCSVImport ? 'Cancel Import' : 'Show Import'}
       </button>
-
       {showCSVImport && (
         <CSVImportForm
           onClose={() => setShowCSVImport(false)}
           onSuccess={handleCSVImportSuccess}
         />
       )}
-
       <div style={styles.section}>
         {hasPlaidConnection ? (
           <>
@@ -242,20 +241,20 @@ export default function Home() {
                 </div>
               ))}
             </div>
-
             <div style={styles.buttonGroup}>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => open()}
                 style={styles.reconnectButton}
+                disabled={!linkToken || !ready}
               >
-                Connect Another Account
+                Connect Account(s)
               </button>
               <button
                 onClick={handleDisconnect}
                 style={styles.disconnectButton}
                 disabled={isLoading}
               >
-                {isLoading ? 'Disconnecting...' : 'Disconnect Account'}
+                {isLoading ? 'Disconnecting...' : 'Disconnect Accounts'}
               </button>
             </div>
           </>
@@ -429,5 +428,18 @@ const styles = {
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
+  },
+  loaderStyle: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    fontSize: '18px',
+    zIndex: 1000,
   },
 };

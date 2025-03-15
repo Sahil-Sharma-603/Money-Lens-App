@@ -112,7 +112,15 @@ export default function Transaction() {
                     <td style={style.td}>{transaction.date}</td>
                     <td style={style.td}>{transaction.name}</td>
                     <td style={style.td}>
-                      ${Math.abs(transaction.amount).toFixed(2)}
+                      <span
+                        style={
+                          transaction.amount < 0
+                            ? style.positive
+                            : style.negative
+                        }
+                      >
+                        ${Math.abs(transaction.amount).toFixed(2)}
+                      </span>
                     </td>
                     <td style={style.td}>{transaction.category.join(', ')}</td>
                   </tr>
@@ -266,5 +274,11 @@ const style = {
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
+  },
+  positive: {
+    color: '#4CAF50',
+  },
+  negative: {
+    color: '#dc3545',
   },
 };
