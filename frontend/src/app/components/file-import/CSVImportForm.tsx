@@ -66,13 +66,13 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   };
 
   const handleSelectAll = () => {
-    if (selectedRows.size === preview.length - 1) {
+    if (selectedRows.size === preview.length) {
       // All rows are currently selected -> deselect all
       setSelectedRows(new Set());
     } else {
       // Select all data rows
       const newSelected = new Set<number>();
-      for (let i = 1; i < preview.length; i++) {
+      for (let i = 0; i < preview.length; i++) {
         newSelected.add(i);
       }
       setSelectedRows(newSelected);
@@ -229,8 +229,8 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
           {preview.length > 0 && (
             <>
               {/* Select/Deselect All button */}
-              <button onClick={handleSelectAll} style={styles.toggleButton}>
-                {selectedRows.size === preview.length - 1
+              <button onClick={handleSelectAll} style={styles.whiteButton}>
+                {selectedRows.size === preview.length
                   ? 'Deselect All'
                   : 'Select All'}
               </button>
@@ -263,7 +263,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
 
               <button
                 onClick={() => setShowAllRows(!showAllRows)}
-                style={styles.toggleButton}
+                style={styles.whiteButton}
               >
                 {showAllRows ? 'Show Fewer Rows' : 'Show All Rows'}
               </button>
@@ -408,7 +408,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
           {error && <p style={styles.error}>{error}</p>}
 
           <div style={styles.buttonGroup}>
-            <button onClick={onClose} style={styles.cancelButton}>
+            <button onClick={onClose} style={styles.whiteButton}>
               Cancel
             </button>
             <button
@@ -457,6 +457,7 @@ const styles = {
     overflowX: 'auto' as const,
     maxHeight: '300px',
     marginBottom: '10px',
+    marginTop: '10px',
     border: '1px solid #ddd',
   },
   table: {
@@ -475,9 +476,7 @@ const styles = {
   td: {
     padding: '8px',
     borderBottom: '1px solid #ddd',
-    maxWidth: '150px',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
+    borderLeft: '1px solid #ddd',
   },
   mappingContainer: {
     display: 'flex',
@@ -528,7 +527,7 @@ const styles = {
     borderRadius: '4px',
     cursor: 'pointer',
   },
-  cancelButton: {
+  whiteButton: {
     backgroundColor: '#f5f5f5',
     color: '#333',
     padding: '10px 16px',
