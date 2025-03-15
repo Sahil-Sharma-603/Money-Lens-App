@@ -4,6 +4,7 @@ import {
   CSVImportResponse,
   uploadFile,
 } from '@/app/assets/utilities/API_HANDLER';
+import { transform } from 'next/dist/build/swc/generated-native';
 import React, { useEffect, useState } from 'react';
 
 interface CSVImportFormProps {
@@ -283,14 +284,14 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       setMapping(newMapping);
                     }}
                   />
-                  My CSV has separate columns for credits and debits
+                  &nbsp; My CSV has separate columns for credits and debits
                 </label>
               </div>
 
               <div style={styles.mappingContainer}>
                 {requiredFields.map((field) => (
                   <div key={field} style={styles.mappingItem}>
-                    <label style={styles.label}>{field}*: </label>
+                    <label style={styles.label}>{field}: </label>
                     <select
                       value={
                         mapping[field] !== undefined
@@ -375,7 +376,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                   </>
                 ) : (
                   <div style={styles.mappingItem}>
-                    <label style={styles.label}>amount*: </label>
+                    <label style={styles.label}>Amount: </label>
                     <select
                       value={
                         mapping.amount !== undefined
@@ -492,6 +493,7 @@ const styles = {
   },
   label: {
     width: '80px',
+    textTransform: 'capitalize',
   },
   select: {
     padding: '8px',
