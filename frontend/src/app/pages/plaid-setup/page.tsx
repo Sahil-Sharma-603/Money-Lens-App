@@ -5,10 +5,9 @@ import {
   AccountsResponse,
   apiRequest,
   PlaidLinkResponse,
-  TransactionsResponse,
 } from '@/app/assets/utilities/API_HANDLER';
 import CSVImportForm from '@/app/components/file-import/CSVImportForm';
-import { Plus, Building, Trash } from 'lucide-react';
+import { Building, Plus, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
@@ -127,33 +126,6 @@ export default function Home() {
     }
   };
 
-  const fetchStoredTransactions = async () => {
-    setIsLoading(true);
-    try {
-      const params: Record<string, string> = {};
-      if (fromDate) params.fromDate = fromDate;
-      if (toDate) params.toDate = toDate;
-      if (searchTerm) params.search = searchTerm; // Include search term in params
-
-      const data = await apiRequest<TransactionsResponse>(
-        '/transactions/stored',
-        {
-          params,
-        }
-      );
-
-      setTransactions(data.transactions);
-      if (data.count === 0)
-        alert('No transactions found for your search criteria');
-      console.log('Stored transactions:', data);
-    } catch (error) {
-      console.error('Error fetching stored transactions:', error);
-      alert('Failed to fetch transactions');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const onSuccess = async (public_token: string, metadata: any) => {
     console.log('Plaid onSuccess – public_token:', public_token);
     setIsLoading(true);
@@ -192,8 +164,6 @@ export default function Home() {
   const handleCSVImportSuccess = () => {
     setShowCSVImport(false);
     alert('Transactions imported successfully');
-    // Optionally refresh the transactions list
-    fetchStoredTransactions();
   };
 
   // Handle creating a new account
