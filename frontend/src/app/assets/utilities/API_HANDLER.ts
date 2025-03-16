@@ -55,6 +55,7 @@ export type PlaidLinkResponse = {
 };
 
 export type Transaction = {
+  _id: string;
   transaction_id: string;
   date: string;
   name: string;

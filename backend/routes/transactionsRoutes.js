@@ -303,4 +303,102 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
   }
 });
 
+/**
+ * @route PUT /api/transactions/:id
+ * @description Update a specific transaction
+ * @access Private
+ */
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const userId = req.user._id;
+
+    // Find the transaction and make sure it belongs to the user
+    const transaction = await Transaction.findOne({
+      _id: id,
+      user_id: userId
+    });
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        error: 'Transaction not found or access denied'
+      });
+    }
+
+    // Only allow updating specific fields
+    const allowedUpdates = ['name', 'category', 'amount', 'date'];
+    const updateData = {};
+    
+    allowedUpdates.forEach(field => {
+      if (updates[field] !== undefined) {
+        updateData[field] = updates[field];
+      }
+    });
+
+    // Add transaction_type field if amount is changed
+    if (updateData.amount !== undefined) {
+      updateData.transaction_type = updateData.amount < 0 ? 'DEBIT' : 'CREDIT';
+    }
+
+    // Update the transaction
+    const updatedTransaction = await Transaction.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      transaction: updatedTransaction
+    });
+  } catch (error) {
+    console.error('Error updating transaction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error updating transaction'
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/transactions/:id
+ * @description Delete a specific transaction
+ * @access Private
+ */
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    // Find the transaction and make sure it belongs to the user
+    const transaction = await Transaction.findOne({
+      _id: id,
+      user_id: userId
+    });
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        error: 'Transaction not found or access denied'
+      });
+    }
+
+    // Delete the transaction
+    await Transaction.findByIdAndDelete(id);
+
+    res.json({
+      success: true,
+      message: 'Transaction deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error deleting transaction'
+    });
+  }
+});
+
 module.exports = router;
