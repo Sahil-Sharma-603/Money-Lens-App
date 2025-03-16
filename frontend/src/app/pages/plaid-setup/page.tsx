@@ -1,36 +1,43 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { PlaidAccount, usePlaidLink } from 'react-plaid-link';
 import {
+  Account,
+  AccountsResponse,
   apiRequest,
-  uploadFile,
-  PlaidAccountsResponse,
   PlaidLinkResponse,
   Transaction,
   TransactionsResponse,
-  CSVImportResponse,
 } from '@/app/assets/utilities/API_HANDLER';
 import CSVImportForm from '@/app/components/file-import/CSVImportForm';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePlaidLink } from 'react-plaid-link';
 
 export default function Home() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [fromDate, setFromDate] = useState<string>('');
-  const [toDate, setToDate] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>(''); // Added search state
   const [isLoading, setIsLoading] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showCSVImport, setShowCSVImport] = useState(false);
 
-  const [connectedAccounts, setConnectedAccounts] = useState<PlaidAccount[]>(
-    []
-  );
+  // We'll now use our own Account type instead of PlaidAccount
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [hasPlaidConnection, setHasPlaidConnection] = useState(false);
+
+  // Account creation/editing state
+  const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
+  const [newAccount, setNewAccount] = useState({
+    name: '',
+    type: 'checking',
+    balance: 0,
+    currency: 'USD',
+    institution: '',
+  });
+
+  // Delete confirmation
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
 
   // Check authentication first
   useEffect(() => {
@@ -50,24 +57,29 @@ export default function Home() {
   }, [router]);
 
   useEffect(() => {
-    // Only fetch Plaid data if the user is authenticated
+    // Only fetch accounts if the user is authenticated
     if (!isCheckingAuth) {
-      const checkExistingAccounts = async () => {
-        try {
-          const data = await apiRequest<PlaidAccountsResponse>(
-            '/plaid/accounts'
-          );
-          setConnectedAccounts(data.accounts);
-          setHasPlaidConnection(data.accounts.length > 0);
-        } catch (error) {
-          console.error('Error checking existing accounts:', error);
-          setHasPlaidConnection(false);
-        }
-      };
-
-      checkExistingAccounts();
+      fetchAccounts();
     }
   }, [isCheckingAuth]);
+
+  // Function to fetch all accounts
+  const fetchAccounts = async () => {
+    try {
+      const data = await apiRequest<AccountsResponse>('/accounts');
+      setAccounts(data.accounts);
+
+      // Check if any plaid accounts exist
+      const plaidAccounts = data.accounts.filter(
+        (account) => account.type === 'plaid'
+      );
+      setHasPlaidConnection(plaidAccounts.length > 0);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      setAccounts([]);
+      setHasPlaidConnection(false);
+    }
+  };
 
   useEffect(() => {
     // Only fetch link token if the user is authenticated
@@ -103,10 +115,8 @@ export default function Home() {
         method: 'POST',
       });
 
-      // Reset states
-      setConnectedAccounts([]);
-      setHasPlaidConnection(false);
-      setTransactions([]);
+      // Refresh accounts list
+      await fetchAccounts();
 
       alert('Bank account disconnected successfully');
     } catch (error) {
@@ -157,13 +167,9 @@ export default function Home() {
       const transactionsData = await apiRequest('/plaid/transactions');
       console.log('Transactions received:', transactionsData);
 
-      // Fetch and update connected accounts immediately
+      // Fetch and update all accounts immediately
       try {
-        const accountsData = await apiRequest<PlaidAccountsResponse>(
-          '/plaid/accounts'
-        );
-        setConnectedAccounts(accountsData.accounts);
-        setHasPlaidConnection(accountsData.accounts.length > 0);
+        await fetchAccounts();
       } catch (error) {
         console.error('Error updating accounts after connection:', error);
       }
@@ -188,6 +194,63 @@ export default function Home() {
     alert('Transactions imported successfully');
     // Optionally refresh the transactions list
     fetchStoredTransactions();
+  };
+
+  // Handle creating a new account
+  const handleCreateAccount = async () => {
+    setIsLoading(true);
+    try {
+      await apiRequest('/accounts', {
+        method: 'POST',
+        body: newAccount,
+      });
+
+      // Reset form and close modal
+      setNewAccount({
+        name: '',
+        type: 'checking',
+        balance: 0,
+        currency: 'USD',
+        institution: '',
+      });
+      setShowCreateAccountModal(false);
+
+      // Refresh accounts list
+      await fetchAccounts();
+
+      alert('Account created successfully');
+    } catch (error) {
+      console.error('Error creating account:', error);
+      alert('Failed to create account');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle account deletion and transaction cleanup
+  const handleDeleteAccount = async () => {
+    if (!accountToDelete) return;
+
+    setIsLoading(true);
+    try {
+      await apiRequest(`/accounts/${accountToDelete._id}`, {
+        method: 'DELETE',
+      });
+
+      // Close confirmation modal
+      setShowDeleteConfirmation(false);
+      setAccountToDelete(null);
+
+      // Refresh accounts list
+      await fetchAccounts();
+
+      alert('Account and associated transactions deleted successfully');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Show loading state while checking authentication
@@ -228,51 +291,272 @@ export default function Home() {
           onSuccess={handleCSVImportSuccess}
         />
       )}
+      {/* Accounts Section */}
       <div style={styles.section}>
-        {hasPlaidConnection ? (
-          <>
-            <h2 style={styles.subtitle}>Connected Accounts</h2>
-            <div style={styles.accountsList}>
-              {connectedAccounts.map((account, index) => (
-                <div key={`${account.id}-${index}`} style={styles.accountItem}>
-                  <strong>{account.name}</strong>
-                  <span>•••• {account.mask}</span>
-                  <span>{account.subtype}</span>
-                </div>
-              ))}
-            </div>
-            <div style={styles.buttonGroup}>
-              <button
-                onClick={() => open()}
-                style={styles.reconnectButton}
-                disabled={!linkToken || !ready}
-              >
-                Connect Account(s)
-              </button>
-              <button
-                onClick={handleDisconnect}
-                style={styles.disconnectButton}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Disconnecting...' : 'Disconnect Accounts'}
-              </button>
-            </div>
-          </>
+        <div style={styles.sectionHeader}>
+          <h2 style={styles.subtitle}>Your Accounts</h2>
+          <div style={styles.headerButtons}>
+            <button
+              onClick={() => setShowCreateAccountModal(true)}
+              style={styles.createButton}
+            >
+              Create Account
+            </button>
+            <button
+              onClick={() => open()}
+              style={styles.plaidButton}
+              disabled={!linkToken || !ready || isLoading}
+            >
+              Connect Bank
+            </button>
+          </div>
+        </div>
+
+        {accounts.length === 0 ? (
+          <div style={styles.emptyState}>
+            <p>
+              You don't have any accounts yet. Create a manual account or
+              connect to your bank.
+            </p>
+          </div>
         ) : (
           <>
-            <h2 style={styles.subtitle}>Connect Bank Account</h2>
-            <div style={styles.buttonGroup}>
-              <button
-                style={styles.plaidButton}
-                onClick={() => open()}
-                disabled={!linkToken || !ready}
-              >
-                Connect a bank account
-              </button>
+            {/* Manual Accounts */}
+            <div style={styles.accountsSection}>
+              <h3 style={styles.accountsSubtitle}>Manual Accounts</h3>
+              <div style={styles.accountsList}>
+                {accounts
+                  .filter((account) => account.type !== 'plaid')
+                  .map((account) => (
+                    <div key={account._id} style={styles.accountItem}>
+                      <div style={styles.accountInfo}>
+                        <strong>{account.name}</strong>
+                        <span style={styles.accountType}>{account.type}</span>
+                      </div>
+                      <div style={styles.accountBalance}>
+                        {account.currency} {account.balance.toFixed(2)}
+                      </div>
+                      <div style={styles.accountActions}>
+                        <button
+                          onClick={() => {
+                            setAccountToDelete(account);
+                            setShowDeleteConfirmation(true);
+                          }}
+                          style={styles.deleteButton}
+                          disabled={isLoading}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                {accounts.filter((account) => account.type !== 'plaid')
+                  .length === 0 && (
+                  <div style={styles.emptyAccountsMessage}>
+                    No manual accounts yet. Create one to get started.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Plaid Accounts */}
+            <div style={styles.accountsSection}>
+              <h3 style={styles.accountsSubtitle}>Connected Bank Accounts</h3>
+              <div style={styles.accountsList}>
+                {accounts
+                  .filter((account) => account.type === 'plaid')
+                  .map((account) => (
+                    <div key={account._id} style={styles.accountItem}>
+                      <div style={styles.accountInfo}>
+                        <strong>{account.name}</strong>
+                        {account.plaid_mask && (
+                          <span style={styles.accountNumber}>
+                            •••• {account.plaid_mask}
+                          </span>
+                        )}
+                        {account.plaid_subtype && (
+                          <span style={styles.accountType}>
+                            {account.plaid_subtype}
+                          </span>
+                        )}
+                      </div>
+                      <div style={styles.accountBalance}>
+                        {account.currency} {account.balance.toFixed(2)}
+                      </div>
+                      <div style={styles.accountInstitution}>
+                        {account.institution}
+                      </div>
+                    </div>
+                  ))}
+
+                {accounts.filter((account) => account.type === 'plaid')
+                  .length === 0 && (
+                  <div style={styles.emptyAccountsMessage}>
+                    No bank accounts connected. Use the "Connect Bank" button to
+                    link your accounts.
+                  </div>
+                )}
+              </div>
+
+              {hasPlaidConnection && (
+                <div style={styles.buttonGroup}>
+                  <button
+                    onClick={handleDisconnect}
+                    style={styles.disconnectButton}
+                    disabled={isLoading}
+                  >
+                    {isLoading
+                      ? 'Disconnecting...'
+                      : 'Disconnect All Bank Accounts'}
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
       </div>
+
+      {/* Create Account Modal */}
+      {showCreateAccountModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3>Create a New Account</h3>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Account Name:</label>
+              <input
+                type="text"
+                value={newAccount.name}
+                onChange={(e) =>
+                  setNewAccount({ ...newAccount, name: e.target.value })
+                }
+                style={styles.input}
+                placeholder="e.g., My Checking Account"
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Account Type:</label>
+              <select
+                value={newAccount.type}
+                onChange={(e) =>
+                  setNewAccount({ ...newAccount, type: e.target.value })
+                }
+                style={styles.input}
+              >
+                <option value="checking">Checking</option>
+                <option value="savings">Savings</option>
+                <option value="credit">Credit Card</option>
+                <option value="loan">Loan</option>
+                <option value="investment">Investment</option>
+                <option value="cash">Cash</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Starting Balance:</label>
+              <input
+                type="number"
+                step="0.01"
+                value={newAccount.balance}
+                onChange={(e) =>
+                  setNewAccount({
+                    ...newAccount,
+                    balance: parseFloat(e.target.value),
+                  })
+                }
+                style={styles.input}
+              />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Currency:</label>
+              <select
+                value={newAccount.currency}
+                onChange={(e) =>
+                  setNewAccount({ ...newAccount, currency: e.target.value })
+                }
+                style={styles.input}
+              >
+                <option value="USD">USD - US Dollar</option>
+                <option value="CAD">CAD - Canadian Dollar</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="GBP">GBP - British Pound</option>
+                <option value="AUD">AUD - Australian Dollar</option>
+                <option value="JPY">JPY - Japanese Yen</option>
+              </select>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Institution (optional):</label>
+              <input
+                type="text"
+                value={newAccount.institution}
+                onChange={(e) =>
+                  setNewAccount({ ...newAccount, institution: e.target.value })
+                }
+                style={styles.input}
+                placeholder="e.g., Chase, Bank of America"
+              />
+            </div>
+
+            <div style={styles.modalButtons}>
+              <button
+                onClick={() => setShowCreateAccountModal(false)}
+                style={styles.cancelButton}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateAccount}
+                style={styles.saveButton}
+                disabled={isLoading || !newAccount.name}
+              >
+                {isLoading ? 'Creating...' : 'Create Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && accountToDelete && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3>Confirm Account Deletion</h3>
+
+            <p style={styles.warningText}>
+              Are you sure you want to delete the account "
+              {accountToDelete.name}"?
+            </p>
+            <p style={styles.warningText}>
+              All transactions associated with this account will also be
+              deleted. This action cannot be undone.
+            </p>
+
+            <div style={styles.modalButtons}>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false);
+                  setAccountToDelete(null);
+                }}
+                style={styles.cancelButton}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                style={styles.deleteConfirmButton}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Deleting...' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -280,7 +564,7 @@ export default function Home() {
 const styles = {
   container: {
     padding: '40px',
-    maxWidth: '800px',
+    maxWidth: '900px',
     margin: '0 auto',
   },
   title: {
@@ -441,5 +725,141 @@ const styles = {
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     fontSize: '18px',
     zIndex: 1000,
+  },
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
+  headerButtons: {
+    display: 'flex',
+    gap: '10px',
+  },
+  createButton: {
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  accountsSection: {
+    marginBottom: '30px',
+  },
+  accountsSubtitle: {
+    fontSize: '18px',
+    marginBottom: '10px',
+    color: '#444',
+    borderBottom: '1px solid #ddd',
+    paddingBottom: '8px',
+  },
+  accountInfo: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    flex: '1',
+  },
+  accountType: {
+    color: '#666',
+    fontSize: '14px',
+    textTransform: 'capitalize' as const,
+  },
+  accountNumber: {
+    color: '#666',
+    fontSize: '14px',
+  },
+  accountBalance: {
+    fontWeight: 'bold' as const,
+    minWidth: '120px',
+    textAlign: 'right' as const,
+  },
+  accountInstitution: {
+    color: '#666',
+    fontSize: '14px',
+    minWidth: '100px',
+    textAlign: 'right' as const,
+  },
+  accountActions: {
+    display: 'flex',
+    gap: '5px',
+    minWidth: '80px',
+    justifyContent: 'flex-end',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+    color: 'white',
+    padding: '5px 10px',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    fontSize: '12px',
+  },
+  emptyState: {
+    textAlign: 'center' as const,
+    padding: '30px',
+    color: '#666',
+  },
+  emptyAccountsMessage: {
+    padding: '15px',
+    color: '#666',
+    textAlign: 'center' as const,
+    fontStyle: 'italic',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: '30px',
+    borderRadius: '8px',
+    maxWidth: '500px',
+    width: '100%',
+  },
+  formGroup: {
+    marginBottom: '20px',
+  },
+  modalButtons: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '10px',
+    marginTop: '30px',
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+    color: '#333',
+    padding: '8px 16px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  deleteConfirmButton: {
+    backgroundColor: '#dc3545',
+    color: 'white',
+    padding: '8px 16px',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  warningText: {
+    color: '#dc3545',
+    fontWeight: 'bold' as const,
+    marginBottom: '10px',
   },
 };
