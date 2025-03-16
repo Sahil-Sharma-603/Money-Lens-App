@@ -8,7 +8,14 @@ import {
   TransactionsResponse,
 } from '../../assets/utilities/API_HANDLER';
 import Card from '../../components/Card';
-import { Edit, Trash } from 'lucide-react';
+import {
+  Edit,
+  Trash,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+} from 'lucide-react';
 
 export default function Transaction() {
   const [fromDate, setFromDate] = useState<string>('');
@@ -27,6 +34,11 @@ export default function Transaction() {
     date: '',
   });
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+
   // Bulk selection state
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
     new Set()
@@ -39,10 +51,20 @@ export default function Transaction() {
     date: '',
   });
 
+  // Initial load of transactions
   useEffect(() => {
     fetchStoredTransactions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // When pagination changes, fetch transactions again
+  useEffect(() => {
+    if (transactions.length > 0) {
+      // Skip on first load
+      fetchStoredTransactions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, itemsPerPage]);
 
   const fetchStoredTransactions = async () => {
     setIsLoading(true);
@@ -52,6 +74,10 @@ export default function Transaction() {
       if (toDate) params.toDate = toDate;
       if (searchTerm) params.search = searchTerm; // Include search term in params
 
+      // Add pagination params
+      params.page = currentPage.toString();
+      params.limit = itemsPerPage.toString();
+
       const data = await apiRequest<TransactionsResponse>(
         '/transactions/stored',
         {
@@ -60,6 +86,16 @@ export default function Transaction() {
       );
 
       setTransactions(data.transactions);
+      setTotalCount(data.count);
+
+      // Reset to page 1 if we're on a page with no results (except page 1 itself)
+      if (data.transactions.length === 0 && currentPage > 1) {
+        setCurrentPage(1);
+      }
+
+      // Clear selection when changing pages
+      setSelectedTransactions(new Set());
+
       if (data.count === 0)
         alert('No transactions found for your search criteria');
       console.log('Stored transactions:', data);
@@ -346,7 +382,10 @@ export default function Transaction() {
             </div>
           </div>
           <button
-            onClick={fetchStoredTransactions}
+            onClick={() => {
+              setCurrentPage(1); // Reset to page 1 when applying new filters
+              fetchStoredTransactions();
+            }}
             disabled={isLoading}
             style={style.fetchButton}
           >
@@ -433,6 +472,81 @@ export default function Transaction() {
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            <div style={style.paginationContainer}>
+              <div style={style.paginationInfo}>
+                Showing{' '}
+                {transactions.length > 0
+                  ? (currentPage - 1) * itemsPerPage + 1
+                  : 0}{' '}
+                - {Math.min(currentPage * itemsPerPage, totalCount)} of{' '}
+                {totalCount} transactions
+              </div>
+
+              <div style={style.itemsPerPageContainer}>
+                <label style={style.paginationLabel}>Items per page:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing items per page
+                  }}
+                  style={style.itemsPerPageSelect}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+
+              <div style={style.pageButtonsContainer}>
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1 || isLoading}
+                  style={style.pageButton}
+                >
+                  <ChevronsLeft size={20} />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1 || isLoading}
+                  style={style.pageButton}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                <span style={style.pageIndicator}>
+                  Page {currentPage} of{' '}
+                  {Math.ceil(totalCount / itemsPerPage) || 1}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={
+                    currentPage >= Math.ceil(totalCount / itemsPerPage) ||
+                    isLoading
+                  }
+                  style={style.pageButton}
+                >
+                  <ChevronRight size={20} />
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage(Math.ceil(totalCount / itemsPerPage))
+                  }
+                  disabled={
+                    currentPage >= Math.ceil(totalCount / itemsPerPage) ||
+                    isLoading
+                  }
+                  style={style.pageButton}
+                >
+                  <ChevronsRight size={20} />
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -737,6 +851,53 @@ const style = {
     marginBottom: '15px',
     fontSize: '14px',
     color: '#666',
+  },
+  paginationContainer: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: '20px',
+    padding: '10px 0',
+    borderTop: '1px solid #dee2e6',
+  },
+  paginationInfo: {
+    color: '#6c757d',
+    fontSize: '14px',
+  },
+  itemsPerPageContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  paginationLabel: {
+    color: '#6c757d',
+    fontSize: '14px',
+    margin: 0,
+  },
+  itemsPerPageSelect: {
+    padding: '4px 8px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+  },
+  pageButtonsContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+  },
+  pageButton: {
+    padding: '4px 10px',
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #dee2e6',
+    borderRadius: '4px',
+    color: '#212529',
+    cursor: 'pointer',
+    fontSize: '14px',
+  },
+  pageIndicator: {
+    padding: '0 10px',
+    color: '#6c757d',
+    fontSize: '14px',
   },
   title: {
     fontSize: '24px',

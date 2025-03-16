@@ -43,8 +43,13 @@ const upload = multer({
  */
 router.get('/stored', auth, async (req, res) => {
   try {
-    const { fromDate, toDate, search } = req.query;
+    const { fromDate, toDate, search, page = 1, limit = 10 } = req.query;
     const userId = req.user._id;
+
+    // Parse pagination parameters
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const skip = (pageNum - 1) * limitNum;
 
     // Build query object
     const query = {
@@ -68,14 +73,21 @@ router.get('/stored', auth, async (req, res) => {
       query.$or = [{ merchant_name: searchRegex }, { name: searchRegex }];
     }
 
-    // Fetch transactions
+    // Count total matching transactions
+    const totalCount = await Transaction.countDocuments(query);
+
+    // Fetch transactions with pagination
     const transactions = await Transaction.find(query)
       .sort({ date: -1 }) // Sort by date descending (newest first)
+      .skip(skip)
+      .limit(limitNum)
       .exec();
 
     res.json({
       success: true,
-      count: transactions.length,
+      count: totalCount,
+      page: pageNum,
+      limit: limitNum,
       transactions,
     });
   } catch (error) {
