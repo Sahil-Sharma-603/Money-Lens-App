@@ -90,10 +90,23 @@ router.post('/', auth, async (req, res) => {
  */
 router.delete('/plaid', auth, async (req, res) => {
   try {
-    await Account.deleteMany({ user_id: req.user._id, type: 'plaid' });
+    // First, get all plaid account IDs for this user
+    const plaidAccounts = await Account.find({ user_id: req.user._id, type: 'plaid' });
+    const accountIds = plaidAccounts.map(account => account._id);
+    
+    // Delete all transactions associated with these accounts
+    const { Transaction } = require('../models/transaction.model');
+    const deletedTransactions = await Transaction.deleteMany({
+      user_id: req.user._id,
+      account_id: { $in: accountIds }
+    });
+    
+    // Delete all plaid accounts
+    const deletedAccounts = await Account.deleteMany({ user_id: req.user._id, type: 'plaid' });
+    
     res.json({
       success: true,
-      message: 'All plaid accounts deleted successfully',
+      message: `All plaid accounts deleted successfully. Removed ${deletedAccounts.deletedCount} accounts and ${deletedTransactions.deletedCount} associated transactions.`,
     });
   } catch (error) {
     console.error('Error deleting plaid accounts:', error);
@@ -208,11 +221,19 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
+    // Delete all transactions associated with this account
+    const { Transaction } = require('../models/transaction.model');
+    const deletedTransactions = await Transaction.deleteMany({
+      user_id: req.user._id,
+      account_id: req.params.id
+    });
+
+    // Delete the account
     await Account.deleteOne({ _id: req.params.id });
 
     res.json({
       success: true,
-      message: 'Account deleted successfully',
+      message: `Account deleted successfully. Removed ${deletedTransactions.deletedCount} associated transactions.`,
     });
   } catch (error) {
     console.error('Error deleting account:', error);
