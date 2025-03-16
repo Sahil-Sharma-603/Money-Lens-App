@@ -3,6 +3,9 @@
 import {
   CSVImportResponse,
   uploadFile,
+  apiRequest,
+  Account,
+  AccountsResponse,
 } from '@/app/assets/utilities/API_HANDLER';
 import React, { useEffect, useState, useCallback } from 'react';
 
@@ -28,6 +31,8 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [hasSeparateAmountColumns, setHasSeparateAmountColumns] =
     useState(false);
   const [showAllRows, setShowAllRows] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -121,6 +126,12 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       setError(`Please map these required fields: ${missingFields.join(', ')}`);
       return;
     }
+    
+    // Validate that an account is selected
+    if (!selectedAccount) {
+      setError('Please select an account for these transactions');
+      return;
+    }
 
     setIsProcessing(true);
 
@@ -141,6 +152,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       // selectedRows already contains the actual file indices of selected rows
       // so we can send them directly to the backend
       formData.append('selectedRows', JSON.stringify(Array.from(selectedRows)));
+      
+      // Add the selected account ID
+      formData.append('accountId', selectedAccount);
 
       const result = await uploadFile<CSVImportResponse>(
         '/transactions/import-csv',
@@ -206,6 +220,28 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       processFile(file);
     }
   }, [showAllRows, file, processFile]);
+  
+  // Fetch available accounts when component mounts
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const response = await apiRequest<AccountsResponse>('/accounts');
+        // Filter for active accounts only
+        const activeAccounts = response.accounts.filter(account => account.is_active);
+        setAccounts(activeAccounts);
+        
+        // Set default account if available
+        if (activeAccounts.length > 0) {
+          setSelectedAccount(activeAccounts[0]._id);
+        }
+      } catch (error) {
+        console.error('Error fetching accounts:', error);
+        setError('Failed to load accounts. Please try again later.');
+      }
+    };
+    
+    fetchAccounts();
+  }, []);
 
   return (
     <div style={styles.container}>
@@ -297,6 +333,33 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                 </label>
               </div>
 
+              {/* Account Selection */}
+              <div style={styles.accountSelection}>
+                <h4>Select Account</h4>
+                <p>Choose which account these transactions belong to:</p>
+                
+                <select
+                  value={selectedAccount}
+                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  style={styles.accountSelect}
+                >
+                  <option value="">Select an Account</option>
+                  {accounts.map((account) => (
+                    <option key={account._id} value={account._id}>
+                      {account.name} ({account.type}) - {account.currency}
+                    </option>
+                  ))}
+                </select>
+                
+                <div style={styles.accountNote}>
+                  <p>Don't see your account? <a href="#" onClick={(e) => {
+                    e.preventDefault();
+                    // You could open a modal here to create a new account
+                    alert('Please go to Accounts page to create a new account first.');
+                  }}>Create a new account</a></p>
+                </div>
+              </div>
+            
               <div style={styles.mappingContainer}>
                 {requiredFields.map((field) => (
                   <div key={field} style={styles.mappingItem}>
@@ -553,6 +616,26 @@ const styles = {
   error: {
     color: 'red',
     marginBottom: '10px',
+  },
+  accountSelection: {
+    marginTop: '20px',
+    padding: '15px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '4px',
+    marginBottom: '15px',
+  },
+  accountSelect: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    fontSize: '16px',
+    marginTop: '10px',
+  },
+  accountNote: {
+    marginTop: '10px',
+    fontSize: '14px',
+    color: '#666',
   },
 };
 

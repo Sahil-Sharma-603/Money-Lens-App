@@ -54,6 +54,24 @@ export type PlaidLinkResponse = {
   link_token: string;
 };
 
+export type Account = {
+  _id: string;
+  name: string;
+  type: string;
+  balance: number;
+  currency: string;
+  institution: string;
+  is_active: boolean;
+  plaid_account_id?: string;
+  plaid_mask?: string;
+  plaid_subtype?: string;
+};
+
+export type AccountsResponse = {
+  accounts: Account[];
+  count: number;
+};
+
 export type Transaction = {
   _id: string;
   transaction_id: string;
@@ -61,6 +79,8 @@ export type Transaction = {
   name: string;
   amount: number;
   category: string[];
+  account_id: string;
+  account?: Account;
 };
 
 export type TransactionsResponse = {

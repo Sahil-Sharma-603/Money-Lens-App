@@ -178,6 +178,31 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
     const filePath = req.file.path;
     const mapping = req.body.mapping || {};
     const hasSeparateAmountColumns = req.body.hasSeparateAmountColumns === 'true';
+    const accountId = req.body.accountId;
+    
+    // Validate account ID
+    if (!accountId) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({
+        success: false,
+        error: 'No account selected for these transactions'
+      });
+    }
+    
+    // Validate that the account exists and belongs to the user
+    const Account = require('../models/Account.model');
+    const account = await Account.findOne({
+      _id: accountId,
+      user_id: req.user._id
+    });
+    
+    if (!account) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid account selected'
+      });
+    }
     
     // Validate required mappings
     const requiredFields = ['date', 'name', 'category'];
@@ -318,7 +343,7 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
         // Generate a transaction object
         const transaction = {
           user_id: req.user._id,
-          account_id: 'csv-import', // Default account ID for imported transactions
+          account_id: accountId, // Use the selected account ID
           amount: amount,
           date: moment(dateValue).isValid() ? 
             moment(dateValue).format('YYYY-MM-DD') : 
@@ -326,12 +351,12 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
           name: nameValue,
           category: categoryValue ? [categoryValue] : ['Uncategorized'],
           transaction_id: `csv-${uuidv4()}`, // Generate a unique ID
-          iso_currency_code: 'USD', // Default currency
+          iso_currency_code: account.currency || 'USD', // Use account currency
           transaction_type: (amount < 0) ? 'DEBIT' : 'CREDIT',
         };
         
         // Save transaction using the existing helper function
-        const savedTransaction = await saveTransaction(transaction, req.user._id);
+        const savedTransaction = await saveTransaction(transaction, req.user._id, accountId);
         
         if (savedTransaction) {
           importedCount++;

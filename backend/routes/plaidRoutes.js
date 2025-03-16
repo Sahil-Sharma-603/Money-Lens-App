@@ -74,6 +74,7 @@ router.post('/set_access_token', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     const publicToken = req.body.public_token;
+    const Account = require('../models/Account.model');
 
     const tokenResponse = await client.itemPublicTokenExchange({
       public_token: publicToken,
@@ -88,9 +89,56 @@ router.post('/set_access_token', auth, async (req, res) => {
       plaidItemId: itemId,
     });
 
+    // Now fetch and store the accounts
+    const accountsResponse = await client.accountsGet({
+      access_token: accessToken,
+    });
+
+    const plaidAccounts = accountsResponse.data.accounts;
+    const createdAccounts = [];
+
+    // Save each account from Plaid
+    for (const plaidAccount of plaidAccounts) {
+      try {
+        // Check if this account already exists by plaid_account_id
+        let existingAccount = await Account.findOne({
+          plaid_account_id: plaidAccount.account_id
+        });
+
+        if (!existingAccount) {
+          // Create a new account
+          const newAccount = new Account({
+            user_id: req.user._id,
+            name: plaidAccount.name,
+            type: 'plaid',
+            balance: plaidAccount.balances.current || 0,
+            currency: plaidAccount.balances.iso_currency_code || 'USD',
+            institution: req.body.institution || '',
+            plaid_account_id: plaidAccount.account_id,
+            plaid_item_id: itemId,
+            plaid_mask: plaidAccount.mask || '',
+            plaid_subtype: plaidAccount.subtype || '',
+          });
+
+          await newAccount.save();
+          createdAccounts.push(newAccount);
+        } else {
+          // Update the existing account
+          existingAccount.balance = plaidAccount.balances.current || 0;
+          existingAccount.updated_at = Date.now();
+          await existingAccount.save();
+          createdAccounts.push(existingAccount);
+        }
+      } catch (accountError) {
+        console.error('Error saving Plaid account:', accountError);
+        // Continue with other accounts even if one fails
+      }
+    }
+
     res.json({
       status: 'success',
-      message: 'Access token stored successfully',
+      message: 'Access token and accounts stored successfully',
+      accounts: createdAccounts
     });
   } catch (error) {
     console.error(error);
@@ -188,12 +236,37 @@ router.get('/transactions', auth, async (req, res) => {
     // transaction_id and also date+name+amount combination, so we can pass all
     // transactions directly to it
     
-    // Save transactions to database, the saveTransaction function will handle duplicate detection
+    // Get the accounts mapping first
+    const Account = require('../models/Account.model');
+    const plaidAccounts = await Account.find({
+      user_id: req.user._id,
+      type: 'plaid',
+      is_active: true,
+    });
+    
+    // Create a mapping from Plaid account_id to our internal account _id
+    const accountMapping = {};
+    plaidAccounts.forEach(account => {
+      if (account.plaid_account_id) {
+        accountMapping[account.plaid_account_id] = account._id;
+      }
+    });
+    
+    // Save transactions to database with proper account references
     let savedCount = 0;
     let duplicateCount = 0;
     
     for (const transaction of recently_added) {
-      const result = await saveTransaction(transaction, req.user._id);
+      const plaidAccountId = transaction.account_id;
+      const internalAccountId = accountMapping[plaidAccountId];
+      
+      if (!internalAccountId) {
+        console.log(`Warning: No matching account found for Plaid account ${plaidAccountId}`);
+        duplicateCount++;
+        continue;
+      }
+      
+      const result = await saveTransaction(transaction, req.user._id, internalAccountId);
       if (result) {
         savedCount++;
       } else {
@@ -277,6 +350,7 @@ router.post('/disconnect', auth, async (req, res) => {
     const client = req.app.locals.plaidClient;
     const user = await User.findById(req.user._id);
     const { Transaction } = require('../models/transaction.model');
+    const Account = require('../models/Account.model');
 
     if (!user?.plaidAccessToken) {
       return res.status(400).json({ error: 'No Plaid access token found' });
@@ -287,17 +361,33 @@ router.post('/disconnect', auth, async (req, res) => {
       access_token: user.plaidAccessToken,
     });
     
-    // Extract account IDs
-    const accountIds = accountsResponse.data.accounts.map(account => account.account_id);
+    // Extract Plaid account IDs
+    const plaidAccountIds = accountsResponse.data.accounts.map(account => account.account_id);
     
-    // Remove all transactions associated with these account IDs
-    // Only delete transactions that came from Plaid (not from CSV imports)
+    // Find our internal accounts that correspond to these Plaid accounts
+    const accounts = await Account.find({
+      user_id: req.user._id,
+      plaid_account_id: { $in: plaidAccountIds }
+    });
+    
+    const accountIds = accounts.map(account => account._id);
+    
+    // Remove all transactions associated with these accounts
     const deleteResult = await Transaction.deleteMany({
       user_id: req.user._id,
       account_id: { $in: accountIds }
     });
     
     console.log(`Deleted ${deleteResult.deletedCount} transactions from disconnected accounts`);
+
+    // Mark accounts as inactive or delete them based on preference
+    // Here we'll mark them as inactive
+    const accountUpdateResult = await Account.updateMany(
+      { _id: { $in: accountIds } },
+      { is_active: false }
+    );
+    
+    console.log(`Updated ${accountUpdateResult.modifiedCount} Plaid accounts to inactive status`);
 
     // Remove the Item from Plaid
     await client.itemRemove({

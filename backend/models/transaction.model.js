@@ -57,7 +57,8 @@ const transactionSchema = new mongoose.Schema({
     required: true,
   },
   account_id: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account',
     required: true,
   },
   account_owner: String,
@@ -115,7 +116,7 @@ const transactionSchema = new mongoose.Schema({
 const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);
 
 // Internal function to save transaction data
-const saveTransaction = async (transactionData, userId) => {
+const saveTransaction = async (transactionData, userId, accountId = null) => {
   try {
     // First check if transaction with same ID already exists
     const existingTransactionById = await Transaction.findOne({
@@ -147,13 +148,37 @@ const saveTransaction = async (transactionData, userId) => {
       return null;
     }
 
+    // Use provided accountId if available, otherwise use the one from transactionData
+    const account_id = accountId || transactionData.account_id;
+    
+    if (!account_id) {
+      throw new Error('Account ID is required for saving transactions');
+    }
+
     // Create and save new transaction
     const transaction = new Transaction({
       ...transactionData,
       user_id: userId,
+      account_id: account_id,
     });
     await transaction.save();
     console.log('Transaction saved successfully:', transaction);
+    
+    // Update the account balance if needed
+    if (account_id) {
+      const Account = require('./Account.model');
+      try {
+        const account = await Account.findById(account_id);
+        if (account) {
+          await account.updateBalance(transactionData.amount);
+          console.log(`Updated balance for account ${account.name}`);
+        }
+      } catch (err) {
+        console.error('Error updating account balance:', err);
+        // Continue with the transaction save even if balance update fails
+      }
+    }
+    
     return transaction;
   } catch (error) {
     console.error('Error saving transaction:', error);

@@ -101,6 +101,12 @@ input[type='checkbox'] {
   accent-color: #4caf50;
 }
 
+/* Force checkboxes to light mode */
+input[type='checkbox']:checked {
+  -webkit-appearance: auto;
+  appearance: auto;
+}
+
 /* Ensure the calendar icon is shown for date inputs and appears dark */
 input[type='date']::-webkit-calendar-picker-indicator {
   opacity: 1;
