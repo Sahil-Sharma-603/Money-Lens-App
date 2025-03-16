@@ -103,6 +103,33 @@ export default function Home() {
     }
   }, [isCheckingAuth]);
 
+  // Function to fetch historical transactions (up to 24 months)
+  const fetchHistoricalTransactions = async () => {
+    try {
+      setIsLoading(true);
+      
+      const data = await apiRequest(
+        '/plaid/transactions/historical',
+        {
+          method: 'GET',
+        }
+      );
+      
+      console.log('Historical transactions fetch completed:', data);
+      
+      // Show success message
+      alert(`Successfully processed ${data.total_transactions} historical transactions. Check your transactions page.`);
+      
+      // Refresh accounts after processing
+      fetchAccounts();
+    } catch (error) {
+      console.error('Error fetching historical transactions:', error);
+      alert('Error fetching historical transactions. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   const handleDisconnect = async () => {
     if (!confirm('Are you sure you want to disconnect your bank account?')) {
       return;
@@ -388,8 +415,22 @@ export default function Home() {
                     disabled={isLoading}
                   >
                     {isLoading
-                      ? 'Disconnecting...'
+                      ? 'Processing...'
                       : 'Disconnect All Bank Accounts'}
+                  </button>
+                  
+                  <button
+                    onClick={fetchHistoricalTransactions}
+                    style={{
+                      ...styles.plaidButton,
+                      marginLeft: '10px', 
+                      backgroundColor: '#4285F4'
+                    }}
+                    disabled={isLoading}
+                  >
+                    {isLoading
+                      ? 'Processing...'
+                      : 'Fetch Historical Transactions (24 Months)'}
                   </button>
                 </div>
               )}
