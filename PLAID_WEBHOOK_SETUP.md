@@ -35,11 +35,11 @@ WEBHOOK_URL=https://your-ngrok-url.ngrok.io/api/plaid/webhook
 ### 3. Verify Webhook in Plaid Dashboard
 
 1. Log in to the [Plaid Dashboard](https://dashboard.plaid.com/)
-2. Go to Platform > Developers > API > Allowed redirect URIs (Add ngrok link, it will ask for password, only 'Jashanjot Gill' has access to this)
+2. Go to Platform > Developers > API > Allowed redirect URIs (Add ngrok link "https://your-ngrok-url.ngrok.io/api/plaid/webhook", it will ask for password, only 'Jashanjot Gill' has access to this)
 
 ## Accessing Historical Transactions
 
-- Click button "Fetch Historical Transactions (24 Months)" on "plaid-setup/page.tsx"
+- Click button "Fetch Historical Transactions (24 Months)" on "plaid-setup/page.tsx" after connecting to bank account using plaid which calls the following route.
 - Call the `/api/plaid/transactions/historical` endpoint after connecting an account to fetch up to 24 months of transaction history.
 
 ## Troubleshooting
