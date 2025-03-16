@@ -489,8 +489,14 @@ export default function Transaction() {
                 <select
                   value={itemsPerPage}
                   onChange={(e) => {
-                    setItemsPerPage(Number(e.target.value));
-                    setCurrentPage(1); // Reset to first page when changing items per page
+                    const newItemsPerPage = Number(e.target.value);
+                    setItemsPerPage(newItemsPerPage);
+                    e.target.disabled = true;
+                    // Delay the page reset to allow the dropdown to close smoothly
+                    setTimeout(() => {
+                      setCurrentPage(1); // Reset to first page when items per page changes
+                      e.target.disabled = false;
+                    }, 300);
                   }}
                   style={style.itemsPerPageSelect}
                 >
