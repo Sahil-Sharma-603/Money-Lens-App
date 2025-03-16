@@ -275,7 +275,7 @@ export default function Home() {
     <div style={styles.container}>
       {isLoading && (
         <div style={styles.loaderStyle}>
-          Loading your transactions, please wait...
+          Getting your transactions (this might take long), please wait...
         </div>
       )}
       <h1 style={styles.title}>Bank Account Connection</h1>
@@ -298,7 +298,7 @@ export default function Home() {
           <div style={styles.headerButtons}>
             <button
               onClick={() => setShowCreateAccountModal(true)}
-              style={styles.createButton}
+              style={styles.plaidButton}
             >
               Create Account
             </button>
