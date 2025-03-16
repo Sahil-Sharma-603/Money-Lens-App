@@ -3,19 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --font-jost: "Jost", sans-serif;
+  --font-jost: 'Jost', sans-serif;
 
   /* Gradient Colours */
-  --gradient-start: #DAE6FF;
-  --gradient-end: #BBE4FF;
+  --gradient-start: #dae6ff;
+  --gradient-end: #bbe4ff;
 
   /* Primary colors */
-  --positive: #0707E2;
-  --negative: #E80770;
+  --positive: #0707e2;
+  --negative: #e80770;
 
   /* Blue-grey text color */
-  --text: #4A4F59;
+  --text: #4a4f59;
+
+  /* Define custom properties for inputs */
+  --input-bg: #ffffff;
+  --input-border: #ddd;
+  --input-text: #212529;
 }
+
+/* TODO: REQUIRED FOR Dark mode*/
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --input-bg: #333;
+    --input-border: #555;
+    --input-text: #ffffff;
+  }
+} */
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -33,7 +47,11 @@ body {
 
 body {
   color: var(--text);
-  background: linear-gradient(to bottom, var(--gradient-start), var(--gradient-end));
+  background: linear-gradient(
+    to bottom,
+    var(--gradient-start),
+    var(--gradient-end)
+  );
   font-family: var(--font-jost);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -48,6 +66,61 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Global styles for inputs */
+input,
+select,
+textarea {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+/* Optional: style placeholders */
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-text);
+  opacity: 0.7;
+}
+
+/* Force checkboxes to light mode */
+input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  /* Use native check mark, colored green when checked */
+  accent-color: #4caf50;
+}
+
+/* Force checkboxes to light mode */
+input[type='checkbox']:checked {
+  -webkit-appearance: auto;
+  appearance: auto;
+}
+
+/* Ensure the calendar icon is shown for date inputs and appears dark */
+input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: brightness(0); /* Make the icon black */
+}
+
+input[type='date']::-moz-calendar-picker-indicator {
+  opacity: 1;
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 @media (prefers-color-scheme: dark) {
