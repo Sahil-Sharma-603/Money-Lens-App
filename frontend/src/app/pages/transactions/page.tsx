@@ -8,6 +8,7 @@ import {
   TransactionsResponse,
 } from '../../assets/utilities/API_HANDLER';
 import Card from '../../components/Card';
+import { Edit, Trash } from 'lucide-react';
 
 export default function Transaction() {
   const [fromDate, setFromDate] = useState<string>('');
@@ -286,26 +287,26 @@ export default function Transaction() {
       <Card className={styles.fullPageCard}>
         <h2>Transactions</h2>
 
-        {/* Bulk Actions */}
-        {transactions.length > 0 && (
-          <div style={style.bulkActionsContainer}>
+        {/* Floating Bulk Actions */}
+        {transactions.length > 0 && selectedTransactions.size > 0 && (
+          <div style={style.floatingBulkActions}>
             <div style={style.selectedCount}>
               {selectedTransactions.size} transaction(s) selected
             </div>
             <div style={style.bulkButtons}>
               <button
                 onClick={openBulkEdit}
-                style={style.bulkEditButton}
+                style={style.editButton}
                 disabled={selectedTransactions.size === 0 || isLoading}
               >
-                Edit Selected
+                <Edit size={20} />
               </button>
               <button
                 onClick={handleBulkDelete}
-                style={style.bulkDeleteButton}
+                style={style.deleteButton}
                 disabled={selectedTransactions.size === 0 || isLoading}
               >
-                Delete Selected
+                <Trash size={20} />
               </button>
             </div>
           </div>
@@ -415,7 +416,7 @@ export default function Transaction() {
                           style={style.editButton}
                           disabled={isLoading}
                         >
-                          Edit
+                          <Edit size={20} />
                         </button>
                         <button
                           onClick={() =>
@@ -424,7 +425,7 @@ export default function Transaction() {
                           style={style.deleteButton}
                           disabled={isLoading}
                         >
-                          Delete
+                          <Trash size={20} />
                         </button>
                       </div>
                     </td>
@@ -624,8 +625,8 @@ const style = {
     gap: '5px',
   },
   editButton: {
-    backgroundColor: '#4CAF50',
-    color: 'white',
+    background: 'transparent',
+    color: '#4CAF50',
     padding: '5px 10px',
     border: 'none',
     borderRadius: '3px',
@@ -633,8 +634,8 @@ const style = {
     fontSize: '14px',
   },
   deleteButton: {
-    backgroundColor: '#dc3545',
-    color: 'white',
+    background: 'transparent',
+    color: '#DC3545',
     padding: '5px 10px',
     border: 'none',
     borderRadius: '3px',
@@ -695,28 +696,24 @@ const style = {
     borderRadius: '4px',
     marginBottom: '15px',
   },
+  floatingBulkActions: {
+    position: 'fixed' as const,
+    bottom: '20px',
+    right: '20px',
+    backgroundColor: '#fff',
+    padding: '10px 15px',
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+    zIndex: 1000,
+  },
+  // You can keep your existing selectedCount and bulkButtons style or adjust as needed
   selectedCount: {
     fontWeight: 'bold',
+    marginBottom: '8px',
   },
   bulkButtons: {
     display: 'flex',
     gap: '10px',
-  },
-  bulkEditButton: {
-    backgroundColor: '#4CAF50',
-    color: 'white',
-    padding: '8px 16px',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  bulkDeleteButton: {
-    backgroundColor: '#dc3545',
-    color: 'white',
-    padding: '8px 16px',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
   },
   checkboxTh: {
     backgroundColor: '#f8f9fa',

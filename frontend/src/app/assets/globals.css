@@ -87,6 +87,25 @@ textarea::placeholder {
   opacity: 0.7;
 }
 
+/* Force checkboxes to light mode */
+input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  /* Use native check mark, colored green when checked */
+  accent-color: #4caf50;
+}
+
+/* Style for checked checkboxes */
+input[type='checkbox']:checked {
+  appearance: auto;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
