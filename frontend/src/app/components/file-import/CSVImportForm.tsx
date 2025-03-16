@@ -126,7 +126,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       setError(`Please map these required fields: ${missingFields.join(', ')}`);
       return;
     }
-    
+
     // Validate that an account is selected
     if (!selectedAccount) {
       setError('Please select an account for these transactions');
@@ -152,7 +152,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       // selectedRows already contains the actual file indices of selected rows
       // so we can send them directly to the backend
       formData.append('selectedRows', JSON.stringify(Array.from(selectedRows)));
-      
+
       // Add the selected account ID
       formData.append('accountId', selectedAccount);
 
@@ -220,16 +220,18 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       processFile(file);
     }
   }, [showAllRows, file, processFile]);
-  
+
   // Fetch available accounts when component mounts
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
         const response = await apiRequest<AccountsResponse>('/accounts');
         // Filter for active accounts only
-        const activeAccounts = response.accounts.filter(account => account.is_active);
+        const activeAccounts = response.accounts.filter(
+          (account) => account.is_active
+        );
         setAccounts(activeAccounts);
-        
+
         // Set default account if available
         if (activeAccounts.length > 0) {
           setSelectedAccount(activeAccounts[0]._id);
@@ -239,7 +241,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         setError('Failed to load accounts. Please try again later.');
       }
     };
-    
+
     fetchAccounts();
   }, []);
 
@@ -337,7 +339,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
               <div style={styles.accountSelection}>
                 <h4>Select Account</h4>
                 <p>Choose which account these transactions belong to:</p>
-                
+
                 <select
                   value={selectedAccount}
                   onChange={(e) => setSelectedAccount(e.target.value)}
@@ -350,16 +352,26 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                     </option>
                   ))}
                 </select>
-                
+
                 <div style={styles.accountNote}>
-                  <p>Don't see your account? <a href="#" onClick={(e) => {
-                    e.preventDefault();
-                    // You could open a modal here to create a new account
-                    alert('Please go to Accounts page to create a new account first.');
-                  }}>Create a new account</a></p>
+                  <p>
+                    Don't see your account?{' '}
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // You could open a modal here to create a new account
+                        alert(
+                          'Click on "Close Import" button, then click on "Create Account" button on this page '
+                        );
+                      }}
+                    >
+                      Create a new account
+                    </a>
+                  </p>
                 </div>
               </div>
-            
+
               <div style={styles.mappingContainer}>
                 {requiredFields.map((field) => (
                   <div key={field} style={styles.mappingItem}>

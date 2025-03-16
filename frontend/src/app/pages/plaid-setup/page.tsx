@@ -5,10 +5,10 @@ import {
   AccountsResponse,
   apiRequest,
   PlaidLinkResponse,
-  Transaction,
   TransactionsResponse,
 } from '@/app/assets/utilities/API_HANDLER';
 import CSVImportForm from '@/app/components/file-import/CSVImportForm';
+import { Plus, Building, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
@@ -300,6 +300,7 @@ export default function Home() {
               onClick={() => setShowCreateAccountModal(true)}
               style={styles.plaidButton}
             >
+              <Plus size={16} style={{ marginRight: '8px' }} />
               Create Account
             </button>
             <button
@@ -307,7 +308,8 @@ export default function Home() {
               style={styles.plaidButton}
               disabled={!linkToken || !ready || isLoading}
             >
-              Connect Bank
+              <Building size={16} style={{ marginRight: '8px' }} />
+              Setup Bank Sync
             </button>
           </div>
         </div>
@@ -345,6 +347,7 @@ export default function Home() {
                           style={styles.deleteButton}
                           disabled={isLoading}
                         >
+                          <Trash size={16} style={{ marginRight: '4px' }} />
                           Delete
                         </button>
                       </div>
@@ -623,6 +626,9 @@ const styles = {
     cursor: 'pointer',
     fontSize: '16px',
     opacity: 1,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   importButton: {
     backgroundColor: '#0066cc',
