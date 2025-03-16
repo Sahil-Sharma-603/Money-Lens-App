@@ -117,15 +117,32 @@ const Transaction = mongoose.models.Transaction || mongoose.model('Transaction',
 // Internal function to save transaction data
 const saveTransaction = async (transactionData, userId) => {
   try {
-    // Check if transaction already exists
-    const existingTransaction = await Transaction.findOne({
+    // First check if transaction with same ID already exists
+    const existingTransactionById = await Transaction.findOne({
       transaction_id: transactionData.transaction_id,
     });
 
-    if (existingTransaction) {
+    if (existingTransactionById) {
       console.log(
-        'Transaction already exists:',
+        'Transaction with same ID already exists:',
         transactionData.transaction_id
+      );
+      return null;
+    }
+
+    // Then check if a transaction with the same date, name and amount exists
+    // This catches duplicates even if the transaction_id is different (e.g., after reconnecting)
+    const existingTransactionByDetails = await Transaction.findOne({
+      user_id: userId,
+      date: transactionData.date,
+      amount: transactionData.amount,
+      name: transactionData.name
+    });
+
+    if (existingTransactionByDetails) {
+      console.log(
+        'Transaction with same date, name, and amount already exists:',
+        `${transactionData.date} | ${transactionData.name} | ${transactionData.amount}`
       );
       return null;
     }

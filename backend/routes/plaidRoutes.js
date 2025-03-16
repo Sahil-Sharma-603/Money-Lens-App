@@ -184,17 +184,30 @@ router.get('/transactions', auth, async (req, res) => {
       (a.date < b.date) - (a.date > b.date);
     const recently_added = [...added].sort(compareTxnsByDateAscending);
 
-    // Save all transactions to database
-    const savePromises = recently_added.map((transaction) =>
-      saveTransaction(transaction, req.user._id)
-    );
-    await Promise.all(savePromises);
+    // The enhanced saveTransaction function now checks for duplicates based on 
+    // transaction_id and also date+name+amount combination, so we can pass all
+    // transactions directly to it
+    
+    // Save transactions to database, the saveTransaction function will handle duplicate detection
+    let savedCount = 0;
+    let duplicateCount = 0;
+    
+    for (const transaction of recently_added) {
+      const result = await saveTransaction(transaction, req.user._id);
+      if (result) {
+        savedCount++;
+      } else {
+        duplicateCount++;
+      }
+    }
+    
+    console.log(`Transactions: ${savedCount} saved, ${duplicateCount} duplicates prevented`);
 
-    console.log(`Successfully saved ${recently_added.length} transactions`);
+    console.log(`Successfully saved ${savedCount} unique transactions`);
 
     res.json({
-      latest_transactions: recently_added,
-      message: `${recently_added.length} transactions saved to database`,
+      latest_transactions: recently_added.slice(0, Math.min(10, recently_added.length)), // Just send a preview of transactions
+      message: `${savedCount} transactions saved to database (${duplicateCount} duplicates skipped)`,
     });
   } catch (error) {
     console.error(error);
@@ -263,10 +276,28 @@ router.post('/disconnect', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     const user = await User.findById(req.user._id);
+    const { Transaction } = require('../models/transaction.model');
 
     if (!user?.plaidAccessToken) {
       return res.status(400).json({ error: 'No Plaid access token found' });
     }
+
+    // First, get all accounts for the Plaid connection
+    const accountsResponse = await client.accountsGet({
+      access_token: user.plaidAccessToken,
+    });
+    
+    // Extract account IDs
+    const accountIds = accountsResponse.data.accounts.map(account => account.account_id);
+    
+    // Remove all transactions associated with these account IDs
+    // Only delete transactions that came from Plaid (not from CSV imports)
+    const deleteResult = await Transaction.deleteMany({
+      user_id: req.user._id,
+      account_id: { $in: accountIds }
+    });
+    
+    console.log(`Deleted ${deleteResult.deletedCount} transactions from disconnected accounts`);
 
     // Remove the Item from Plaid
     await client.itemRemove({
@@ -283,7 +314,7 @@ router.post('/disconnect', auth, async (req, res) => {
 
     res.json({
       status: 'success',
-      message: 'Account disconnected successfully',
+      message: `Account disconnected successfully. Removed ${deleteResult.deletedCount} associated transactions.`,
     });
   } catch (error) {
     console.error('Error disconnecting account:', error);
