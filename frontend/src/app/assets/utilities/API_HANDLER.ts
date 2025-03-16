@@ -116,9 +116,13 @@ export async function apiRequest<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    console.log('API Response Status:', response.status);
+    console.log('API Response Headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'API request failed');
+      console.error('API Error Data:', errorData);
+      throw new Error(errorData.message || errorData.error || 'API request failed');
     }
 
     return response.json();
