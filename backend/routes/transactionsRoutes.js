@@ -346,8 +346,8 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
           user_id: req.user._id,
           account_id: accountId, // Use the selected account ID
           amount: amount,
-          date: moment(dateValue).isValid() ? 
-            moment(dateValue).format('YYYY-MM-DD') : 
+          date: moment(dateValue, ["MM/DD/YYYY", "YYYY-MM-DD", "DD/MM/YYYY", "YYYY/MM/DD"], true).isValid() ? 
+            moment(dateValue, ["MM/DD/YYYY", "YYYY-MM-DD", "DD/MM/YYYY", "YYYY/MM/DD"], true).format('YYYY-MM-DD') : 
             moment().format('YYYY-MM-DD'),
           name: nameValue,
           category: categoryValue ? [categoryValue] : ['Uncategorized'],

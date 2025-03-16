@@ -96,17 +96,36 @@ router.delete('/plaid', auth, async (req, res) => {
     
     // Delete all transactions associated with these accounts
     const { Transaction } = require('../models/transaction.model');
-    const deletedTransactions = await Transaction.deleteMany({
+    
+    // Build a complex query to match all possible ways account_id may be stored
+    const orConditions = [];
+    
+    // For each account ID, we need to add both ObjectId and string formats to our query
+    for (const id of accountIds) {
+      const stringId = id.toString();
+      orConditions.push(
+        { account_id: new mongoose.Types.ObjectId(stringId) },
+        { account_id: stringId },
+        { "account_id": new mongoose.Types.ObjectId(stringId) },
+        { "account_id": stringId }
+      );
+    }
+    
+    // Delete all transactions matching any of our account IDs
+    const result = await Transaction.deleteMany({
       user_id: req.user._id,
-      account_id: { $in: accountIds }
+      $or: orConditions
     });
+    
+    console.log(`Deleted ${result.deletedCount} transactions for ${accountIds.length} plaid accounts`);
+    const totalDeleted = result.deletedCount;
     
     // Delete all plaid accounts
     const deletedAccounts = await Account.deleteMany({ user_id: req.user._id, type: 'plaid' });
     
     res.json({
       success: true,
-      message: `All plaid accounts deleted successfully. Removed ${deletedAccounts.deletedCount} accounts and ${deletedTransactions.deletedCount} associated transactions.`,
+      message: `All plaid accounts deleted successfully. Removed ${deletedAccounts.deletedCount} accounts and ${totalDeleted} associated transactions.`,
     });
   } catch (error) {
     console.error('Error deleting plaid accounts:', error);
@@ -223,17 +242,31 @@ router.delete('/:id', auth, async (req, res) => {
 
     // Delete all transactions associated with this account
     const { Transaction } = require('../models/transaction.model');
-    const deletedTransactions = await Transaction.deleteMany({
+    
+    // We need to be thorough in our query to catch all transactions
+    // First, try deleting with string comparison (account_id stored as string)
+    const stringId = req.params.id.toString();
+    
+    const result = await Transaction.deleteMany({
       user_id: req.user._id,
-      account_id: req.params.id
+      $or: [
+        // Try all possible ways the account_id might be stored
+        { account_id: new mongoose.Types.ObjectId(stringId) },
+        { account_id: stringId },
+        { "account_id": new mongoose.Types.ObjectId(stringId) },
+        { "account_id": stringId }
+      ]
     });
+    
+    console.log(`Deleted ${result.deletedCount} transactions for account ${stringId}`);
+    const totalDeleted = result.deletedCount;
 
     // Delete the account
     await Account.deleteOne({ _id: req.params.id });
 
     res.json({
       success: true,
-      message: `Account deleted successfully. Removed ${deletedTransactions.deletedCount} associated transactions.`,
+      message: `Account deleted successfully. Removed ${totalDeleted} associated transactions.`,
     });
   } catch (error) {
     console.error('Error deleting account:', error);

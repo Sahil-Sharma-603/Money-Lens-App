@@ -280,7 +280,7 @@ export default function Home() {
     <div style={styles.container}>
       {isLoading && (
         <div style={styles.loaderStyle}>
-          Getting your transactions (this might take long), please wait...
+          Updating your account, please wait (Max: 30 seconds)...
         </div>
       )}
       <h1 style={styles.title}>Bank Account Connection</h1>
