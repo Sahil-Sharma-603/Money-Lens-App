@@ -110,14 +110,22 @@ export default function Home() {
 
     setIsLoading(true);
     try {
+      // 1. Disconnect from Plaid
       await apiRequest('/plaid/disconnect', {
         method: 'POST',
       });
 
-      // Refresh accounts list
+      // 2. Delete all plaid accounts from the database
+      await apiRequest('/accounts/plaid', {
+        method: 'DELETE',
+      });
+
+      // 3. Refresh accounts list
       await fetchAccounts();
 
-      alert('Bank account disconnected successfully');
+      alert(
+        'Bank account disconnected and plaid accounts deleted successfully'
+      );
     } catch (error) {
       console.error('Error disconnecting account:', error);
       alert('Failed to disconnect bank account');

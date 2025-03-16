@@ -83,6 +83,28 @@ router.post('/', auth, async (req, res) => {
 });
 
 /**
+ * DELETE all plaid accounts for the authenticated user.
+ * This route must come BEFORE the "/:id" route.
+ * @route DELETE /api/accounts/plaid
+ * @access Private
+ */
+router.delete('/plaid', auth, async (req, res) => {
+  try {
+    await Account.deleteMany({ user_id: req.user._id, type: 'plaid' });
+    res.json({
+      success: true,
+      message: 'All plaid accounts deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting plaid accounts:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error deleting plaid accounts',
+    });
+  }
+});
+
+/**
  * @route GET /api/accounts/:id
  * @description Get a specific account by ID
  * @access Private
@@ -166,7 +188,6 @@ router.put('/:id', auth, async (req, res) => {
  */
 router.delete('/:id', auth, async (req, res) => {
   try {
-    // Find the account and make sure it belongs to the user
     const account = await Account.findOne({
       _id: req.params.id,
       user_id: req.user._id,
@@ -179,15 +200,14 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
-    // Check if this is a Plaid account
     if (account.type === 'plaid') {
       return res.status(400).json({
         success: false,
-        error: 'Plaid accounts cannot be deleted directly. Please disconnect from Plaid instead.',
+        error:
+          'Plaid accounts cannot be deleted directly. Please disconnect from Plaid instead.',
       });
     }
 
-    // Delete the account
     await Account.deleteOne({ _id: req.params.id });
 
     res.json({
