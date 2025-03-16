@@ -35,10 +35,7 @@ WEBHOOK_URL=https://your-ngrok-url.ngrok.io/api/plaid/webhook
 ### 3. Verify Webhook in Plaid Dashboard
 
 1. Log in to the [Plaid Dashboard](https://dashboard.plaid.com/)
-2. Go to Platform > Developers > API > Redirect URIs (Add ngrok link)
-3. Add your webhook URL (Platform > Developers > API > Webhooks )
-4. Enable the following webhook events:
-   - Just add all the events I am not sure which one we are supposed to.
+2. Go to Platform > Developers > API > Allowed redirect URIs (Add ngrok link, it will ask for password, only 'Jashanjot Gill' has access to this)
 
 ## Accessing Historical Transactions
 
