@@ -283,7 +283,7 @@ export default function Home() {
         style={styles.importButton}
         onClick={() => setShowCSVImport(!showCSVImport)}
       >
-        {showCSVImport ? 'Cancel Import' : 'Show Import'}
+        {showCSVImport ? 'Cancel Import' : 'Show CSV Import'}
       </button>
       {showCSVImport && (
         <CSVImportForm
