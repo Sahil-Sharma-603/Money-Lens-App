@@ -34,6 +34,15 @@ export default function Transaction() {
     date: '',
   });
 
+  // Advanced filter state
+  const [minAmount, setMinAmount] = useState<string>('');
+  const [maxAmount, setMaxAmount] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [transactionType, setTransactionType] = useState<string>('all'); // 'all', 'credit', 'debit'
+  const [sortOrder, setSortOrder] = useState<string>('newest'); // 'newest', 'oldest', 'largest', 'smallest'
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -54,8 +63,19 @@ export default function Transaction() {
   // Initial load of transactions
   useEffect(() => {
     fetchStoredTransactions();
+    fetchAvailableCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch unique categories for the filter dropdown
+  const fetchAvailableCategories = async () => {
+    try {
+      const response = await apiRequest('/transactions/categories');
+      setAvailableCategories(response.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   // When pagination changes, fetch transactions again
   useEffect(() => {
@@ -70,9 +90,20 @@ export default function Transaction() {
     setIsLoading(true);
     try {
       const params: Record<string, string> = {};
+
+      // Basic filters
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
-      if (searchTerm) params.search = searchTerm; // Include search term in params
+      if (searchTerm) params.search = searchTerm;
+
+      // Advanced filters
+      if (minAmount) params.minAmount = minAmount;
+      if (maxAmount) params.maxAmount = maxAmount;
+      if (categoryFilter) params.category = categoryFilter;
+      if (transactionType !== 'all') params.type = transactionType;
+
+      // Sorting
+      params.sort = sortOrder;
 
       // Add pagination params
       params.page = currentPage.toString();
@@ -381,6 +412,92 @@ export default function Transaction() {
               />
             </div>
           </div>
+
+          {/* Advanced Filters Toggle */}
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            style={style.advancedFiltersToggle}
+          >
+            {showAdvancedFilters
+              ? 'Hide Advanced Filters'
+              : 'Show Advanced Filters'}
+          </button>
+
+          {/* Advanced Filters Section */}
+          {showAdvancedFilters && (
+            <div style={style.advancedFiltersContainer}>
+              <div style={style.filterRow}>
+                <div style={style.filterGroup}>
+                  <label style={style.label}>Min Amount:</label>
+                  <input
+                    type="number"
+                    value={minAmount}
+                    onChange={(e) => setMinAmount(e.target.value)}
+                    placeholder="Min amount"
+                    style={style.input}
+                  />
+                </div>
+                <div style={style.filterGroup}>
+                  <label style={style.label}>Max Amount:</label>
+                  <input
+                    type="number"
+                    value={maxAmount}
+                    onChange={(e) => setMaxAmount(e.target.value)}
+                    placeholder="Max amount"
+                    style={style.input}
+                  />
+                </div>
+              </div>
+
+              <div style={style.filterRow}>
+                <div style={style.filterGroup}>
+                  <label style={style.label}>Category:</label>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    style={style.select}
+                  >
+                    <option value="">All Categories</option>
+                    {availableCategories.map((category, index) => (
+                      <option key={index} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={style.filterGroup}>
+                  <label style={style.label}>Transaction Type:</label>
+                  <select
+                    value={transactionType}
+                    onChange={(e) => setTransactionType(e.target.value)}
+                    style={style.select}
+                  >
+                    <option value="all">All Types</option>
+                    {/* I know it looks stupid, but this is easier. */}
+                    <option value="credit">Debit (Expense)</option>
+                    <option value="debit">Credit (Income)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={style.filterRow}>
+                <div style={style.filterGroup}>
+                  <label style={style.label}>Sort By:</label>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    style={style.select}
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="largest">Largest Amount First</option>
+                    <option value="smallest">Smallest Amount First</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => {
               setCurrentPage(1); // Reset to page 1 when applying new filters
@@ -904,6 +1021,42 @@ const style = {
     padding: '0 10px',
     color: '#6c757d',
     fontSize: '14px',
+  },
+  advancedFiltersToggle: {
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #dee2e6',
+    borderRadius: '4px',
+    padding: '8px 16px',
+    marginBottom: '15px',
+    cursor: 'pointer',
+    color: '#495057',
+    fontSize: '14px',
+    width: '100%',
+    textAlign: 'center' as const,
+  },
+  advancedFiltersContainer: {
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #dee2e6',
+    borderRadius: '4px',
+    padding: '15px',
+    marginBottom: '15px',
+  },
+  filterRow: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '15px',
+    marginBottom: '10px',
+  },
+  filterGroup: {
+    flex: '1 1 45%',
+    minWidth: '200px',
+  },
+  select: {
+    width: '100%',
+    padding: '8px',
+    borderRadius: '4px',
+    border: '1px solid #ddd',
+    fontSize: '16px',
   },
   title: {
     fontSize: '24px',

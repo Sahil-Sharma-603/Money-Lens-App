@@ -43,7 +43,19 @@ const upload = multer({
  */
 router.get('/stored', auth, async (req, res) => {
   try {
-    const { fromDate, toDate, search, page = 1, limit = 10 } = req.query;
+    const { 
+      fromDate, 
+      toDate, 
+      search, 
+      page = 1, 
+      limit = 10,
+      minAmount,
+      maxAmount,
+      category,
+      type,
+      sort = 'newest'
+    } = req.query;
+    
     const userId = req.user._id;
 
     // Parse pagination parameters
@@ -72,13 +84,63 @@ router.get('/stored', auth, async (req, res) => {
       const searchRegex = new RegExp(search.trim(), 'i'); // 'i' for case-insensitive
       query.$or = [{ merchant_name: searchRegex }, { name: searchRegex }];
     }
+    
+    // Add amount range filters
+    if (minAmount !== undefined || maxAmount !== undefined) {
+      query.amount = {};
+      
+      if (minAmount !== undefined) {
+        // For expenses (negative values), we need to check that amount is LESS than -minAmount
+        // For income (positive values), we need to check that amount is GREATER than minAmount
+        query.amount.$gte = parseFloat(minAmount);
+      }
+      
+      if (maxAmount !== undefined) {
+        // For expenses (negative values), we need to check that amount is GREATER than -maxAmount
+        // For income (positive values), we need to check that amount is LESS than maxAmount
+        query.amount.$lte = parseFloat(maxAmount);
+      }
+    }
+    
+    // Add category filter
+    if (category) {
+      query.category = { $in: [category] };
+    }
+    
+    // Add transaction type filter (credit/debit)
+    if (type) {
+      if (type === 'credit') {
+        // Credit transactions have amount >= 0
+        query.amount = { ...(query.amount || {}), $gte: 0 };
+      } else if (type === 'debit') {
+        // Debit transactions have amount < 0
+        query.amount = { ...(query.amount || {}), $lt: 0 };
+      }
+    }
 
     // Count total matching transactions
     const totalCount = await Transaction.countDocuments(query);
+    
+    // Determine sort order
+    let sortOptions = {};
+    switch (sort) {
+      case 'oldest':
+        sortOptions = { date: 1 };
+        break;
+      case 'largest':
+        sortOptions = { amount: -1 }; // Descending (largest first)
+        break;
+      case 'smallest':
+        sortOptions = { amount: 1 }; // Ascending (smallest first)
+        break;
+      case 'newest':
+      default:
+        sortOptions = { date: -1 }; // Descending (newest first)
+    }
 
     // Fetch transactions with pagination
     const transactions = await Transaction.find(query)
-      .sort({ date: -1 }) // Sort by date descending (newest first)
+      .sort(sortOptions)
       .skip(skip)
       .limit(limitNum)
       .exec();
@@ -409,6 +471,45 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Error deleting transaction'
+    });
+  }
+});
+
+/**
+ * @route GET /api/transactions/categories
+ * @description Get all unique categories from user's transactions
+ * @access Private
+ */
+router.get('/categories', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Find all unique categories across all user's transactions
+    const transactions = await Transaction.find({ user_id: userId });
+    
+    // Extract all categories (they are stored as arrays)
+    let allCategories = [];
+    transactions.forEach(transaction => {
+      if (transaction.category && Array.isArray(transaction.category)) {
+        allCategories = [...allCategories, ...transaction.category];
+      }
+    });
+    
+    // Remove duplicates and filter out empty categories
+    const uniqueCategories = [...new Set(allCategories)].filter(cat => cat && cat.trim() !== '');
+    
+    // Sort alphabetically
+    uniqueCategories.sort();
+    
+    res.json({
+      success: true,
+      categories: uniqueCategories
+    });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error fetching categories'
     });
   }
 });

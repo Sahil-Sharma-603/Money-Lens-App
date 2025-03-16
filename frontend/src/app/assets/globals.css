@@ -101,9 +101,20 @@ input[type='checkbox'] {
   accent-color: #4caf50;
 }
 
-/* Style for checked checkboxes */
-input[type='checkbox']:checked {
-  appearance: auto;
+/* Ensure the calendar icon is shown for date inputs and appears dark */
+input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: brightness(0); /* Make the icon black */
+}
+
+input[type='date']::-moz-calendar-picker-indicator {
+  opacity: 1;
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 @media (prefers-color-scheme: dark) {
