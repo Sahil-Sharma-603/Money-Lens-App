@@ -265,12 +265,13 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
       });
     }
     
-    const results = [];
     const errors = [];
-    let importedCount = 0;
+    const transactionsToImport = [];
     let skippedCount = 0;
     
-    // Process only the selected rows from the data rows
+    console.log(`Processing ${selectedRows.length} selected rows for batch import`);
+    
+    // First pass: Parse rows and prepare transactions for batch processing
     for (let i = 0; i < dataRows.length; i++) {
       // Skip rows that aren't in the selectedRows array
       if (selectedRows.length > 0 && !selectedRows.includes(i)) {
@@ -340,8 +341,8 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
           continue;
         }
         
-        // Generate a transaction object
-        const transaction = {
+        // Generate a transaction object and add to batch array
+        transactionsToImport.push({
           user_id: req.user._id,
           account_id: accountId, // Use the selected account ID
           amount: amount,
@@ -353,15 +354,8 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
           transaction_id: `csv-${uuidv4()}`, // Generate a unique ID
           iso_currency_code: account.currency || 'USD', // Use account currency
           transaction_type: (amount < 0) ? 'DEBIT' : 'CREDIT',
-        };
+        });
         
-        // Save transaction using the existing helper function
-        const savedTransaction = await saveTransaction(transaction, req.user._id, accountId);
-        
-        if (savedTransaction) {
-          importedCount++;
-          results.push(savedTransaction);
-        }
       } catch (error) {
         console.error(`Error processing row ${i + 1}:`, error);
         errors.push({
@@ -369,6 +363,21 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
           error: error.message
         });
       }
+    }
+    
+    // Second pass: Bulk save all valid transactions at once for better performance
+    console.log(`Batch importing ${transactionsToImport.length} transactions...`);
+    let importedCount = 0;
+    
+    if (transactionsToImport.length > 0) {
+      // Use the new batch processing function instead of individual saves
+      const { saveTransactionsBatch } = require('../models/transaction.model');
+      const batchResult = await saveTransactionsBatch(transactionsToImport, req.user._id);
+      
+      importedCount = batchResult.saved;
+      skippedCount += batchResult.duplicates;
+      
+      console.log(`Batch import results: ${batchResult.saved} saved, ${batchResult.duplicates} duplicates, ${batchResult.errors} errors`);
     }
     
     // Delete the uploaded file

@@ -252,29 +252,35 @@ router.get('/transactions', auth, async (req, res) => {
       }
     });
     
-    // Save transactions to database with proper account references
-    let savedCount = 0;
-    let duplicateCount = 0;
+    // Save transactions to database with proper account references using batch processing
+    console.log(`Processing ${recently_added.length} transactions from Plaid...`);
     
-    for (const transaction of recently_added) {
+    // Filter out transactions without a matching account
+    const validTransactions = recently_added.filter(transaction => {
       const plaidAccountId = transaction.account_id;
       const internalAccountId = accountMapping[plaidAccountId];
       
       if (!internalAccountId) {
         console.log(`Warning: No matching account found for Plaid account ${plaidAccountId}`);
-        duplicateCount++;
-        continue;
+        return false;
       }
       
-      const result = await saveTransaction(transaction, req.user._id, internalAccountId);
-      if (result) {
-        savedCount++;
-      } else {
-        duplicateCount++;
+      // Ensure each transaction has a category (Plaid sometimes returns null)
+      if (!transaction.category || !Array.isArray(transaction.category) || transaction.category.length === 0) {
+        transaction.category = ['Uncategorized'];
       }
-    }
+      
+      return true;
+    });
     
-    console.log(`Transactions: ${savedCount} saved, ${duplicateCount} duplicates prevented`);
+    // Use the new batch processing function for better performance
+    const { saveTransactionsBatch } = require('../models/transaction.model');
+    const result = await saveTransactionsBatch(validTransactions, req.user._id, accountMapping);
+    
+    const savedCount = result.saved;
+    const duplicateCount = result.duplicates;
+    
+    console.log(`Transactions: ${savedCount} saved, ${duplicateCount} duplicates prevented, ${result.errors} errors`);
 
     console.log(`Successfully saved ${savedCount} unique transactions`);
 

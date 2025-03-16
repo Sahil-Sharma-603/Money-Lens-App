@@ -13,7 +13,16 @@ const accountSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['checking', 'savings', 'credit', 'loan', 'investment', 'cash', 'other', 'plaid'],
+    enum: [
+      'checking',
+      'savings',
+      'credit',
+      'loan',
+      'investment',
+      'cash',
+      'other',
+      'plaid',
+    ],
   },
   balance: {
     type: Number,
@@ -42,7 +51,7 @@ const accountSchema = new mongoose.Schema({
   // Fields for Plaid accounts
   plaid_account_id: {
     type: String,
-    sparse: true, // Allow null/undefined but enforce uniqueness when present
+    // No index here, defined it with schema.index() below
   },
   plaid_item_id: {
     type: String,
@@ -62,19 +71,20 @@ accountSchema.index({ user_id: 1, name: 1 }, { unique: true });
 accountSchema.index({ plaid_account_id: 1 }, { unique: true, sparse: true });
 
 // Update the 'updated_at' field on save
-accountSchema.pre('save', function(next) {
+accountSchema.pre('save', function (next) {
   this.updated_at = Date.now();
   next();
 });
 
 // Method to update account balance
-accountSchema.methods.updateBalance = async function(amount) {
+accountSchema.methods.updateBalance = async function (amount) {
   this.balance += amount;
   this.updated_at = Date.now();
   return this.save();
 };
 
 // Create the Account model
-const Account = mongoose.models.Account || mongoose.model('Account', accountSchema);
+const Account =
+  mongoose.models.Account || mongoose.model('Account', accountSchema);
 
 module.exports = Account;
