@@ -84,6 +84,14 @@ export type DashboardResponse = {
   thisMonth: { spent: number; earned: number };
 };
 
+export type AnalysisResponse = { 
+  transactions: { amount: number; name: string; category: string}[]; 
+  balance: number;
+  monthlySpending: { month: string; spent: number; earned: number }[];
+  dailyAvg: number; 
+  monthAvg: { spent: number; earned: number };
+  thisMonth: { spent: number; earned: number };
+};
 // Update apiRequest function
 export async function apiRequest<T>(
   endpoint: string,
