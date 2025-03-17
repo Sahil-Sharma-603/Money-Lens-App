@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '../../components/Card';
 import styles from '../../assets/page.module.css';
-import BarChart from './components/BarChart'; 
+import BarChart from '../dashboard/components/BarChartComponent';
 import CategoryPieChart from './components/CategoryPieChart'; 
 import Greeting from './components/Greeting'; 
 import LargestExpense from './components/LargestExpense.tsx'; 
@@ -70,22 +70,22 @@ export default function Analysis() {
     return (
       <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
-        <Greeting userName={user ? user.firstName : ''}>Hi</Greeting>
+        {/* <Greeting userName={user ? user.firstName : ''}>Hi</Greeting> */}
         <div>
-          <BarChart monthlySpending={analysisData?.monthlySpending || []}> </BarChart>
+          {/* <BarChart monthlySpending={analysisData?.monthlySpending || []}> </BarChart> */}
         </div>
         <div>
-          <CategoryPieChart> </CategoryPieChart>
+          {/* <CategoryPieChart> </CategoryPieChart> */}
 
         </div>
         <div>
-          <LargestExpense> </LargestExpense>
+          {/* <LargestExpense> </LargestExpense>
           <TopRevenueSource> </TopRevenueSource>
-          <NetIncome> </NetIncome>
+          <NetIncome> </NetIncome> */}
 
         </div>
         <div>
-          <RecurringExpenses> </RecurringExpenses>
+          {/* <RecurringExpenses> </RecurringExpenses> */}
         </div>
       </Card>
     </div>
