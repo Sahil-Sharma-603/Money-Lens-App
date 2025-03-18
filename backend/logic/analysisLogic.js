@@ -115,17 +115,18 @@ async function getAnalysisData(userId) {
         const totalDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)); // Convert milliseconds to days
         const dailyAvg = totalDays > 0 ? parseFloat((totalSpent / totalDays).toFixed(2)) : 0;
 
-        console.log("Oldest Transaction Date:", oldestTransactionDate.toISOString().split("T")[0]);
-        console.log("Total Days:", totalDays);
-        console.log("Daily Average Spending:", dailyAvg);
+        // console.log("Oldest Transaction Date:", oldestTransactionDate.toISOString().split("T")[0]);
+        // console.log("Total Days:", totalDays);
+        // console.log("Daily Average Spending:", dailyAvg);
 
-        console.log("Monthly Spending Data:", monthlySpending);
-        console.log("This Month:", thisMonthData);
-        console.log("Average Monthly:", monthAvg);
-        console.log("Daily Average Spending:", dailyAvg);
+        // console.log("Monthly Spending Data:", monthlySpending);
+        // console.log("This Month:", thisMonthData);
+        // console.log("Average Monthly:", monthAvg);
+        // console.log("Daily Average Spending:", dailyAvg);
 
 
         const spendingByCategory = getSpendingByCategory(transactions, Date.getMonth() +1, Date.getFullYear()); 
+        console.log("SpendingbyCategory", spendingByCategory); 
 
         return {
             todaySpending,
@@ -162,4 +163,4 @@ async function getSpendingByCategory(transactions, month, year) {
     }
 }
 
-module.exports = { getAnalysisData };
+module.exports = { getAnalysisData, getSpendingByCategory };

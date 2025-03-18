@@ -10,7 +10,7 @@ import LargestExpense from './components/LargestExpense';
 import NetIncome from './components/NetIncome'; 
 import RecurringExpenses from './components/RecurringExpenses'; 
 import TopRevenueSource from './components/TopRevenueSource'; 
-import { apiRequest, UserResponse, AnalysisResponse } from '@/app/assets/utilities/API_HANDLER';
+import { apiRequest, UserResponse, AnalysisResponse, DashboardResponse } from '@/app/assets/utilities/API_HANDLER';
 
 
 
@@ -47,9 +47,19 @@ export default function Analysis() {
           console.error('Error fetching user info:', error);
         }
       };
+
+      const analysisData = async () => {
+        try {
+          const data = await apiRequest<AnalysisResponse>('/analytics/analytics', { method: 'GET' });
+          setAnalysisData(data);
+        } catch (error) {
+          console.error('Error fetching user info:', error);
+        }
+      }; 
       
       
       fetchUser();
+      analysisData(); 
     }
   }, [isCheckingAuth]);
   
