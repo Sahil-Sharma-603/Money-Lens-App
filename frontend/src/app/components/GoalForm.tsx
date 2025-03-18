@@ -1,102 +1,114 @@
 import React, { useState } from 'react';
 import styles from '../assets/styles/goals.module.css';
-import { Goal, GoalType, SpendingPeriod } from '../types/goals';
 
+// Updated type to match API structure
 interface GoalFormProps {
   onClose: () => void;
-  onSubmit: (goal: Omit<Goal, 'id'>) => void;
-  initialGoal?: Goal;
+  onSubmit: (goal: {
+    title: string;
+    description?: string;
+    targetAmount: number;
+    currentAmount: number;
+    targetDate: Date;
+    category: string;
+  }) => void;
+  initialGoal?: {
+    id: string;
+    title: string;
+    description?: string;
+    targetAmount: number;
+    currentAmount: number;
+    targetDate: Date;
+    category: string;
+  };
 }
 
 export default function GoalForm({ onClose, onSubmit, initialGoal }: GoalFormProps) {
   const [formData, setFormData] = useState({
-    name: initialGoal?.name || '',
+    title: initialGoal?.title || '',
     targetAmount: initialGoal?.targetAmount || 0,
     currentAmount: initialGoal?.currentAmount || 0,
     targetDate: initialGoal?.targetDate || new Date(),
-    category: (initialGoal?.category as GoalType) || 'Savings',
-    type: (initialGoal?.type as GoalType) || 'Savings',
-    spendingPeriod: initialGoal?.spendingPeriod || 'Monthly',
-    limitCategory: initialGoal?.limitCategory || '',
+    category: initialGoal?.category || 'Savings',
     description: initialGoal?.description || ''
   });
 
-  const isSpendingLimit = formData.type === 'Spending Limit';
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.title.trim()) {
+      alert('Title is required');
+      return;
+    }
+    
+    if (formData.targetAmount <= 0) {
+      alert('Target amount must be greater than 0');
+      return;
+    }
+    
+    // Log what we're submitting to verify
+    console.log('Submitting goal data:', formData);
+    
+    // Submit the form data
+    onSubmit(formData);
+  };
 
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
         <h2>{initialGoal ? 'Edit Goal' : 'Add New Goal'}</h2>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          onSubmit(formData);
-        }}>
+        <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
-            <label>Goal Type</label>
+            <label>Goal Title</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              required
+              placeholder="Enter goal title"
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Category</label>
             <select
-              value={formData.type}
-              onChange={(e) => setFormData({...formData, type: e.target.value as GoalType})}
+              value={formData.category}
+              onChange={(e) => setFormData({...formData, category: e.target.value})}
+              required
             >
               <option value="Savings">Savings</option>
-              <option value="Spending Limit">Spending Limit</option>
+              <option value="Investment">Investment</option>
+              <option value="Emergency">Emergency Fund</option>
+              <option value="Retirement">Retirement</option>
+              <option value="Education">Education</option>
+              <option value="Home">Home</option>
+              <option value="Travel">Travel</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
           <div className={styles.formGroup}>
-            <label>Goal Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              required
-            />
-          </div>
-
-          {isSpendingLimit && (
-            <div className={styles.formGroup}>
-              <label>Spending Limit Period</label>
-              <select
-                value={formData.spendingPeriod}
-                onChange={(e) => setFormData({...formData, spendingPeriod: e.target.value as SpendingPeriod})}
-              >
-                <option value="Daily">Daily</option>
-                <option value="Weekly">Weekly</option>
-                <option value="Monthly">Monthly</option>
-                <option value="Category">Category-specific</option>
-              </select>
-            </div>
-          )}
-
-          {isSpendingLimit && formData.spendingPeriod === 'Category' && (
-            <div className={styles.formGroup}>
-              <label>Spending Category</label>
-              <input
-                type="text"
-                value={formData.limitCategory}
-                onChange={(e) => setFormData({...formData, limitCategory: e.target.value})}
-                required
-                placeholder="e.g., Entertainment, Food, Shopping"
-              />
-            </div>
-          )}
-
-          <div className={styles.formGroup}>
-            <label>{isSpendingLimit ? 'Spending Limit' : 'Target Amount'}</label>
+            <label>Target Amount</label>
             <input
               type="number"
               value={formData.targetAmount}
               onChange={(e) => setFormData({...formData, targetAmount: Number(e.target.value)})}
               required
+              min="1"
+              step="0.01"
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label>{isSpendingLimit ? 'Current Spending' : 'Current Amount'}</label>
+            <label>Current Amount</label>
             <input
               type="number"
               value={formData.currentAmount}
               onChange={(e) => setFormData({...formData, currentAmount: Number(e.target.value)})}
               required
+              min="0"
+              step="0.01"
             />
           </div>
 
@@ -104,7 +116,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal }: GoalFormPro
             <label>Target Date</label>
             <input
               type="date"
-              value={formData.targetDate.toISOString().split('T')[0]}
+              value={formData.targetDate instanceof Date ? formData.targetDate.toISOString().split('T')[0] : new Date(formData.targetDate).toISOString().split('T')[0]}
               onChange={(e) => setFormData({...formData, targetDate: new Date(e.target.value)})}
               required
             />
@@ -115,12 +127,13 @@ export default function GoalForm({ onClose, onSubmit, initialGoal }: GoalFormPro
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({...formData, description: e.target.value})}
+              placeholder="Add details about your financial goal"
             />
           </div>
 
           <div className={styles.formActions}>
-            <button type="button" onClick={onClose}>Cancel</button>
-            <button type="submit">Save Goal</button>
+            <button type="button" onClick={onClose} className={styles.cancelButton}>Cancel</button>
+            <button type="submit" className={styles.saveButton}>Save Goal</button>
           </div>
         </form>
       </div>

@@ -5,6 +5,7 @@ const userRoutes = require('./routes/userRoutes');
 const plaidRoutes = require('./routes/plaidRoutes');
 const transactionsRoutes = require('./routes/transactionsRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const goalsRoutes = require('./routes/goalsRoutes'); // Add goals routes
 
 require('dotenv').config({ path: '.env' });
 const cookieParser = require('cookie-parser');
@@ -52,6 +53,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/plaid', plaidRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/goals', goalsRoutes); // Register goals routes
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {

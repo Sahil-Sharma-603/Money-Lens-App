@@ -5,6 +5,30 @@
   overflow-y: auto;
 }
 
+/* Add these styles to your goals.module.css file */
+
+/* Past due goal card style */
+.pastDue {
+  background-color: rgba(255, 200, 200, 0.5); /* Light red background */
+  border: 1px solid rgba(255, 100, 100, 0.7); /* Red border */
+}
+
+/* Past due text style */
+.pastDueText {
+  color: #d32f2f; /* Red text */
+  font-weight: bold;
+}
+
+/* Progress bar styles */
+.progressFill.completed {
+  background-color: #4caf50; /* Green for completed goals */
+}
+
+/* Additional style for goal card to ensure transitions work well */
+.goalCard {
+  transition: background-color 0.3s ease, border 0.3s ease;
+}
+
 .header {
   display: flex;
   justify-content: space-between;

@@ -4,17 +4,8 @@ export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   params?: Record<string, string>;
-  requireAuth?: boolean; // Add this line
+  requireAuth?: boolean;
 };
-
-// export type PlaidAccount = {
-//   account_id: string;
-//   name: string;
-//   official_name: string;
-//   type: string;
-//   subtype: string;
-//   mask: string;
-// };
 
 export interface PlaidAccount {
   id: string;
@@ -24,7 +15,6 @@ export interface PlaidAccount {
   subtype: string;
   verification_status: string;
 }
-
 
 export type PlaidAccountsResponse = {
   accounts: PlaidAccount[];
@@ -82,6 +72,19 @@ export type DashboardResponse = {
   dailyAvg: number; 
   monthAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
+};
+
+// Add Goal type definitions
+export type Goal = {
+  id: string;
+  name: string;
+  description?: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: Date;
+  category: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 // Update apiRequest function
