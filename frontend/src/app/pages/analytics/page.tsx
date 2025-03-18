@@ -6,7 +6,7 @@ import styles from '../../assets/page.module.css';
 import BarChart from './components/BarChart'; 
 import CategoryPieChart from './components/CategoryPieChart'; 
 import Greeting from './components/Greeting'; 
-import LargestExpense from './components/LargestExpense.tsx'; 
+import LargestExpense from './components/LargestExpense'; 
 import NetIncome from './components/NetIncome'; 
 import RecurringExpenses from './components/RecurringExpenses'; 
 import TopRevenueSource from './components/TopRevenueSource'; 
@@ -70,22 +70,23 @@ export default function Analysis() {
     return (
       <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
-        <Greeting userName={user ? user.firstName : ''}>Hi</Greeting>
-        <div>
-          <BarChart monthlySpending={analysisData?.monthlySpending || []}> </BarChart>
-        </div>
-        <div>
-          <CategoryPieChart> </CategoryPieChart>
+        <div style= {{display: "flex", flexDirection: "column"}}>
+          <Greeting userName={user ? user.firstName : ''}/>
+          <div style = {{display: "flex", flexDirection: "row"}}>
+            <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
+  
+            <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>
 
-        </div>
-        <div>
-          <LargestExpense> </LargestExpense>
-          <TopRevenueSource> </TopRevenueSource>
-          <NetIncome> </NetIncome>
+          </div>
+          {/* <div>
+            <LargestExpense />
+            <TopRevenueSource> </TopRevenueSource>
+            <NetIncome> </NetIncome>
 
-        </div>
-        <div>
-          <RecurringExpenses> </RecurringExpenses>
+          </div>
+          <div>
+            <RecurringExpenses> </RecurringExpenses>
+          </div> */}
         </div>
       </Card>
     </div>

@@ -8,3 +8,10 @@
     flex-direction: column;
     overflow: hidden; 
   }
+
+  .pieChart {
+    position: relative; 
+    margin: 20px; 
+    min-height: 200px;
+    min-width: 300px; 
+  }

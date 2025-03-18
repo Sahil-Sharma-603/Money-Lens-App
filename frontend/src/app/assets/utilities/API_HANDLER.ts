@@ -91,6 +91,7 @@ export type AnalysisResponse = {
   dailyAvg: number; 
   monthAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
+  spendingByCategory: {category: string, amount: number}[]; 
 };
 // Update apiRequest function
 export async function apiRequest<T>(
