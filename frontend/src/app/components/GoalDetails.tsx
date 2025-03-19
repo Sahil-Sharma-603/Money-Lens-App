@@ -56,6 +56,12 @@ export default function GoalDetails({ goal, onClose }: GoalDetailsProps) {
             <p className={styles.bigNumber}>${dailyRate.toFixed(2)}</p>
             <p>per day {isSpendingLimit ? 'remaining' : 'to reach goal'}</p>
           </div>
+
+          <div className={styles.detailsSection}>
+            <h3>{isSpendingLimit ? 'Amount Left in Budget' : 'Amount Left to Save'}</h3>
+            <p className={styles.bigNumber}>${remainingAmount.toLocaleString()}</p>
+            <p>{isSpendingLimit ? 'remaining this period' : 'to reach goal'}</p>
+          </div>
         </div>
       </Card>
     </div>
