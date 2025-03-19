@@ -1,6 +1,6 @@
-name: CD - Build and Push to DockerHub
+name: CD Pipeline - Build and Push to DockerHub
 
-# Trigger manually for Continuous Delivery
+# Trigger for Continuous Delivery
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +8,12 @@ on:
         description: 'Money-lens version 2.0'
         required: true
         default: 'sprint3'
+  pull_request:
+    branches:
+      - CD
+  push:
+    branches:
+      - CD
 
 jobs:
   build-and-push:
