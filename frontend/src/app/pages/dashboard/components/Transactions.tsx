@@ -26,7 +26,7 @@ const Transactions = ({ transactions }: TransactionsProps) => {
               >
                 {t.amount > 0 ? '↓' : '↑'} ${Math.abs(t.amount).toFixed(2)}
               </span>
-              <span>{t.name}</span>
+              <span className={styles.transactionName}>{t.name}</span>
             </li>
           ))}
         </ul>
