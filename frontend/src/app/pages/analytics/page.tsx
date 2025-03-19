@@ -6,10 +6,8 @@ import styles from '../../assets/page.module.css';
 import BarChart from '../dashboard/components/BarChartComponent';
 import CategoryPieChart from './components/CategoryPieChart'; 
 import Greeting from './components/Greeting'; 
-import LargestExpense from './components/LargestExpense'; 
-import NetIncome from './components/NetIncome'; 
+import Breakdown from './components/Breakdown';
 import RecurringExpenses from './components/RecurringExpenses'; 
-import TopRevenueSource from './components/TopRevenueSource'; 
 import { apiRequest, UserResponse, AnalysisResponse, DashboardResponse } from '@/app/assets/utilities/API_HANDLER';
 
 
@@ -102,23 +100,13 @@ export default function Analysis() {
     return (
       <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
-        <div style= {{display: "flex", flexDirection: "column"}}>
-          <Greeting userName={user ? user.firstName : ''}/>
-          <div style = {{display: "flex", flexDirection: "row", minWidth: "1000px"}}>
-            <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
-  
-            <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>
-
-          </div>
-          {/* <div>
-            <LargestExpense />
-            <TopRevenueSource> </TopRevenueSource>
-            <NetIncome> </NetIncome>
-
-          </div>
-          <div>
-            <RecurringExpenses> </RecurringExpenses>
-          </div> */}
+        <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Greeting userName={user ? user.firstName : ''} />
+          {/* <Breakdown /> */}
+          <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
+        </div>
+        <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>
+          <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>
         </div>
       </Card>
     </div>
