@@ -114,15 +114,31 @@ export type CSVImportResponse = {
   errorDetails?: any[];
 };
 
-export type AnalysisResponse = { 
-  transactions: { amount: number; name: string; category: string}[]; 
+export type AnalysisResponse = {
+  transactions: { amount: number; name: string; category: string }[];
   balance: number;
   monthlySpending: { month: string; spent: number; earned: number }[];
-  dailyAvg: number; 
+  dailyAvg: number;
   monthAvg: { spent: number; earned: number };
+  yearAvg: { spent: number; earned: number }; 
+  weekAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
-  spendingByCategory: {category: string, amount: number}[]; 
+  thisYear: { spent: number; earned: number }; 
+  thisWeek: { spent: number; earned: number };
+  spendingByCategory: { category: string, amount: number }[];
+  topSources: { 
+    thisWeek: TopSources;
+    thisMonth: TopSources;
+    thisYear: TopSources;
+  };
 };
+
+// Top sources (for analysis)
+type TopSources = {
+  topSpending: { name: string; amount: number }[];
+  topEarning: { name: string; amount: number }[];
+};
+
 // Update apiRequest function
 export async function apiRequest<T>(
   endpoint: string,

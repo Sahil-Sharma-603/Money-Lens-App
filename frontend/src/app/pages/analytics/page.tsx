@@ -10,9 +10,6 @@ import Breakdown from './components/Breakdown';
 import RecurringExpenses from './components/RecurringExpenses'; 
 import { apiRequest, UserResponse, AnalysisResponse, DashboardResponse } from '@/app/assets/utilities/API_HANDLER';
 
-
-
-
 export default function Analysis() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -102,7 +99,15 @@ export default function Analysis() {
       <Card className={styles.fullPageCard}>
         <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <Greeting userName={user ? user.firstName : ''} />
-          {/* <Breakdown /> */}
+          <Breakdown
+            weekAvg={analysisData?.weekAvg}
+            monthAvg={analysisData?.monthAvg}
+            yearAvg={analysisData?.yearAvg}
+            thisWeek={analysisData?.thisWeek}
+            thisMonth={analysisData?.thisMonth}
+            thisYear={analysisData?.thisYear}
+            topSources={analysisData?.topSources}
+          />
           <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
         </div>
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>

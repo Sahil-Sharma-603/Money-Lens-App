@@ -69,10 +69,17 @@ const BarChartComponent = ({ monthlySpending }: BarChartProps) => {
     <Card style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100px", maxHeight: "600px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
         <h4 style={{ fontWeight: "600", fontSize: "0.9rem" }}>Summary</h4>
-        <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} size="small">
-          <MenuItem value="month">Past Month</MenuItem>
-          <MenuItem value="6months">Past 6 Months</MenuItem>
-          <MenuItem value="year">Past Year</MenuItem>
+        <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} size="small"
+          sx={{
+              fontSize: '0.8rem',
+              fontFamily: 'Jost',
+              "& .MuiSvgIcon-root": {
+              fontSize: '1rem'
+              }
+          }}>
+          <MenuItem sx={{ fontFamily: 'Jost' }} value="month">Past Month</MenuItem>
+          <MenuItem sx={{ fontFamily: 'Jost' }} value="6months">Past 6 Months</MenuItem>
+          <MenuItem sx={{ fontFamily: 'Jost' }} value="year">Past Year</MenuItem>
         </Select>
       </div>
 
