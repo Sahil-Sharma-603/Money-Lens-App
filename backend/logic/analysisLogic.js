@@ -170,82 +170,59 @@ async function getSpendingByCategory(transactions, month, year) {
     }
 }
 
-// async function getRecurringExpenses(transaction) {
-//     return transaction.filter(transaction => transaction.recurring === 'monthly');
-// }
 
-// async function getRecurringExpenses(transactions) {
-//     console.log("Transactions:", transactions); // Check the data
-
-//     if (!Array.isArray(transactions)) {
-//         console.error("Expected an array of transactions, but got:", transactions);
-//         return null;
-//     }
-
-//     const recurringExpenses = transactions.filter(transaction => {
-//         console.log("Checking transaction:", transaction); // Debug individual transaction
-//         console.log('Transaction recurring value:', transaction.recurring);  // Log the recurring property  
-//         return transaction.recurring === 'monthly';
-//     });
-
-//     console.log("Recurring Expenses:", recurringExpenses); // Check the filtered results
-//     return recurringExpenses;
-// }
 
 async function getRecurringExpenses(transactions) {
-    // Group transactions by name (e.g., subscription name) and amount
-    const groupedByNameAmount = transactions.reduce((acc, transaction) => {
-        const { name, amount, date } = transaction;
-        const transactionDate = new Date(date);
+    const recurringMap = new Map();
 
-        // Use the name and amount as the key to group transactions
-        const key = `${name}-${amount}`;
+    transactions.forEach(transaction => {
+        const key = `${transaction.name}-${Math.round(transaction.amount * 100) / 100}`; // Round to 2 decimal places
         
-        if (!acc[key]) acc[key] = [];
-        acc[key].push({ ...transaction, date: transactionDate });  // Store the transaction date
+        if (!recurringMap.has(key)) {
+            recurringMap.set(key, []);
+        }
         
-        return acc;
-    }, {});
+        recurringMap.get(key).push(transaction.date);
+    });
 
-    // Now, find recurring expenses based on pattern matching
     const recurringExpenses = [];
-
-    for (const key in groupedByNameAmount) {
-        const transactionsInGroup = groupedByNameAmount[key];
-        
-        // If there are multiple transactions in the group with the same name and amount
-        if (transactionsInGroup.length > 1) {
-            // Check if these transactions follow a regular pattern (e.g., monthly)
-            const isRecurring = checkDatePattern(transactionsInGroup);
+    recurringMap.forEach((dates, key) => {
+        if (dates.length > 1) { // At least two occurrences
+            const sortedDates = dates.map(date => new Date(date)).sort((a, b) => a - b);
             
-            if (isRecurring) {
-                recurringExpenses.push(...transactionsInGroup);
+            const intervals = sortedDates.map((date, index) => 
+                index > 0 ? date - sortedDates[index - 1] : null
+            ).filter(interval => interval !== null);
+
+            if (intervals.length === 0) return;
+
+            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            const monthlyInterval = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+
+            if (avgInterval >= monthlyInterval * 0.5 && avgInterval <= monthlyInterval * 1.5) {
+                const [name, amount] = key.split('-');
+                recurringExpenses.push({
+                    name,
+                    amount: parseFloat(amount),
+                    frequency: 'Monthly',
+                    nextPaymentDate: getNextPaymentDate(sortedDates)
+                });
             }
         }
-    }
+    });
 
+    console.log("recurring map: ", recurringMap); 
+
+    console.log("Detected Recurring Expenses:", recurringExpenses);
     return recurringExpenses;
 }
 
-// Function to check if the transactions follow a regular pattern (e.g., monthly)
-function checkDatePattern(transactions) {
-    const dates = transactions.map(tx => tx.date);
-    
-    // Sort dates to ensure we are checking in chronological order
-    dates.sort((a, b) => a - b);
-
-    // Check if the difference between consecutive dates is approximately the same (e.g., monthly)
-    for (let i = 1; i < dates.length; i++) {
-        const diff = dates[i] - dates[i - 1];  // Time difference in milliseconds
-        const diffInDays = diff / (1000 * 3600 * 24); // Convert to days
-
-        // Assuming a monthly pattern, the difference should be about 30 days
-        if (Math.abs(diffInDays - 30) > 7) {
-            return false;  // If the difference is not close to 30 days, it's not recurring
-        }
-    }
-
-    return true;  // If the dates follow a consistent pattern, return true
+// Helper function to estimate the next payment date
+function getNextPaymentDate(dates) {
+    const sortedDates = dates.sort((a, b) => new Date(a) - new Date(b));
+    const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+    lastDate.setMonth(lastDate.getMonth() + 1);
+    return lastDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 }
 
 
