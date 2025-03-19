@@ -1,4 +1,4 @@
-name: CD Pipeline - Build and Push to DockerHub
+name: CD - Build and Push to DockerHub
 
 # Trigger manually for Continuous Delivery
 on:
