@@ -102,22 +102,23 @@ export default function Analysis() {
     return (
       <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
-        {/* <Greeting userName={user ? user.firstName : ''}>Hi</Greeting> */}
-        <div>
-          {/* <BarChart monthlySpending={analysisData?.monthlySpending || []}> </BarChart> */}
-        </div>
-        <div>
-          {/* <CategoryPieChart> </CategoryPieChart> */}
+        <div style= {{display: "flex", flexDirection: "column"}}>
+          <Greeting userName={user ? user.firstName : ''}/>
+          <div style = {{display: "flex", flexDirection: "row", minWidth: "1000px"}}>
+            <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
+  
+            <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>
 
-        </div>
-        <div>
-          {/* <LargestExpense> </LargestExpense>
-          <TopRevenueSource> </TopRevenueSource>
-          <NetIncome> </NetIncome> */}
+          </div>
+          {/* <div>
+            <LargestExpense />
+            <TopRevenueSource> </TopRevenueSource>
+            <NetIncome> </NetIncome>
 
-        </div>
-        <div>
-          {/* <RecurringExpenses> </RecurringExpenses> */}
+          </div>
+          <div>
+            <RecurringExpenses> </RecurringExpenses>
+          </div> */}
         </div>
       </Card>
     </div>

@@ -125,7 +125,7 @@ async function getAnalysisData(userId) {
         // console.log("Daily Average Spending:", dailyAvg);
 
 
-        const spendingByCategory = getSpendingByCategory(transactions, today.getMonth() +1, today.getFullYear()); 
+        const spendingByCategory = await getSpendingByCategory(transactions, today.getMonth() + 1, today.getFullYear());
         console.log("SpendingbyCategory: ", spendingByCategory); 
 
         return {

@@ -6,6 +6,7 @@ const plaidRoutes = require('./routes/plaidRoutes');
 const transactionsRoutes = require('./routes/transactionsRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const accountRoutes = require('./routes/accountRoutes');
+const analysisRoutes = require('./routes/analysisRoutes');
 
 require('dotenv').config({ path: '.env' });
 const cookieParser = require('cookie-parser');
