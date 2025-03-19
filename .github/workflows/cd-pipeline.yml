@@ -1,6 +1,5 @@
 name: CD Pipeline - Build and Push to DockerHub
 
-# Trigger for Continuous Delivery
 on:
   workflow_dispatch:
     inputs:
@@ -18,7 +17,9 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
+    # Set a default version using an environment variable.
+    env:
+      VERSION: ${{ github.event.inputs.version || 'sprint3' }}
     steps:
       # Checkout code
       - name: Checkout repository
@@ -39,12 +40,12 @@ jobs:
       - name: Build and Push Backend Image
         working-directory: ./backend
         run: |
-          docker build -t sahilsharma603/money-lens-backend:${{ github.event.inputs.version }} .
-          docker push sahilsharma603/money-lens-backend:${{ github.event.inputs.version }}
+          docker build -t sahilsharma603/money-lens-backend:${{ env.VERSION }} .
+          docker push sahilsharma603/money-lens-backend:${{ env.VERSION }}
 
       # Build and push Frontend Docker image
       - name: Build and Push Frontend Image
         working-directory: ./frontend
         run: |
-          docker build -t sahilsharma603/money-lens-frontend:${{ github.event.inputs.version }} .
-          docker push sahilsharma603/money-lens-frontend:${{ github.event.inputs.version }}
+          docker build -t sahilsharma603/money-lens-frontend:${{ env.VERSION }} .
+          docker push sahilsharma603/money-lens-frontend:${{ env.VERSION }}
