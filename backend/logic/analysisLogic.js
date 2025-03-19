@@ -88,6 +88,28 @@ async function getAnalysisData(userId) {
         const spendingByCategory = await getSpendingByCategory(transactions, today.getMonth() + 1, today.getFullYear());
         console.log("SpendingbyCategory: ", spendingByCategory); 
 
+        // Get top 5 sources for this week
+        const thisWeekSources = await getTopSources(transactions, {
+            startDate: startOfWeek,
+            endDate: new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1)
+        });
+
+        // Get top 5 sources for this month
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+        const thisMonthSources = await getTopSources(transactions, {
+            startDate: startOfMonth,
+            endDate: endOfMonth
+        });
+
+        // Get top 5 sources for this year
+        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        const endOfYear = new Date(today.getFullYear(), 11, 31, 23, 59, 59, 999);
+        const thisYearSources = await getTopSources(transactions, {
+            startDate: startOfYear,
+            endDate: endOfYear
+        });
+
         console.log("Weekly Average Spending:", weekAvg);
         console.log("Monthly Average Spending:", monthAvg);
         console.log("Yearly Average Spending:", yearAvg);
@@ -98,6 +120,10 @@ async function getAnalysisData(userId) {
         console.log("This Month:", thisMonthData);
         console.log("This Week:", thisWeekData);
         console.log("This Year:", thisYearData);
+
+        console.log("Top Sources This Week:", thisWeekSources);
+        console.log("Top Sources This Month:", thisMonthSources);
+        console.log("Top Sources This Year:", thisYearSources);
 
         return {
             transactions,
@@ -112,7 +138,12 @@ async function getAnalysisData(userId) {
             weekAvg,
             yearAvg,
             dailyAvg, 
-            spendingByCategory
+            spendingByCategory,
+            topSources: {
+                thisWeek: thisWeekSources,
+                thisMonth: thisMonthSources,
+                thisYear: thisYearSources
+            }
         };
     } catch (error) {
         console.error("Error fetching analysis data:", error);
@@ -137,6 +168,62 @@ async function getSpendingByCategory(transactions, month, year) {
     } catch (error) {
         console.error("Error getting spending by category:", error); 
         return {error: error.message}; 
+    }
+}
+
+async function getTopSources(transactions, { startDate, endDate }) {
+    try {
+        // Filter transactions for the date range
+        const filteredTransactions = transactions.filter(t => {
+            if (!t.date) return false;
+            const txDate = new Date(t.date);
+            return txDate >= startDate && txDate <= endDate;
+        });
+
+        // Separate spending and earning transactions
+        const spendingTransactions = filteredTransactions.filter(t => parseFloat(t.amount) > 0);
+        const earningTransactions = filteredTransactions.filter(t => parseFloat(t.amount) < 0);
+
+        // Group by source name and sum amounts for spending
+        const spendingBySource = {};
+        spendingTransactions.forEach(t => {
+            const source = t.name || "Unknown";
+            const amount = parseFloat(t.amount);
+            if (!spendingBySource[source]) {
+                spendingBySource[source] = 0;
+            }
+            spendingBySource[source] += amount;
+        });
+
+        // Group by source name and sum amounts for earning
+        const earningBySource = {};
+        earningTransactions.forEach(t => {
+            const source = t.name || "Unknown";
+            const amount = Math.abs(parseFloat(t.amount)); // Convert to positive
+            if (!earningBySource[source]) {
+                earningBySource[source] = 0;
+            }
+            earningBySource[source] += amount;
+        });
+
+        // Convert to arrays and sort by amount
+        const spendingSources = Object.entries(spendingBySource)
+            .map(([name, amount]) => ({ name, amount: parseFloat(amount.toFixed(2)) }))
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 5);
+
+        const earningSources = Object.entries(earningBySource)
+            .map(([name, amount]) => ({ name, amount: parseFloat(amount.toFixed(2)) }))
+            .sort((a, b) => b.amount - a.amount)
+            .slice(0, 5);
+
+        return {
+            topSpending: spendingSources,
+            topEarning: earningSources
+        };
+    } catch (error) {
+        console.error("Error getting top sources:", error);
+        return { error: error.message };
     }
 }
 
