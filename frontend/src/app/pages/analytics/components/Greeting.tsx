@@ -13,7 +13,7 @@ type GreetingProps = {
   
     return (
       <div>
-        <h2>Hello {userName}</h2>
+        <h2>Analytics</h2>
         <p>{today}</p>
       </div>
     );
