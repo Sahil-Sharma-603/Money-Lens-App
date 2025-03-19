@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "../../../components/Card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ClipLoader } from "react-spinners";
+import { Select, MenuItem } from "@mui/material";
 
 interface MonthlySpending {
   month: string;
@@ -23,27 +24,57 @@ const formatMonth = (monthKey: string, includeYear = false) => {
   return includeYear ? `${monthName} ${year}` : monthName;
 };
 
+const getFilteredData = (data: MonthlySpending[], range: string) => {
+  let filteredData = [];
+
+  switch (range) {
+    case "month":
+      filteredData = data.slice(0,1);
+      break;
+    case "6months":
+      filteredData = data.slice(0,6);
+      break;
+    case "year":
+      filteredData = data.slice(-12);
+      break;
+    default:
+      filteredData = data;
+  }
+  return filteredData;
+};
+
 const BarChartComponent = ({ monthlySpending }: BarChartProps) => {
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState<MonthlySpending[]>([]);
+  const [timeRange, setTimeRange] = useState("year");
 
   useEffect(() => {
     if (monthlySpending.length > 0) {
       setTimeout(() => {
-        setChartData([...monthlySpending].reverse().map(entry => ({
-          month: formatMonth(entry.month),
-          fullMonth: formatMonth(entry.month, true),
-          spent: entry.spent,
-          earned: Math.abs(entry.earned),
-        })));
+        const filteredData = getFilteredData(monthlySpending, timeRange);
+        setChartData(
+          filteredData.reverse().map((entry) => ({
+            month: formatMonth(entry.month),
+            fullMonth: formatMonth(entry.month, true),
+            spent: entry.spent,
+            earned: Math.abs(entry.earned),
+          }))
+        );
         setLoading(false);
-      }, 100); // loading delay
+      }, 100);
     }
-  }, [monthlySpending]);
+  }, [monthlySpending, timeRange]);
 
   return (
     <Card style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100px", maxHeight: "600px" }}>
-      <h4 style={{ fontWeight: "600", fontSize: "0.9rem", marginBottom: 15 }}>Last 12 Months</h4>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
+        <h4 style={{ fontWeight: "600", fontSize: "0.9rem" }}>Summary</h4>
+        <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} size="small">
+          <MenuItem value="month">Past Month</MenuItem>
+          <MenuItem value="6months">Past 6 Months</MenuItem>
+          <MenuItem value="year">Past Year</MenuItem>
+        </Select>
+      </div>
 
       {loading ? (
         <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>

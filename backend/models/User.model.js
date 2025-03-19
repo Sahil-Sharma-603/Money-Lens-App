@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Transaction } = require('./Transaction.model');
+// const { Transaction } = require('./transaction.model');
 
 const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
