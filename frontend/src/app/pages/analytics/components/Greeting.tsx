@@ -1,20 +1,24 @@
 'use client';
 type GreetingProps = {
     userName: string;
+    balance: number; 
   };
   
-  export default function Greeting({ userName }: GreetingProps) {
-    const today = new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+
+  // const [chartData, setChartData] = useState<CategorySpending[]>([]);
+
+  export default function Greeting({ userName, balance}: GreetingProps) {
+    // const today = new Date().toLocaleDateString('en-US', {
+    //   weekday: 'long',
+    //   year: 'numeric',
+    //   month: 'long',
+    //   day: 'numeric',
+    // });
   
     return (
       <div>
         <h2>Hello {userName}</h2>
-        <p>{today}</p>
+        <p>${-balance.toFixed(2)}</p>
       </div>
     );
   }

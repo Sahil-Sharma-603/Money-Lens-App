@@ -125,8 +125,11 @@ async function getAnalysisData(userId) {
         // console.log("Daily Average Spending:", dailyAvg);
 
 
-        const spendingByCategory = getSpendingByCategory(transactions, today.getMonth() +1, today.getFullYear()); 
+        const spendingByCategory = await getSpendingByCategory(transactions, today.getMonth() +1, today.getFullYear());
+        const recurringExpenses = await getRecurringExpenses(transactions); 
+        const recurringIncomeSources = await getSpendingByCategory(transactions, today.getMonth() +1, today.getFullYear()); 
         console.log("SpendingbyCategory: ", spendingByCategory); 
+        console.log("Recurring expenses: ", recurringExpenses); 
 
         return {
             todaySpending,
@@ -137,7 +140,9 @@ async function getAnalysisData(userId) {
             thisMonth: thisMonthData,
             monthAvg,
             dailyAvg, 
-            spendingByCategory
+            spendingByCategory, 
+            recurringExpenses, 
+            recurringIncomeSources, 
         };
     } catch (error) {
         console.error("Error fetching analysis data:", error);
@@ -165,4 +170,88 @@ async function getSpendingByCategory(transactions, month, year) {
     }
 }
 
-module.exports = { getAnalysisData, getSpendingByCategory };
+// async function getRecurringExpenses(transaction) {
+//     return transaction.filter(transaction => transaction.recurring === 'monthly');
+// }
+
+// async function getRecurringExpenses(transactions) {
+//     console.log("Transactions:", transactions); // Check the data
+
+//     if (!Array.isArray(transactions)) {
+//         console.error("Expected an array of transactions, but got:", transactions);
+//         return null;
+//     }
+
+//     const recurringExpenses = transactions.filter(transaction => {
+//         console.log("Checking transaction:", transaction); // Debug individual transaction
+//         console.log('Transaction recurring value:', transaction.recurring);  // Log the recurring property  
+//         return transaction.recurring === 'monthly';
+//     });
+
+//     console.log("Recurring Expenses:", recurringExpenses); // Check the filtered results
+//     return recurringExpenses;
+// }
+
+async function getRecurringExpenses(transactions) {
+    // Group transactions by name (e.g., subscription name) and amount
+    const groupedByNameAmount = transactions.reduce((acc, transaction) => {
+        const { name, amount, date } = transaction;
+        const transactionDate = new Date(date);
+
+        // Use the name and amount as the key to group transactions
+        const key = `${name}-${amount}`;
+        
+        if (!acc[key]) acc[key] = [];
+        acc[key].push({ ...transaction, date: transactionDate });  // Store the transaction date
+        
+        return acc;
+    }, {});
+
+    // Now, find recurring expenses based on pattern matching
+    const recurringExpenses = [];
+
+    for (const key in groupedByNameAmount) {
+        const transactionsInGroup = groupedByNameAmount[key];
+        
+        // If there are multiple transactions in the group with the same name and amount
+        if (transactionsInGroup.length > 1) {
+            // Check if these transactions follow a regular pattern (e.g., monthly)
+            const isRecurring = checkDatePattern(transactionsInGroup);
+            
+            if (isRecurring) {
+                recurringExpenses.push(...transactionsInGroup);
+            }
+        }
+    }
+
+    return recurringExpenses;
+}
+
+// Function to check if the transactions follow a regular pattern (e.g., monthly)
+function checkDatePattern(transactions) {
+    const dates = transactions.map(tx => tx.date);
+    
+    // Sort dates to ensure we are checking in chronological order
+    dates.sort((a, b) => a - b);
+
+    // Check if the difference between consecutive dates is approximately the same (e.g., monthly)
+    for (let i = 1; i < dates.length; i++) {
+        const diff = dates[i] - dates[i - 1];  // Time difference in milliseconds
+        const diffInDays = diff / (1000 * 3600 * 24); // Convert to days
+
+        // Assuming a monthly pattern, the difference should be about 30 days
+        if (Math.abs(diffInDays - 30) > 7) {
+            return false;  // If the difference is not close to 30 days, it's not recurring
+        }
+    }
+
+    return true;  // If the dates follow a consistent pattern, return true
+}
+
+
+
+async function getRecurringIncomeSources() {
+
+}
+
+module.exports = { getAnalysisData, getSpendingByCategory, getRecurringExpenses, getRecurringIncomeSources };

@@ -103,11 +103,33 @@ export default function Analysis() {
       <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
         <div style= {{display: "flex", flexDirection: "column"}}>
-          <Greeting userName={user ? user.firstName : ''}/>
+          <Greeting userName={user ? user.firstName : ''} balance={analysisData?.balance ?? 0} />
+          <div style = {{display: "flex", flexDirection: "row", minWidth: "1000px"}}>
+            <Card > 
+            <div style = {{display: "flex", flexDirection: "column", minWidth: "1000px"}}>
+              <h4>Month Breakdown</h4>
+              <p>Average Monthly Spending</p>
+              <p>Average Monthly Earning</p>
+              <p>Average Monthly Saving</p>
+              <div style = {{display: "flex", flexDirection: "row", minWidth: "1000px", justifyContent: "space-between"}}>
+                <div style = {{display: "flex", flexDirection: "column"}}>
+                  <h4>Top Spending Sources</h4>
+                </div>
+                <div style = {{display: "flex", flexDirection: "column"}}>
+                  <h4>Top Earning Sources</h4>
+                </div>  
+              </div>
+            
+
+            </div>
+            </Card>
+            <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>
+
+          </div>
           <div style = {{display: "flex", flexDirection: "row", minWidth: "1000px"}}>
             <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
-  
-            <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>
+            <RecurringExpenses recurringExpenses={analysisData?.recurringExpenses || []}/>
+          
 
           </div>
           {/* <div>

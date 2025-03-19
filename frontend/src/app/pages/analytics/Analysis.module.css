@@ -15,3 +15,31 @@
     min-height: 200px;
     min-width: 300px; 
   }
+
+
+  .recurringExpensesContainer {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.expensesTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.expensesTable th,
+.expensesTable td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.expensesTable th {
+    background-color: #f1f1f1;
+}
+
+.expensesTable tr:hover {
+    background-color: #f1f1f1;
+}

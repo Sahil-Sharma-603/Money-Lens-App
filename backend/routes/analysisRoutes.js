@@ -35,7 +35,7 @@ router.get("/analytics", auth, async (req, res) => {
         return res.status(404).json({ error: analysisData.error });
       }
   
-      console.log("Sending analysis data response...", analysisData);
+      console.log("Sending analysis data response..."); //, analysisData);
       res.status(200).json(analysisData);
     } catch (error) {
       console.error("Analysis page route error:", error);
