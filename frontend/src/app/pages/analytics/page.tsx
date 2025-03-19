@@ -38,30 +38,52 @@ export default function Analysis() {
   }, [router]);
 
   useEffect(() => {
+    console.log("isCheckingAuth:", isCheckingAuth);
+
     if (!isCheckingAuth) {
       const fetchUser = async () => {
         try {
           const data = await apiRequest<UserResponse>('/users/user', { method: 'GET' });
           setUser(data);
+          console.log("User info set", data); 
         } catch (error) {
           console.error('Error fetching user info:', error);
         }
       };
-
-      const analysisData = async () => {
+  
+      const fetchAnalysisData = async () => {
         try {
+          console.log("fetching analysis data"); 
+
+          // const response = await fetch('/analytics/analytics');
+          // const data = await response.json();
+          // console.log(data); // Check data structure
+          // setAnalysisData(data);
+
+
+
           const data = await apiRequest<AnalysisResponse>('/analytics/analytics', { method: 'GET' });
+          console.log("Analysis Data:", data);  // Debugging step
           setAnalysisData(data);
         } catch (error) {
-          console.error('Error fetching user info:', error);
+          console.error('Error fetching analysis data:', error);
         }
       }; 
-      
-      
+
+      console.log("fetching user")
       fetchUser();
-      analysisData(); 
+// console.log("fetching analysis data")
+      fetchAnalysisData(); 
     }
   }, [isCheckingAuth]);
+
+  useEffect(() => {
+    console.log("User:", user);
+    console.log("Analysis Data:", analysisData);
+  }, [user, analysisData]);
+  
+  
+    
   
   // Show loading state while checking authentication
   if (isCheckingAuth) {
@@ -82,7 +104,7 @@ export default function Analysis() {
       <Card className={styles.fullPageCard}>
         <div style= {{display: "flex", flexDirection: "column"}}>
           <Greeting userName={user ? user.firstName : ''}/>
-          <div style = {{display: "flex", flexDirection: "row"}}>
+          <div style = {{display: "flex", flexDirection: "row", minWidth: "1000px"}}>
             <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
   
             <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>

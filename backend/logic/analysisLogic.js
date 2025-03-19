@@ -15,7 +15,7 @@ async function getAnalysisData(userId) {
         // Fetch transactions for this user
         const transactions = await Transaction.find({ user_id: userId });
 
-        console.log("Fetched transactions:", transactions); // ✅ Debugging
+        // console.log("Fetched transactions:", transactions); // ✅ Debugging
 
         // Get today's transactions
         const todayDate = new Date().toISOString().split("T")[0];
@@ -125,13 +125,13 @@ async function getAnalysisData(userId) {
         // console.log("Daily Average Spending:", dailyAvg);
 
 
-        const spendingByCategory = getSpendingByCategory(transactions, Date.getMonth() +1, Date.getFullYear()); 
-        console.log("SpendingbyCategory", spendingByCategory); 
+        const spendingByCategory = getSpendingByCategory(transactions, today.getMonth() +1, today.getFullYear()); 
+        console.log("SpendingbyCategory: ", spendingByCategory); 
 
         return {
             todaySpending,
             transactions,
-            recentTransactions,
+            // recentTransactions,
             balance,
             monthlySpending,
             thisMonth: thisMonthData,
@@ -147,7 +147,7 @@ async function getAnalysisData(userId) {
 
 async function getSpendingByCategory(transactions, month, year) {
     try {
-        return transactions
+        const result =  transactions
         .filter(({ date }) => {
             const transactionDate = new Date(date);
             return transactionDate.getMonth() === month - 1 && transactionDate.getFullYear() === year;
@@ -157,6 +157,8 @@ async function getSpendingByCategory(transactions, month, year) {
             return acc;
         }, {}); 
 
+        console.log("spending by category: ", result); 
+        return result; 
     } catch (error) {
         console.error("Error getting spending by category:", error); 
         return {error: error.message}; 

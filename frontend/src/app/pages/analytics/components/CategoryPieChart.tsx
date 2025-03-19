@@ -5,6 +5,7 @@ import Card from "../../../components/Card";
 import { PieChart, ResponsiveContainer, Legend, Pie, Cell, Label, Tooltip } from "recharts";
 import { CategoricalChartFunc } from "recharts/types/chart/generateCategoricalChart";
 import { ClipLoader } from "react-spinners";
+import { ChatSession } from "firebase/vertexai";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
