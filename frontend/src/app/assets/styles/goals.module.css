@@ -180,8 +180,12 @@
 
 .progressBarFill {
   height: 100%;
-  background: var(--primary);
+  background: #4CAF50;
   transition: width 0.3s ease;
+}
+
+.progressBarFill.exceeded {
+  background: #dc3545;
 }
 
 .progressText {
@@ -220,4 +224,46 @@
   top: -20px;
   font-size: 0.8rem;
   color: #6c757d;
+}
+
+.goalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-right: auto;
+  margin-left: 1rem;
+}
+
+.addMoneyButton {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.addMoneyButton:hover {
+  background-color: #45a049;
+}
+
+.addMoneyForm {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.addMoneyForm input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
 }

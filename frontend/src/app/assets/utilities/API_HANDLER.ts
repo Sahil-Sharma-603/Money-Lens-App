@@ -1,3 +1,5 @@
+import { Goal } from '../../types/goals';
+
 const BASE_URL = 'http://localhost:5001/api';
 
 export type ApiOptions = {
@@ -72,19 +74,6 @@ export type DashboardResponse = {
   dailyAvg: number; 
   monthAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
-};
-
-// Add Goal type definitions
-export type Goal = {
-  id: string;
-  name: string;
-  description?: string;
-  targetAmount: number;
-  currentAmount: number;
-  targetDate: Date;
-  category: string;
-  createdAt?: Date;
-  updatedAt?: Date;
 };
 
 // Update apiRequest function

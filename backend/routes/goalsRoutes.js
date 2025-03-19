@@ -2,51 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const auth = require('../middleware/auth.middleware');
-
-// Goal Schema
-const goalSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  description: {
-    type: String,
-    trim: true
-  },
-  targetAmount: {
-    type: Number,
-    required: true
-  },
-  currentAmount: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  targetDate: {
-    type: Date,
-    required: true
-  },
-  category: {
-    type: String,
-    required: true
-  },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    ref: 'User'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date
-  }
-});
-
-// Check if model already exists to prevent overwriting
-const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);
+const Goal = require('../models/Goal');
 
 // Test endpoint - no auth required
 router.get('/test', (req, res) => {
@@ -74,7 +30,7 @@ router.post('/test-create', async (req, res) => {
       return res.status(400).json({ error: 'Invalid test user ID format' });
     }
     
-    const { title, description, targetAmount, currentAmount, targetDate, category } = req.body;
+    const { title, description, targetAmount, currentAmount, targetDate, category, type } = req.body;
     
     const newGoal = new Goal({
       title: title || 'Test Goal',
@@ -82,7 +38,8 @@ router.post('/test-create', async (req, res) => {
       targetAmount: Number(targetAmount) || 1000,
       currentAmount: currentAmount ? Number(currentAmount) : 0,
       targetDate: targetDate || new Date(),
-      category: category || 'Test',
+      category: type === 'Savings' ? (category || 'Test') : undefined,
+      type: type || 'Savings',
       userId: testUserId
     });
     
@@ -99,6 +56,7 @@ router.post('/test-create', async (req, res) => {
       currentAmount: savedGoal.currentAmount,
       targetDate: savedGoal.targetDate,
       category: savedGoal.category,
+      type: savedGoal.type,
       createdAt: savedGoal.createdAt
     });
   } catch (error) {
@@ -133,6 +91,7 @@ router.get('/', auth, async (req, res) => {
       currentAmount: goal.currentAmount,
       targetDate: goal.targetDate,
       category: goal.category,
+      type: goal.type,
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt
     }));
@@ -152,7 +111,7 @@ router.post('/', auth, async (req, res) => {
     console.log('User object from auth:', req.user);
     
     // Validate that all required fields are present
-    const { title, description, targetAmount, currentAmount, targetDate, category } = req.body;
+    const { title, description, targetAmount, currentAmount, targetDate, category, type } = req.body;
     
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
@@ -166,8 +125,8 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Target date is required' });
     }
     
-    if (!category) {
-      return res.status(400).json({ error: 'Category is required' });
+    if (type === 'Savings' && !category) {
+      return res.status(400).json({ error: 'Category is required for savings goals' });
     }
     
     if (!req.user || !req.user.id) {
@@ -181,7 +140,8 @@ router.post('/', auth, async (req, res) => {
       targetAmount: Number(targetAmount),
       currentAmount: currentAmount ? Number(currentAmount) : 0,
       targetDate: new Date(targetDate),
-      category,
+      category: type === 'Savings' ? category : undefined,
+      type: type || 'Savings',
       userId: req.user.id,
       createdAt: new Date()
     });
@@ -189,6 +149,8 @@ router.post('/', auth, async (req, res) => {
     console.log('Goal to be saved:', {
       title: newGoal.title,
       targetAmount: newGoal.targetAmount,
+      type: newGoal.type,
+      category: newGoal.category,
       userId: newGoal.userId
     });
     
@@ -205,6 +167,7 @@ router.post('/', auth, async (req, res) => {
       currentAmount: savedGoal.currentAmount,
       targetDate: savedGoal.targetDate,
       category: savedGoal.category,
+      type: savedGoal.type,
       createdAt: savedGoal.createdAt
     });
   } catch (error) {
@@ -247,6 +210,7 @@ router.get('/:id', auth, async (req, res) => {
       currentAmount: goal.currentAmount,
       targetDate: goal.targetDate,
       category: goal.category,
+      type: goal.type,
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt
     });
@@ -259,7 +223,7 @@ router.get('/:id', auth, async (req, res) => {
 // PUT update a goal
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { title, description, targetAmount, currentAmount, targetDate, category } = req.body;
+    const { title, description, targetAmount, currentAmount, targetDate, category, type } = req.body;
     
     // Build update object with only provided fields
     const updateFields = {};
@@ -268,7 +232,15 @@ router.put('/:id', auth, async (req, res) => {
     if (targetAmount) updateFields.targetAmount = Number(targetAmount);
     if (currentAmount !== undefined) updateFields.currentAmount = Number(currentAmount);
     if (targetDate) updateFields.targetDate = new Date(targetDate);
-    if (category) updateFields.category = category;
+    if (type) {
+      updateFields.type = type;
+      // Only update category if it's a savings goal
+      if (type === 'Savings' && category) {
+        updateFields.category = category;
+      } else if (type === 'Spending Limit') {
+        updateFields.category = undefined;
+      }
+    }
     updateFields.updatedAt = new Date();
     
     // Find and update the goal
@@ -290,6 +262,7 @@ router.put('/:id', auth, async (req, res) => {
       currentAmount: goal.currentAmount,
       targetDate: goal.targetDate,
       category: goal.category,
+      type: goal.type,
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt
     });
@@ -328,6 +301,46 @@ router.delete('/:id', auth, async (req, res) => {
     res.json({ success: true, id: req.params.id });
   } catch (error) {
     console.error('Error deleting goal:', error);
+    res.status(500).json({ error: 'Server error', message: error.message });
+  }
+});
+
+// PATCH add money to a goal
+router.patch('/:id/add-money', auth, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Valid amount is required' });
+    }
+
+    const goal = await Goal.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      { 
+        $inc: { currentAmount: Number(amount) },
+        updatedAt: new Date()
+      },
+      { new: true }
+    );
+    
+    if (!goal) {
+      return res.status(404).json({ error: 'Goal not found or you do not have permission' });
+    }
+    
+    res.json({
+      id: goal._id.toString(),
+      title: goal.title,
+      description: goal.description,
+      targetAmount: goal.targetAmount,
+      currentAmount: goal.currentAmount,
+      targetDate: goal.targetDate,
+      category: goal.category,
+      type: goal.type,
+      createdAt: goal.createdAt,
+      updatedAt: goal.updatedAt
+    });
+  } catch (error) {
+    console.error('Error adding money to goal:', error);
     res.status(500).json({ error: 'Server error', message: error.message });
   }
 });

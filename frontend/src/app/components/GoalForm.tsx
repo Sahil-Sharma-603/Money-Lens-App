@@ -11,6 +11,8 @@ interface GoalFormProps {
     currentAmount: number;
     targetDate: Date;
     category: string;
+    type: 'Savings' | 'Spending Limit';
+    spendingPeriod?: 'Monthly' | 'Weekly' | 'Yearly';
   }) => void;
   initialGoal?: {
     id: string;
@@ -20,6 +22,8 @@ interface GoalFormProps {
     currentAmount: number;
     targetDate: Date;
     category: string;
+    type: 'Savings' | 'Spending Limit';
+    spendingPeriod?: 'Monthly' | 'Weekly' | 'Yearly';
   };
 }
 
@@ -30,7 +34,8 @@ export default function GoalForm({ onClose, onSubmit, initialGoal }: GoalFormPro
     currentAmount: initialGoal?.currentAmount || 0,
     targetDate: initialGoal?.targetDate || new Date(),
     category: initialGoal?.category || 'Savings',
-    description: initialGoal?.description || ''
+    description: initialGoal?.description || '',
+    type: initialGoal?.type || 'Savings'
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,6 +59,8 @@ export default function GoalForm({ onClose, onSubmit, initialGoal }: GoalFormPro
     onSubmit(formData);
   };
 
+  const isSpendingLimit = formData.type === 'Spending Limit';
+
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
@@ -71,25 +78,39 @@ export default function GoalForm({ onClose, onSubmit, initialGoal }: GoalFormPro
           </div>
 
           <div className={styles.formGroup}>
-            <label>Category</label>
+            <label>Goal Type</label>
             <select
-              value={formData.category}
-              onChange={(e) => setFormData({...formData, category: e.target.value})}
+              value={formData.type}
+              onChange={(e) => setFormData({...formData, type: e.target.value as 'Savings' | 'Spending Limit'})}
               required
             >
-              <option value="Savings">Savings</option>
-              <option value="Investment">Investment</option>
-              <option value="Emergency">Emergency Fund</option>
-              <option value="Retirement">Retirement</option>
-              <option value="Education">Education</option>
-              <option value="Home">Home</option>
-              <option value="Travel">Travel</option>
-              <option value="Other">Other</option>
+              <option value="Savings">Savings Goal</option>
+              <option value="Spending Limit">Spending Limit</option>
             </select>
           </div>
 
+          {!isSpendingLimit && (
+            <div className={styles.formGroup}>
+              <label>Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                required
+              >
+                <option value="Savings">Savings</option>
+                <option value="Investment">Investment</option>
+                <option value="Emergency">Emergency Fund</option>
+                <option value="Retirement">Retirement</option>
+                <option value="Education">Education</option>
+                <option value="Home">Home</option>
+                <option value="Travel">Travel</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          )}
+
           <div className={styles.formGroup}>
-            <label>Target Amount</label>
+            <label>{isSpendingLimit ? 'Spending Limit' : 'Target Amount'}</label>
             <input
               type="number"
               value={formData.targetAmount}
@@ -101,7 +122,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal }: GoalFormPro
           </div>
 
           <div className={styles.formGroup}>
-            <label>Current Amount</label>
+            <label>{isSpendingLimit ? 'Amount Spent' : 'Current Amount'}</label>
             <input
               type="number"
               value={formData.currentAmount}

@@ -1,15 +1,16 @@
 export type GoalType = 'Savings' | 'Spending Limit';
-export type SpendingPeriod = 'Daily' | 'Weekly' | 'Monthly' | 'Category';
+export type SpendingPeriod = 'Monthly' | 'Weekly' | 'Yearly';
 
 export interface Goal {
   id: string;
-  name: string;
+  title: string;
   targetAmount: number;
   currentAmount: number;
   targetDate: Date;
-  category: GoalType;
+  category?: string;
   type: GoalType;
   spendingPeriod?: SpendingPeriod;
-  limitCategory?: string;  // For category-specific spending limits
   description?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 } 

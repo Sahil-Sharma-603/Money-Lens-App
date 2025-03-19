@@ -25,7 +25,14 @@ const goalSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: true
+    required: function() {
+      return this.type === 'Savings';
+    }
+  },
+  type: {
+    type: String,
+    enum: ['Savings', 'Spending Limit'],
+    default: 'Savings'
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,

@@ -14,17 +14,19 @@ export default function GoalDetails({ goal, onClose }: GoalDetailsProps) {
   const targetDate = new Date(goal.targetDate);
   const daysRemaining = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
-  const remainingAmount = goal.targetAmount - goal.currentAmount;
-  const dailyRate = daysRemaining > 0 ? remainingAmount / daysRemaining : 0;
-  
   const progressPercentage = (goal.currentAmount / goal.targetAmount) * 100;
   const isSpendingLimit = goal.type === 'Spending Limit';
+  const isCompleted = progressPercentage >= 100;
+  
+  // If completed/exceeded, set remaining amount and daily rate to 0
+  const remainingAmount = isCompleted ? 0 : goal.targetAmount - goal.currentAmount;
+  const dailyRate = isCompleted ? 0 : (daysRemaining > 0 ? remainingAmount / daysRemaining : 0);
 
   return (
     <div className={styles.modalOverlay}>
       <Card className={styles.detailsCard}>
         <div className={styles.detailsHeader}>
-          <h2>{isSpendingLimit ? `${goal.spendingPeriod} Spending Limit` : goal.name}</h2>
+          <h2>{goal.title}</h2>
           <button onClick={onClose} className={styles.closeButton}>&times;</button>
         </div>
 
@@ -52,15 +54,15 @@ export default function GoalDetails({ goal, onClose }: GoalDetailsProps) {
           </div>
 
           <div className={styles.detailsSection}>
-            <h3>{isSpendingLimit ? 'Daily Budget Left' : 'Daily Savings Needed'}</h3>
+            <h3>{isSpendingLimit ? 'Max Daily Spending' : 'Daily Savings Needed'}</h3>
             <p className={styles.bigNumber}>${dailyRate.toFixed(2)}</p>
-            <p>per day {isSpendingLimit ? 'remaining' : 'to reach goal'}</p>
+            <p>per day {isSpendingLimit ? 'to stay under limit' : 'to reach goal'}</p>
           </div>
 
           <div className={styles.detailsSection}>
-            <h3>{isSpendingLimit ? 'Amount Left in Budget' : 'Amount Left to Save'}</h3>
+            <h3>{isSpendingLimit ? 'Budget Remaining' : 'Amount Left to Save'}</h3>
             <p className={styles.bigNumber}>${remainingAmount.toLocaleString()}</p>
-            <p>{isSpendingLimit ? 'remaining this period' : 'to reach goal'}</p>
+            <p>{isSpendingLimit ? 'left to spend this period' : 'to reach goal'}</p>
           </div>
         </div>
       </Card>

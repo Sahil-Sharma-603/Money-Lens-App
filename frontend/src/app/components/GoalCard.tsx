@@ -1,15 +1,16 @@
 import React from 'react';
 import styles from '../assets/styles/goals.module.css';
-import { Goal } from '../assets/utilities/API_HANDLER';
+import { Goal } from '../types/goals';
 
 interface GoalCardProps {
   goal: Goal;
   onEdit: () => void;
   onDelete: () => void;
   onViewDetails: () => void;
+  onAddMoney: (goal: Goal) => void;
 }
 
-export default function GoalCard({ goal, onEdit, onDelete, onViewDetails }: GoalCardProps) {
+export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddMoney }: GoalCardProps) {
   const calculateProgress = (current: number, target: number) => {
     return Math.min((current / target) * 100, 100);
   };
@@ -28,8 +29,8 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails }: Goal
   const { days, isPastDue } = calculateTimeRemaining(goal.targetDate);
   const timeRemainingText = isPastDue ? `${Math.abs(days)} days overdue` : `${days} days remaining`;
   
-  // Completed goals shouldn't be highlighted as past due
-  const isCompleted = progress >= 100;
+  const isSpendingLimit = goal.type === 'Spending Limit';
+  const isCompleted = isSpendingLimit ? progress >= 100 : progress >= 100;
   const shouldHighlightPastDue = isPastDue && !isCompleted;
 
   return (
@@ -41,6 +42,12 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails }: Goal
           <button onClick={onEdit}>Edit</button>
           <button onClick={onDelete}>Delete</button>
         </div>
+        <button 
+          onClick={() => onAddMoney(goal)}
+          className={styles.addMoneyButton}
+        >
+          {isSpendingLimit ? 'Add Spending' : 'Add Money'}
+        </button>
       </div>
 
       <div className={styles.progressBar}>
@@ -52,9 +59,12 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails }: Goal
 
       <div className={styles.goalDetails}>
         <p>
-          Progress: ${goal.currentAmount.toLocaleString()} / ${goal.targetAmount.toLocaleString()}
+          {isSpendingLimit 
+            ? `Spent: $${goal.currentAmount.toLocaleString()} / $${goal.targetAmount.toLocaleString()}`
+            : `Progress: $${goal.currentAmount.toLocaleString()} / $${goal.targetAmount.toLocaleString()}`
+          }
         </p>
-        <p>Category: {goal.category}</p>
+        {!isSpendingLimit && <p>Category: {goal.category}</p>}
         <p className={`${isPastDue ? styles.pastDueText : ''}`}>{timeRemainingText}</p>
       </div>
     </div>

@@ -8,6 +8,7 @@ import GoalForm from '../../components/GoalForm';
 import { Goal, apiRequest } from '../../assets/utilities/API_HANDLER';
 import GoalDetails from '../../components/GoalDetails';
 import Card from '../../components/Card';
+import AddMoneyForm from '../../components/AddMoneyForm';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -17,6 +18,7 @@ export default function GoalsPage() {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addingMoneyToGoal, setAddingMoneyToGoal] = useState<Goal | null>(null);
 
   // Fetch goals from MongoDB when component mounts
   useEffect(() => {
@@ -75,8 +77,10 @@ export default function GoalsPage() {
         description: formData.description || "",
         targetAmount: Number(formData.targetAmount),
         currentAmount: Number(formData.currentAmount) || 0,
-        targetDate: new Date(formData.targetDate), // Convert to date object first
-        category: formData.category || "Savings"
+        targetDate: new Date(formData.targetDate),
+        type: formData.type || "Savings",
+        // Only include category for savings goals
+        ...(formData.type === 'Savings' ? { category: formData.category } : {})
       };
       
       console.log('Formatted goal data to be sent:', newGoal);
@@ -141,7 +145,9 @@ export default function GoalsPage() {
         targetDate: updatedGoal.targetDate instanceof Date 
           ? updatedGoal.targetDate.toISOString() 
           : new Date(updatedGoal.targetDate).toISOString(),
-        category: updatedGoal.category || "Savings"
+        category: updatedGoal.category || "Savings",
+        type: updatedGoal.type || "Savings",
+        spendingPeriod: updatedGoal.spendingPeriod
       };
       
       const savedGoal = await apiRequest<Goal>(`/goals/${updatedGoal.id}`, {
@@ -158,6 +164,34 @@ export default function GoalsPage() {
     } catch (error) {
       console.error('Error updating goal:', error);
       setError('Failed to update your goal. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add new function to handle money addition
+  const addMoneyToGoal = async (goalId: string, amount: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const updatedGoal = await apiRequest<Goal>(`/goals/${goalId}/add-money`, {
+        method: 'PATCH',
+        body: { amount },
+        requireAuth: true
+      });
+
+      // Update the goals list with the new amount
+      setGoals(goals.map(goal => 
+        goal.id === goalId 
+          ? { ...goal, currentAmount: goal.currentAmount + amount }
+          : goal
+      ));
+
+      setError('Money added successfully!');
+    } catch (error) {
+      console.error('Error adding money to goal:', error);
+      setError('Failed to add money to goal. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -228,6 +262,7 @@ export default function GoalsPage() {
                     onEdit={() => setEditingGoal(goal)} 
                     onDelete={() => deleteGoal(goal.id)}
                     onViewDetails={() => setSelectedGoal(goal)}
+                    onAddMoney={() => setAddingMoneyToGoal(goal)}
                   />
                 ))
               )}
@@ -258,6 +293,14 @@ export default function GoalsPage() {
             // Include the ID from the editing goal
             editGoal({...updatedGoal, id: editingGoal.id});
           }}
+        />
+      )}
+
+      {addingMoneyToGoal && (
+        <AddMoneyForm
+          goal={addingMoneyToGoal}
+          onClose={() => setAddingMoneyToGoal(null)}
+          onSubmit={addMoneyToGoal}
         />
       )}
     </div>
