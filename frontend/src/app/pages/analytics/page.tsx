@@ -49,14 +49,6 @@ export default function Analysis() {
       const fetchAnalysisData = async () => {
         try {
           console.log("fetching analysis data"); 
-
-          // const response = await fetch('/analytics/analytics');
-          // const data = await response.json();
-          // console.log(data); // Check data structure
-          // setAnalysisData(data);
-
-
-
           const data = await apiRequest<AnalysisResponse>('/analytics/analytics', { method: 'GET' });
           console.log("Analysis Data:", data);  // Debugging step
           setAnalysisData(data);
@@ -67,7 +59,6 @@ export default function Analysis() {
 
       console.log("fetching user")
       fetchUser();
-// console.log("fetching analysis data")
       fetchAnalysisData(); 
     }
   }, [isCheckingAuth]);
@@ -76,9 +67,6 @@ export default function Analysis() {
     console.log("User:", user);
     console.log("Analysis Data:", analysisData);
   }, [user, analysisData]);
-  
-  
-    
   
   // Show loading state while checking authentication
   if (isCheckingAuth) {

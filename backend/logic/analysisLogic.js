@@ -114,9 +114,6 @@ async function getAnalysisData(userId) {
         console.log("Monthly Average Spending:", monthAvg);
         console.log("Yearly Average Spending:", yearAvg);
 
-        // console.log("Monthly Spending Data:", monthlySpending);
-        // console.log("Weekly Spending Data:", weeklySpending);
-        // console.log("Yearly Spending Data:", yearlySpending);
         console.log("This Month:", thisMonthData);
         console.log("This Week:", thisWeekData);
         console.log("This Year:", thisYearData);
@@ -153,15 +150,47 @@ async function getAnalysisData(userId) {
 
 async function getSpendingByCategory(transactions, month, year) {
     try {
-        const result =  transactions
-        .filter(({ date }) => {
+        // Filter transactions for the specified month and year
+        const filteredTransactions = transactions.filter(({ date }) => {
             const transactionDate = new Date(date);
             return transactionDate.getMonth() === month - 1 && transactionDate.getFullYear() === year;
-        })
-        .reduce((acc, { category, amount }) => {
-            acc[category] = (acc[category] || 0) + amount;
-            return acc;
-        }, {}); 
+        });
+        
+        // Initialize result object
+        const result = {};
+        
+        // Process each transaction
+        filteredTransactions.forEach((transaction) => {
+            // Skip if amount is undefined or null
+            if (transaction.amount === undefined || transaction.amount === null) return;
+            
+            const amount = parseFloat(transaction.amount);
+            
+            // Skip negative amounts (earnings) or zero
+            if (amount <= 0) return;
+            
+            // Skip if category is undefined or null
+            if (!transaction.category) return;
+            
+            // Make sure category is treated as a string
+            const categoryStr = String(transaction.category);
+            
+            // Parse the category string to handle multiple categories
+            const categories = categoryStr.split(',');
+            
+            // Add the amount to each category
+            categories.forEach(cat => {
+                const trimmedCat = cat.trim();
+                if (trimmedCat) {
+                    result[trimmedCat] = (result[trimmedCat] || 0) + amount;
+                }
+            });
+        });
+        
+        // Round all values to 2 decimal places
+        Object.keys(result).forEach(key => {
+            result[key] = parseFloat(result[key].toFixed(2));
+        });
 
         console.log("spending by category: ", result); 
         return result; 
