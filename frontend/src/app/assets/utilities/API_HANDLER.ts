@@ -92,6 +92,7 @@ export type DashboardResponse = {
   recentTransactions: { amount: number; name: string; category: string }[];
   balance: number;
   monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
   dailyAvg: number; 
   monthAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
@@ -104,6 +105,34 @@ export type CSVImportResponse = {
   skipped: number;
   errors: number;
   errorDetails?: any[];
+};
+
+export type AnalysisResponse = {
+  transactions: { amount: number; name: string; category: string }[];
+  balance: number;
+  monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
+  dailyAvg: number;
+  monthAvg: { spent: number; earned: number };
+  yearAvg: { spent: number; earned: number }; 
+  weekAvg: { spent: number; earned: number };
+  thisMonth: { spent: number; earned: number };
+  recurringExpenses: {category: string, nextPaymentDate: string, frequency: string, name: string, amount: number}[]; 
+  recurringIncomeSources: {name: string, amount: number}[]; 
+  thisYear: { spent: number; earned: number }; 
+  thisWeek: { spent: number; earned: number };
+  spendingByCategory: { category: string, amount: number }[];
+  topSources: { 
+    thisWeek: TopSources;
+    thisMonth: TopSources;
+    thisYear: TopSources;
+  };
+};
+
+// Top sources (for analysis)
+type TopSources = {
+  topSpending: { name: string; amount: number }[];
+  topEarning: { name: string; amount: number }[];
 };
 
 // Update apiRequest function
