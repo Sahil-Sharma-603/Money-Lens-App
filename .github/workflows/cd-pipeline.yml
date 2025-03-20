@@ -3,10 +3,10 @@ name: CD Pipeline - Build, Push, and Deploy Locally
 on:
   push:
     branches:
-      - CD_new_deploy
+      - CD_test_deploy
   pull_request:
     branches:
-      - CD_new_deploy
+      - CD_test_deploy
   workflow_dispatch:
     inputs:
       version:
@@ -49,11 +49,7 @@ jobs:
           docker push sahilsharma603/money-lens-frontend:${{ env.VERSION }}
 
       # Deploy locally using Docker Compose
-      - name: Deploy Locally via Docker Compose
+      - name: Deploy Locally
         run: |
-          # Optional: Stop and remove any existing containers
-          docker-compose down
-          # Rebuild images defined in docker-compose.yml (if needed)
-          docker-compose build
-          # Start the containers in detached mode
-          docker-compose up -d
+          docker-compose -f docker-compose.yml down
+          docker-compose -f docker-compose.yml up -d
