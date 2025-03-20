@@ -3,10 +3,10 @@ name: CD Pipeline - Build, Push, and Deploy Locally
 on:
   push:
     branches:
-      - CD_test_deploy
+      - CD-deploy-bugfix
   pull_request:
     branches:
-      - CD_test_deploy
+      - CD-deploy-bugfix
   workflow_dispatch:
     inputs:
       version:

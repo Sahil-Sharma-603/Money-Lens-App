@@ -2,7 +2,7 @@ const express = require('express');
 const moment = require('moment');
 const { v4: uuidv4 } = require('uuid');
 const { Products } = require('plaid');
-const { saveTransaction } = require('../models/transaction.model');
+const { saveTransaction } = require('../models/Transaction.model');
 const User = require('../models/User.model');
 const auth = require('../middleware/auth.middleware');
 
@@ -281,7 +281,7 @@ router.get('/transactions', auth, async (req, res) => {
     });
     
     // Use the new batch processing function for better performance
-    const { saveTransactionsBatch } = require('../models/transaction.model');
+    const { saveTransactionsBatch } = require('../models/Transaction.model');
     const result = await saveTransactionsBatch(validTransactions, req.user._id, accountMapping);
     
     const savedCount = result.saved;
@@ -369,7 +369,7 @@ router.get('/transactions/historical', auth, async (req, res) => {
       // Store this batch of transactions
       if (transactions.length > 0) {
         // Use batch processing for saving transactions
-        const { saveTransactionsBatch } = require('../models/transaction.model');
+        const { saveTransactionsBatch } = require('../models/Transaction.model');
         
         // Make sure each transaction has a category
         const validTransactions = transactions.filter(transaction => {
@@ -503,7 +503,7 @@ router.post('/webhook', async (req, res) => {
             });
             
             // Save transactions in batch
-            const { saveTransactionsBatch } = require('../models/transaction.model');
+            const { saveTransactionsBatch } = require('../models/Transaction.model');
             const result = await saveTransactionsBatch(validTransactions, user._id, accountMapping);
             
             console.log(`Webhook processed: ${result.saved} saved, ${result.duplicates} duplicates`);
@@ -563,7 +563,7 @@ router.post('/disconnect', auth, async (req, res) => {
   try {
     const client = req.app.locals.plaidClient;
     const user = await User.findById(req.user._id);
-    const { Transaction } = require('../models/transaction.model');
+    const { Transaction } = require('../models/Transaction.model');
     const Account = require('../models/Account.model');
 
     if (!user?.plaidAccessToken) {

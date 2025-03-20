@@ -4,7 +4,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
-const { Transaction, saveTransaction } = require('../models/transaction.model');
+const { Transaction, saveTransaction } = require('../models/Transaction.model');
 const auth = require('../middleware/auth.middleware');
 
 const router = express.Router();
@@ -371,7 +371,7 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
     
     if (transactionsToImport.length > 0) {
       // Use the new batch processing function instead of individual saves
-      const { saveTransactionsBatch } = require('../models/transaction.model');
+      const { saveTransactionsBatch } = require('../models/Transaction.model');
       const batchResult = await saveTransactionsBatch(transactionsToImport, req.user._id);
       
       importedCount = batchResult.saved;
