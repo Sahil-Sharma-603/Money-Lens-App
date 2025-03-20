@@ -12,8 +12,16 @@ interface MonthlySpending {
   earned: number;
 }
 
+interface WeeklySpending {
+  weekStarting: string;
+  spent: number;
+  earned: number;
+  net: number;
+}
+
 interface BarChartProps {
   monthlySpending: MonthlySpending[];
+  weeklySpending: WeeklySpending[];
 }
 
 const formatMonth = (monthKey: string, includeYear = false) => {
@@ -24,46 +32,88 @@ const formatMonth = (monthKey: string, includeYear = false) => {
   return includeYear ? `${monthName} ${year}` : monthName;
 };
 
-const getFilteredData = (data: MonthlySpending[], range: string) => {
+const formatWeek = (weekKey: string, shortFormat = false) => {
+  const date = new Date(weekKey);
+  const month = date.getMonth();
+  const day = date.getDate();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  
+  if (shortFormat) {
+    return `${monthNames[month]} ${day}`;
+  } else {
+    return `Week of ${monthNames[month]} ${day}`;
+  }
+};
+
+const getFilteredData = (monthlyData: MonthlySpending[], weeklyData: WeeklySpending[], range: string) => {
   let filteredData = [];
 
   switch (range) {
     case "month":
-      filteredData = data.slice(0,1);
-      break;
+      return weeklyData.slice(0, 4).map(week => ({
+        period: week.weekStarting,
+        spent: week.spent,
+        earned: Math.abs(week.earned),
+        isWeek: true
+      }));
     case "6months":
-      filteredData = data.slice(0,6);
+      filteredData = monthlyData.slice(0, 6);
       break;
     case "year":
-      filteredData = data.slice(-12);
+      filteredData = monthlyData.slice(-12);
       break;
+    case "12weeks":
+      return weeklyData.slice(0, 12).map(week => ({
+        period: week.weekStarting,
+        spent: week.spent,
+        earned: Math.abs(week.earned),
+        isWeek: true
+      }));
     default:
-      filteredData = data;
+      filteredData = monthlyData;
   }
-  return filteredData;
+  
+  return filteredData.map(entry => ({
+    period: entry.month,
+    spent: entry.spent,
+    earned: Math.abs(entry.earned),
+    isWeek: false
+  }));
 };
 
-const BarChartComponent = ({ monthlySpending }: BarChartProps) => {
+const BarChartComponent = ({ monthlySpending, weeklySpending }: BarChartProps) => {
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState<MonthlySpending[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [timeRange, setTimeRange] = useState("year");
 
   useEffect(() => {
-    if (monthlySpending.length > 0) {
+    if (monthlySpending.length > 0 && weeklySpending.length > 0) {
       setTimeout(() => {
-        const filteredData = getFilteredData(monthlySpending, timeRange);
+        const filteredData = getFilteredData(monthlySpending, weeklySpending, timeRange);
+        
         setChartData(
-          filteredData.reverse().map((entry) => ({
-            month: formatMonth(entry.month),
-            fullMonth: formatMonth(entry.month, true),
-            spent: entry.spent,
-            earned: Math.abs(entry.earned),
-          }))
+          filteredData.reverse().map((entry) => {
+            if (entry.isWeek) {
+              return {
+                month: formatWeek(entry.period, true),
+                fullMonth: formatWeek(entry.period),
+                spent: entry.spent,
+                earned: entry.earned,
+              };
+            } else {
+              return {
+                month: formatMonth(entry.period),
+                fullMonth: formatMonth(entry.period, true),
+                spent: entry.spent,
+                earned: entry.earned,
+              };
+            }
+          })
         );
         setLoading(false);
       }, 100);
     }
-  }, [monthlySpending, timeRange]);
+  }, [monthlySpending, weeklySpending, timeRange]);
 
   return (
     <Card style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100px", maxHeight: "500px" }}>
@@ -78,6 +128,7 @@ const BarChartComponent = ({ monthlySpending }: BarChartProps) => {
               }
           }}>
           <MenuItem sx={{ fontFamily: 'Jost' }} value="month">Past Month</MenuItem>
+          <MenuItem sx={{ fontFamily: 'Jost' }} value="12weeks">Past 12 Weeks</MenuItem>
           <MenuItem sx={{ fontFamily: 'Jost' }} value="6months">Past 6 Months</MenuItem>
           <MenuItem sx={{ fontFamily: 'Jost' }} value="year">Past Year</MenuItem>
         </Select>

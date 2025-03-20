@@ -96,7 +96,7 @@ export default function Analysis() {
             thisYear={analysisData?.thisYear}
             topSources={analysisData?.topSources}
           />
-          <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
+          <BarChart monthlySpending={analysisData?.monthlySpending || []} weeklySpending={analysisData?.weeklySpending || []}/>
         </div>
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10, gap: '10px' }}>
           <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>

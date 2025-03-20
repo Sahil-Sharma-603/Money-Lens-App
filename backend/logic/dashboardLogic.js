@@ -38,8 +38,9 @@ async function getDashboardData(userId) {
         // calculate balance
         const balance = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-        // get monthly spending/earning data (for chart)
+        // get monthly & weekly spending/earning data (for chart)
         const monthlySpending = await getMonthlySpending(transactions);
+        const weeklySpending = await getWeeklySpending(transactions);
 
         // calculate This Month's Stats
         const currentMonthKey = new Date().toISOString().slice(0, 7); // Format: "YYYY-MM"
@@ -83,6 +84,7 @@ async function getDashboardData(userId) {
             recentTransactions,
             balance,
             monthlySpending,
+            weeklySpending,
             thisMonth: thisMonthData,
             monthAvg,
             dailyAvg
@@ -176,6 +178,56 @@ async function getMonthlySpending(transactions) {
     } catch (error) {
         console.error("Error getting monthly spending data:", error); 
         return {error: error.message}; 
+    }
+}
+
+async function getWeeklySpending(transactions) {
+    try {
+        let weeklySpending = [];
+        // Get weeks for the last 12 weeks
+        for (let i = 0; i < 12; i++) {
+            const today = new Date();
+            // Get start of week (Sunday)
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay() - (7 * i));
+            startOfWeek.setHours(0, 0, 0, 0);
+            
+            // Get end of week (Saturday)
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+            
+            const weekKey = startOfWeek.toISOString().slice(0, 10);
+            
+            // Filter transactions for this week
+            const weekTransactions = transactions.filter(t => {
+                if (!t.date) return false;
+                const txDate = new Date(t.date);
+                return txDate >= startOfWeek && txDate <= endOfWeek;
+            });
+            
+            // Calculate spent and earned
+            const spent = weekTransactions
+                .filter(t => !isNaN(parseFloat(t.amount)) && parseFloat(t.amount) > 0)
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+            const earned = weekTransactions
+                .filter(t => !isNaN(parseFloat(t.amount)) && parseFloat(t.amount) < 0)
+                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                
+            weeklySpending.push({
+                weekStarting: weekKey,
+                spent: isNaN(spent) ? 0 : parseFloat(spent.toFixed(2)),
+                earned: isNaN(earned) ? 0 : parseFloat(earned.toFixed(2)),
+                net: isNaN(spent + earned) ? 0 : parseFloat((spent + earned).toFixed(2))
+            });
+        }
+        
+        console.log("Weekly spending data: ", weeklySpending);
+        return weeklySpending;
+    } catch (error) {
+        console.error("Error getting weekly spending data:", error);
+        return {error: error.message};
     }
 }
 

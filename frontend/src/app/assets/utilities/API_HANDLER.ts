@@ -100,6 +100,7 @@ export type DashboardResponse = {
   recentTransactions: { amount: number; name: string; category: string }[];
   balance: number;
   monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
   dailyAvg: number; 
   monthAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
@@ -118,6 +119,7 @@ export type AnalysisResponse = {
   transactions: { amount: number; name: string; category: string }[];
   balance: number;
   monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
   dailyAvg: number;
   monthAvg: { spent: number; earned: number };
   yearAvg: { spent: number; earned: number }; 
