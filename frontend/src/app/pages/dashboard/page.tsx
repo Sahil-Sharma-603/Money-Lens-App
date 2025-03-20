@@ -85,7 +85,7 @@ export default function Dashboard() {
 
             </div>
             <div style={{ flex: '1' }}>
-              <Balance />
+              <Balance balance={dashboardData?.balance ?? 0}/>
             </div>
           </div>
           <Summary 

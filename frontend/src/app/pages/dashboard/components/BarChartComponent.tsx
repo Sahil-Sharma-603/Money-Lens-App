@@ -66,7 +66,7 @@ const BarChartComponent = ({ monthlySpending }: BarChartProps) => {
   }, [monthlySpending, timeRange]);
 
   return (
-    <Card style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100px", maxHeight: "600px" }}>
+    <Card style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "100px", maxHeight: "500px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
         <h4 style={{ fontWeight: "600", fontSize: "0.9rem" }}>Summary</h4>
         <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} size="small"

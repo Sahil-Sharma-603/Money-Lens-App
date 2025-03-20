@@ -123,6 +123,8 @@ export type AnalysisResponse = {
   yearAvg: { spent: number; earned: number }; 
   weekAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
+  recurringExpenses: {category: string, nextPaymentDate: string, frequency: string, name: string, amount: number}[]; 
+  recurringIncomeSources: {name: string, amount: number}[]; 
   thisYear: { spent: number; earned: number }; 
   thisWeek: { spent: number; earned: number };
   spendingByCategory: { category: string, amount: number }[];

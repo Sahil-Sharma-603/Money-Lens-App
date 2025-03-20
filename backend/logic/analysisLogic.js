@@ -88,6 +88,10 @@ async function getAnalysisData(userId) {
         const spendingByCategory = await getSpendingByCategory(transactions, today.getMonth() + 1, today.getFullYear());
         console.log("SpendingbyCategory: ", spendingByCategory); 
 
+        // Recurring expenses data
+        const recurringExpenses = await getRecurringExpenses(transactions); 
+        const recurringIncomeSources = await getSpendingByCategory(transactions, today.getMonth() +1, today.getFullYear()); 
+
         // Get top 5 sources for this week
         const thisWeekSources = await getTopSources(transactions, {
             startDate: startOfWeek,
@@ -136,6 +140,8 @@ async function getAnalysisData(userId) {
             yearAvg,
             dailyAvg, 
             spendingByCategory,
+            recurringExpenses,
+            recurringIncomeSources,
             topSources: {
                 thisWeek: thisWeekSources,
                 thisMonth: thisMonthSources,
@@ -396,4 +402,65 @@ async function getYearlySpending(transactions) {
     }
 }
 
-module.exports = { getAnalysisData, getSpendingByCategory };
+
+
+async function getRecurringExpenses(transactions) {
+    const recurringMap = new Map();
+
+    transactions.forEach(transaction => {
+        const key = `${transaction.name}-${Math.round(transaction.amount * 100) / 100}`; // Round to 2 decimal places
+        
+        if (!recurringMap.has(key)) {
+            recurringMap.set(key, []);
+        }
+        
+        recurringMap.get(key).push(transaction.date);
+    });
+
+    const recurringExpenses = [];
+    recurringMap.forEach((dates, key) => {
+        if (dates.length > 1) { // At least two occurrences
+            const sortedDates = dates.map(date => new Date(date)).sort((a, b) => a - b);
+            
+            const intervals = sortedDates.map((date, index) => 
+                index > 0 ? date - sortedDates[index - 1] : null
+            ).filter(interval => interval !== null);
+
+            if (intervals.length === 0) return;
+
+            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            const monthlyInterval = 30 * 24 * 60 * 60 * 1000; // 30 days in ms
+
+            if (avgInterval >= monthlyInterval * 0.5 && avgInterval <= monthlyInterval * 1.5) {
+                const [name, amount] = key.split('-');
+                recurringExpenses.push({
+                    name,
+                    amount: parseFloat(amount),
+                    frequency: 'Monthly',
+                    nextPaymentDate: getNextPaymentDate(sortedDates)
+                });
+            }
+        }
+    });
+
+    console.log("recurring map: ", recurringMap); 
+
+    console.log("Detected Recurring Expenses:", recurringExpenses);
+    return recurringExpenses;
+}
+
+// Helper function to estimate the next payment date
+function getNextPaymentDate(dates) {
+    const sortedDates = dates.sort((a, b) => new Date(a) - new Date(b));
+    const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+    lastDate.setMonth(lastDate.getMonth() + 1);
+    return lastDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+}
+
+
+
+async function getRecurringIncomeSources() {
+
+}
+
+module.exports = { getAnalysisData, getSpendingByCategory, getRecurringExpenses, getRecurringIncomeSources };

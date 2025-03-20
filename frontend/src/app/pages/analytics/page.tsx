@@ -85,7 +85,7 @@ export default function Analysis() {
     return (
       <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
-        <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ flex: '2', display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '800px' }}>
           <Greeting userName={user ? user.firstName : ''} />
           <Breakdown
             weekAvg={analysisData?.weekAvg}
@@ -98,8 +98,9 @@ export default function Analysis() {
           />
           <BarChart monthlySpending={analysisData?.monthlySpending || []}/>
         </div>
-        <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>
+        <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10, gap: '10px' }}>
           <CategoryPieChart spendingByCategory={analysisData?.spendingByCategory || []}/>
+          <RecurringExpenses recurringExpenses={analysisData?.recurringExpenses || []}/>
         </div>
       </Card>
     </div>
