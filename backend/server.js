@@ -5,6 +5,9 @@ const userRoutes = require('./routes/userRoutes');
 const plaidRoutes = require('./routes/plaidRoutes');
 const transactionsRoutes = require('./routes/transactionsRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+
+const goalsRoutes = require('./routes/goalsRoutes');
+
 const accountRoutes = require('./routes/accountRoutes');
 
 require('dotenv').config({ path: '.env' });
@@ -52,6 +55,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/plaid', plaidRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+
+app.use('/api/goals', goalsRoutes); // Register goals routes
+
 app.use('/api/accounts', accountRoutes);
 
 const PORT = process.env.PORT || 5001;

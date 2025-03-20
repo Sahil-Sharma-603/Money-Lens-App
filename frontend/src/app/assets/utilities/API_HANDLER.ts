@@ -1,20 +1,13 @@
+import { Goal } from '../../types/goals';
+
 const BASE_URL = 'http://localhost:5001/api';
 
 export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   params?: Record<string, string>;
-  requireAuth?: boolean; // Add this line
+  requireAuth?: boolean;
 };
-
-// export type PlaidAccount = {
-//   account_id: string;
-//   name: string;
-//   official_name: string;
-//   type: string;
-//   subtype: string;
-//   mask: string;
-// };
 
 export interface PlaidAccount {
   id: string;
@@ -24,7 +17,6 @@ export interface PlaidAccount {
   subtype: string;
   verification_status: string;
 }
-
 
 export type PlaidAccountsResponse = {
   accounts: PlaidAccount[];
@@ -146,9 +138,13 @@ export async function apiRequest<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    console.log('API Response Status:', response.status);
+    console.log('API Response Headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'API request failed');
+      console.error('API Error Data:', errorData);
+      throw new Error(errorData.message || errorData.error || 'API request failed');
     }
 
     return response.json();
