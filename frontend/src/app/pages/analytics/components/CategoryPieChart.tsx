@@ -3,8 +3,7 @@ import Card from "../../../components/Card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { ClipLoader } from "react-spinners";
 
-const COLORS = ["#0707E2", "#E80770", "#00A6A6", "#FF5400", "#F47C7C", "#A1DE93", "#6A0572", "#FF8C42", "#7F4A88", "#E1E8F0"];
-// const COLORS = ["#0707E2", "#E80770", "#00A6A6", "#FF5400", "#F47C7C", "#A1DE93", "#6A0572", "#FF8C42", "#7F4A88", "#E1E8F0"];
+const COLORS = ["#0707E2", "#E80770", "#00A6A6", "#FF5400", "#8A84E2", "#337357", "#6A0572", "#FF8C42", "#7F4A88", "#CB48B7"];
 
 interface CategorySpending {
     category: string;
@@ -44,7 +43,7 @@ const CategoryPieChart: React.FC<CatPieProps> = ({ spendingByCategory }) => {
 
     return (
         <Card className="pieChart" style={{ minWidth: "250px", flex: 1, display: "flex", flexDirection: "column"}}>
-            <h4 style={{ fontWeight: "600", fontSize: "0.9rem" }}>Spending by Category</h4>
+            <h4 style={{ fontWeight: "600", fontSize: "0.9rem" }}>This Month's Spending by Category</h4>
 
             {loading ? (
                 <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
