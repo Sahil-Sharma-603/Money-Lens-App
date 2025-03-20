@@ -9,10 +9,10 @@ on:
         default: 'sprint3'
   pull_request:
     branches:
-      - CD
+      - develop
   push:
     branches:
-      - CD
+      - develop
 
 jobs:
   build-and-push:
