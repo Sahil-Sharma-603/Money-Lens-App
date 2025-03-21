@@ -85,7 +85,7 @@ export default function Dashboard() {
 
             </div>
             <div style={{ flex: '1' }}>
-              <Balance />
+              <Balance balance={dashboardData?.balance ?? 0}/>
             </div>
           </div>
           <Summary 
@@ -93,7 +93,7 @@ export default function Dashboard() {
             monthAvg={dashboardData?.monthAvg ?? { spent: 0, earned: 0 }}
           />
 
-          <BarChartComponent monthlySpending={dashboardData?.monthlySpending || []} />
+        <BarChartComponent monthlySpending={dashboardData?.monthlySpending || []} weeklySpending={dashboardData?.weeklySpending || []}/>
         </div>
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', marginLeft: 10 }}>
           <Transactions transactions={dashboardData?.recentTransactions || []} />

@@ -1,0 +1,45 @@
+.analysis {
+    position: relative;
+    margin-left: 200px;
+    margin-right: 10px;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+  }
+
+  .pieChart {
+    position: relative; 
+    margin: 20px; 
+    min-height: 200px;
+    min-width: 300px; 
+  }
+
+
+  .recurringExpensesContainer {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.expensesTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.expensesTable th,
+.expensesTable td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.expensesTable th {
+    /* background: rgba(0, 31, 63, 0.1); */
+}
+
+.expensesTable tr:hover {
+    background: rgba(0, 31, 63, 0.05);
+}

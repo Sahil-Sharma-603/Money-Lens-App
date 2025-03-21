@@ -1,20 +1,13 @@
+import { Goal } from '../../types/goals';
+
 const BASE_URL = 'http://localhost:5001/api';
 
 export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   params?: Record<string, string>;
-  requireAuth?: boolean; // Add this line
+  requireAuth?: boolean;
 };
-
-// export type PlaidAccount = {
-//   account_id: string;
-//   name: string;
-//   official_name: string;
-//   type: string;
-//   subtype: string;
-//   mask: string;
-// };
 
 export interface PlaidAccount {
   id: string;
@@ -24,7 +17,6 @@ export interface PlaidAccount {
   subtype: string;
   verification_status: string;
 }
-
 
 export type PlaidAccountsResponse = {
   accounts: PlaidAccount[];
@@ -100,6 +92,7 @@ export type DashboardResponse = {
   recentTransactions: { amount: number; name: string; category: string }[];
   balance: number;
   monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
   dailyAvg: number; 
   monthAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
@@ -112,6 +105,34 @@ export type CSVImportResponse = {
   skipped: number;
   errors: number;
   errorDetails?: any[];
+};
+
+export type AnalysisResponse = {
+  transactions: { amount: number; name: string; category: string }[];
+  balance: number;
+  monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
+  dailyAvg: number;
+  monthAvg: { spent: number; earned: number };
+  yearAvg: { spent: number; earned: number }; 
+  weekAvg: { spent: number; earned: number };
+  thisMonth: { spent: number; earned: number };
+  recurringExpenses: {category: string, nextPaymentDate: string, frequency: string, name: string, amount: number}[]; 
+  recurringIncomeSources: {name: string, amount: number}[]; 
+  thisYear: { spent: number; earned: number }; 
+  thisWeek: { spent: number; earned: number };
+  spendingByCategory: { category: string, amount: number }[];
+  topSources: { 
+    thisWeek: TopSources;
+    thisMonth: TopSources;
+    thisYear: TopSources;
+  };
+};
+
+// Top sources (for analysis)
+type TopSources = {
+  topSpending: { name: string; amount: number }[];
+  topEarning: { name: string; amount: number }[];
 };
 
 // Update apiRequest function
@@ -146,9 +167,13 @@ export async function apiRequest<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    console.log('API Response Status:', response.status);
+    console.log('API Response Headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'API request failed');
+      console.error('API Error Data:', errorData);
+      throw new Error(errorData.message || errorData.error || 'API request failed');
     }
 
     return response.json();
