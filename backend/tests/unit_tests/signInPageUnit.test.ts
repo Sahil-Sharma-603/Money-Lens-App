@@ -1,15 +1,14 @@
-import { apiRequest, LoginResponse, SignupResponse } from '../frontend/src/app/assets/utilities/API_HANDLER';
-import request from 'supertest';
-import app from '../backend/server'; // Adjust the path to your Express app
-import User from '../backend/models/User.model';
+import { apiRequest, LoginResponse, SignupResponse } from '../../frontend/src/app/assets/utilities/API_HANDLER';
+import app from '../../backend/server'; // Adjust the path to your Express app
+import User from '../../backend/models/User.model';
 const BASE_URL = 'http://localhost:5001/api';
 
-jest.mock('../frontend/src/app/assets/utilities/API_HANDLER', () => ({
-  ...jest.requireActual('../frontend/src/app/assets/utilities/API_HANDLER'),
+jest.mock('../../frontend/src/app/assets/utilities/API_HANDLER', () => ({
+  ...jest.requireActual('../../frontend/src/app/assets/utilities/API_HANDLER'),
   apiRequest: jest.fn(),
 }));
 
-jest.mock('../backend/models/User.model');
+jest.mock('../../backend/models/User.model');
 
 
 

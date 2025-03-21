@@ -1,13 +1,13 @@
 // import {expect, test} from 'jest';
 import { describe } from 'node:test';
 
-const { getDashboardData } = require("../backend/logic/dashboardLogic.js"); // Adjust path if needed
-const User = require("../backend/models/User.model.js");
-const { Transaction } = require("../backend/models/transaction.model.js")
+const { getDashboardData } = require("../../backend/logic/dashboardLogic.js"); // Adjust path if needed
+const User = require("../../backend/models/User.model.js");
+const { Transaction } = require("../../backend/models/transaction.model.js")
 
 
-jest.mock("../backend/models/User.model.js");
-jest.mock("../backend/models/transaction.model.js");
+jest.mock("../../backend/models/User.model.js");
+jest.mock("../../backend/models/transaction.model.js");
 
 describe("getDashboardData", () => {
   const userId = "user123";
