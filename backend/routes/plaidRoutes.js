@@ -281,7 +281,7 @@ router.get('/transactions', auth, async (req, res) => {
     });
     
     // Use the new batch processing function for better performance
-    const { saveTransactionsBatch } = require('../models/Transaction.model');
+    const saveTransactionsBatch  = require('../models/Transaction.model');
     const result = await saveTransactionsBatch(validTransactions, req.user._id, accountMapping);
     
     const savedCount = result.saved;
