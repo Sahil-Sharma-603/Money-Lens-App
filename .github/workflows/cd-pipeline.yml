@@ -1,0 +1,51 @@
+name: CD Pipeline - Build and Push to DockerHub
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Money-lens version 2.0'
+        required: true
+        default: 'sprint3'
+  pull_request:
+    branches:
+      - develop
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    # Set a default version using an environment variable.
+    env:
+      VERSION: ${{ github.event.inputs.version || 'sprint3' }}
+    steps:
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Login to DockerHub
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and push Backend Docker image
+      - name: Build and Push Backend Image
+        working-directory: ./backend
+        run: |
+          docker build -t sahilsharma603/money-lens-backend:${{ env.VERSION }} .
+          docker push sahilsharma603/money-lens-backend:${{ env.VERSION }}
+
+      # Build and push Frontend Docker image
+      - name: Build and Push Frontend Image
+        working-directory: ./frontend
+        run: |
+          docker build -t sahilsharma603/money-lens-frontend:${{ env.VERSION }} .
+          docker push sahilsharma603/money-lens-frontend:${{ env.VERSION }}

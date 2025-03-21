@@ -25,6 +25,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [error, setError] = useState('');
   // Track actual data row indices (0-based, relative to the file after header) rather than UI indices
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+ 
+  // Track total data rows in file
+  const [totalRows, setTotalRows] = useState<number>(0); 
 
   // Transaction fields
   const requiredFields = ['date', 'name', 'category'];
@@ -56,6 +59,16 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         const data = lines.map((line) =>
           line.split(',').map((cell) => cell.trim())
         );
+
+        // Assume first row is header
+        const hasHeader = true;
+        const headerRow = hasHeader ? data[0] : [];
+        const dataRows = hasHeader ? data.slice(1) : data;
+        
+        // Set total rows in the file
+        setTotalRows(dataRows.length);
+
+
         const previewData = showAllRows
           ? data
           : data.slice(0, Math.min(6, data.length));
@@ -64,7 +77,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         // Select all rows by default
         const newSelected = new Set<number>();
         // For each row in the preview, add its file index to selected rows
-        for (let i = 0; i < previewData.length; i++) {
+        for (let i = 0; i < dataRows.length; i++) {
           // If showing all rows, then preview indices match file indices
           // If showing limited rows, we're showing the first N rows from the file
           newSelected.add(i);
@@ -78,7 +91,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
 
   const handleSelectAll = () => {
     // If all rows are currently selected
-    if (selectedRows.size === preview.length) {
+    if (selectedRows.size === totalRows) {
       // Deselect all rows
       setSelectedRows(new Set());
     } else {
@@ -86,7 +99,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
       const newSelected = new Set<number>();
 
       // Add each row by its file index
-      for (let i = 0; i < preview.length; i++) {
+      for (let i = 0; i < totalRows; i++) {
         newSelected.add(i);
       }
       setSelectedRows(newSelected);
@@ -279,7 +292,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
             <>
               {/* Select/Deselect All button */}
               <button onClick={handleSelectAll} style={styles.whiteButton}>
-                {selectedRows.size === preview.length
+                {selectedRows.size === totalRows
                   ? 'Deselect All'
                   : 'Select All Rows'}
               </button>
