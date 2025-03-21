@@ -78,7 +78,7 @@ router.get('/', auth, async (req, res) => {
     console.log('Goals GET request received');
     console.log('User ID from token:', req.user?.id);
     
-    const goals = await Goal.find({ userId: req.user.id });
+    const goals = await Goal.find({ userId: req.user._id });
     
     console.log(`Found ${goals.length} goals for user`);
     
@@ -129,7 +129,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: 'Category is required for savings goals' });
     }
     
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user._id) {
       return res.status(400).json({ error: 'User ID is missing from authentication' });
     }
     
@@ -142,7 +142,7 @@ router.post('/', auth, async (req, res) => {
       targetDate: new Date(targetDate),
       category: type === 'Savings' ? category : undefined,
       type: type || 'Savings',
-      userId: req.user.id,
+      userId: req.user._id,
       createdAt: new Date()
     });
     
@@ -195,7 +195,7 @@ router.get('/:id', auth, async (req, res) => {
   try {
     const goal = await Goal.findOne({ 
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.user._id
     });
     
     if (!goal) {
@@ -245,7 +245,7 @@ router.put('/:id', auth, async (req, res) => {
     
     // Find and update the goal
     const goal = await Goal.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.user._id },
       updateFields,
       { new: true, runValidators: true } // Return updated document and run validators
     );
@@ -291,7 +291,7 @@ router.delete('/:id', auth, async (req, res) => {
   try {
     const goal = await Goal.findOneAndDelete({ 
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.user._id
     });
     
     if (!goal) {
@@ -315,7 +315,7 @@ router.patch('/:id/add-money', auth, async (req, res) => {
     }
 
     const goal = await Goal.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.user._id },
       { 
         $inc: { currentAmount: Number(amount) },
         updatedAt: new Date()
