@@ -95,7 +95,7 @@ router.delete('/plaid', auth, async (req, res) => {
     const accountIds = plaidAccounts.map(account => account._id);
     
     // Delete all transactions associated with these accounts
-    const { Transaction } = require('../models/transaction.model');
+    const { Transaction } = require('../models/Transaction.model');
     
     // Build a complex query to match all possible ways account_id may be stored
     const orConditions = [];
@@ -241,7 +241,7 @@ router.delete('/:id', auth, async (req, res) => {
     }
 
     // Delete all transactions associated with this account
-    const { Transaction } = require('../models/transaction.model');
+    const { Transaction } = require('../models/Transaction.model');
     
     // We need to be thorough in our query to catch all transactions
     // First, try deleting with string comparison (account_id stored as string)
