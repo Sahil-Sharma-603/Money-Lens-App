@@ -1,0 +1,12 @@
+﻿{
+  "repositoryName": "Money-Lens/Money-Lens-App",
+  "pipelineDirectory": "Money-Lens-App",
+  "workspaceDirectory": "Money-Lens-App\\Money-Lens-App",
+  "repositories": {
+    "Money-Lens/Money-Lens-App": {
+      "repositoryPath": "Money-Lens-App\\Money-Lens-App",
+      "lastRunOn": "03/20/2025 21:34:37 -05:00"
+    }
+  },
+  "lastRunOn": "03/20/2025 21:34:37 -05:00"
+}
