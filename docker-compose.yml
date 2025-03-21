@@ -22,7 +22,12 @@ services:
       MONGO_URI: "mongodb://myadmin:mysecurepassword@mongodb:27017/mydatabase"
       JWT_SECRET: "3eea8e9f7d546b7de6480b7c5bde527073e8d7cfb25a6a7433bb762b7f9e5368708f6c15c9f674f5d002e37f8d8edce2b0ddc4e9cf7df0fa13adad6b3826440e"
       WEBHOOK_URL: "https://6323-206-45-4-68.ngrok-free.app/api/plaid/webhook"
-     
+      PLAID_CLIENT_ID: "67a24935b24d850020266434"
+      PLAID_SECRET: "7a84bfbf99ee9b0df4c88861736caf"
+      PLAID_ENV: "sandbox"
+
+
+
 
     depends_on:
       - mongodb
