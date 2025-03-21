@@ -18,9 +18,11 @@ services:
     restart: always
     ports:
       - "5001:5001"
+   env_file:
+      - .env
     environment:
-      MONGO_URI: mongodb://myadmin:mysecurepassword@mongodb:27017/mydatabase
-      JWT_SECRET: ${JWT_SECRET}
+      -MONGO_URI=mongodb://myadmin:mysecurepassword@mongodb:27017/mydatabase
+     
 
     depends_on:
       - mongodb
