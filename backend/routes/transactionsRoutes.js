@@ -371,7 +371,7 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
     
     if (transactionsToImport.length > 0) {
       // Use the new batch processing function instead of individual saves
-      const { saveTransactionsBatch } = require('../models/Transaction.model');
+      // const { saveTransactionsBatch } = require('../models/Transaction.model');
       const batchResult = await saveTransactionsBatch(transactionsToImport, req.user._id);
       
       importedCount = batchResult.saved;
