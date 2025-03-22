@@ -17,14 +17,37 @@ router.get('/verify-token', auth, async (req, res) => {
   }
 });
 
+// async function testSignup() {
+//   try {
+//     const newUser = {
+//       firstName: 'Test',
+//       lastName: 'User',
+//       email: 'test2383838@example.com',
+//       firebaseUid: 'firebase123'
+//     };
+
+
+//     // const existingUser = await User.exists({ email: newUser.email });
+
+//     console.log("% THIS new user created");
+
+//   } catch(e) {
+//     console.error("THIS IS AN ERROR", e);
+//   }
+// }
+
+// router.post('/signup', testSignup);
+
 // Create a new user
 router.post('/signup', async (req, res) => {
   try {
-    console.log('SIGN UP ROUTE');
     const { firstName, lastName, email, firebaseUid } = req.body; // Include lastName, remove age
-
+    
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // const existingUser =  await User.findOne({ email });
+    const existingUser =  await User.exists({ email });
+
+    console.log('SIGN UP ROUTE', req);
     if (existingUser) {
       return res
         .status(400)

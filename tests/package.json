@@ -6,7 +6,8 @@
     "author": "Jashanjot, Una, Aakash, Ginelle, Filip, Sahil",
     "scripts": {
         "start": "nodemon server.js",
-        "test": "jest"
+        "test": "jest",
+        "test:coverage": "jest --coverage"
     },
     "dependencies": {
         "body-parser": "^1.20.3",
@@ -36,8 +37,8 @@
         "testEnvironment": "node",
         "testMatch": [
             "**/*.test.ts",
-            "**/*.test.tsx",
-            "**/*.test.ts"
+            "**/*.test.tsx"
+     
         ],
         "testPathIgnorePatterns": [
             "/node_modules/"
