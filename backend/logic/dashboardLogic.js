@@ -103,8 +103,11 @@ async function getTodaySpending(transactions) {
             if (!t.date) return false;
             const transactionDate = new Date(t.date).toISOString().split("T")[0];
             return transactionDate === todayDate;
-        })
-        .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+        }).reduce((sum, t) => {
+            const amount = parseFloat(t.amount);
+            return !isNaN(amount) ? sum + amount : sum;
+        }, 0);
+        // .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
         console.log("Todays spending: ", result); 
         return result; 
@@ -231,4 +234,4 @@ async function getWeeklySpending(transactions) {
     }
 }
 
-module.exports = { getDashboardData };
+module.exports = { getDashboardData, getTodaySpending,  getMonthlySpending, getWeeklySpending, getRecentTransactions};

@@ -25,7 +25,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [error, setError] = useState('');
   // Track actual data row indices (0-based, relative to the file after header) rather than UI indices
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
- 
+
   // Track total data rows in file
   const [totalRows, setTotalRows] = useState<number>(0); 
 
@@ -37,6 +37,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
 
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
