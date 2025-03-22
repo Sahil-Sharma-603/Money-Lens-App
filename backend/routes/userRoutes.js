@@ -17,14 +17,18 @@ router.get('/verify-token', auth, async (req, res) => {
   }
 });
 
+
 // Create a new user
 router.post('/signup', async (req, res) => {
   try {
-    console.log('SIGN UP ROUTE');
     const { firstName, lastName, email, firebaseUid } = req.body; // Include lastName, remove age
-
+    
+    console.log('SIGN UP ROUTE', req);
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // const existingUser =  await User.findOne({ email });
+    const existingUser =  await User.findOne({ email });
+
+  
     if (existingUser) {
       return res
         .status(400)
@@ -37,6 +41,7 @@ router.post('/signup', async (req, res) => {
 
     res.status(201).json({ message: 'User created successfully', user });
   } catch (error) {
+    console.error('SIGNUP ERROR:', error); 
     res.status(500).json({ message: error.message });
   }
 });
@@ -107,6 +112,7 @@ router.post('/login', async (req, res) => {
 // Get information about logged in user
 router.get('/user', auth, async (req, res) => {
   console.log("GETTING USER INFO");
+  console.log("User ID from request:", req.user ? req.user._id : "No user found");
   try {
     const user = await User.findById(req.user._id).select('-password');
     if (!user) {

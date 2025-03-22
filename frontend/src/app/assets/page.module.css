@@ -184,7 +184,6 @@ a.secondary {
   margin: 10px;
   top: 0;
   left: 0;
-  height: 98vh; 
   display: flex;
 }
 
@@ -198,12 +197,6 @@ a.secondary {
 }
 
 /* Transactions */
-.transactionsCard {
-  background: #ffffff;
-  padding: 15px;
-  border-radius: 10px;
-}
-
 .transactionsTitle {
   font-size: 18px;
   font-weight: bold;
@@ -212,6 +205,15 @@ a.secondary {
 .transactionList {
   list-style: none;
   padding: 0;
+}
+
+.transactionAmount {
+  min-width: 90px;
+}
+
+.transactionName {
+  min-width: 100px;
+  text-align: end;
 }
 
 .transactionItem {

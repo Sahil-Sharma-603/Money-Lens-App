@@ -29,4 +29,4 @@ yarn-error.log*
 .vscode/
 *.swp
 *.swo
-.DS_Store
+.DS_Storetests/integration_tests/coverage/

@@ -6,6 +6,11 @@ const plaidRoutes = require('./routes/plaidRoutes');
 const transactionsRoutes = require('./routes/transactionsRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
+const goalsRoutes = require('./routes/goalsRoutes');
+
+const accountRoutes = require('./routes/accountRoutes');
+const analysisRoutes = require('./routes/analysisRoutes');
+
 require('dotenv').config({ path: '.env' });
 const cookieParser = require('cookie-parser');
 
@@ -18,8 +23,7 @@ app.use(cookieParser());
 // MongoDB Connection
 mongoose
   .connect(
-    'mongodb+srv://jashangill3592:4GQyPIRwT6lm5IiE@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority',
-    { useNewUrlParser: true, useUnifiedTopology: true }
+    'mongodb+srv://jashangill3592:4GQyPIRwT6lm5IiE@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority'
   )
   .then(() => console.log('✅ MongoDB Connected'))
   .catch((err) => console.error('❌ MongoDB Connection Error:', err));
@@ -53,7 +57,14 @@ app.use('/api/plaid', plaidRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
+app.use('/api/goals', goalsRoutes); // Register goals routes
+
+app.use('/api/accounts', accountRoutes);
+app.use('/api/analytics', analysisRoutes)
+
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
+
+module.exports = { app };

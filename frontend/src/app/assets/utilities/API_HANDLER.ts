@@ -1,20 +1,13 @@
+import { Goal } from '../../types/goals';
+
 const BASE_URL = 'http://localhost:5001/api';
 
 export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   params?: Record<string, string>;
-  requireAuth?: boolean; // Add this line
+  requireAuth?: boolean;
 };
-
-// export type PlaidAccount = {
-//   account_id: string;
-//   name: string;
-//   official_name: string;
-//   type: string;
-//   subtype: string;
-//   mask: string;
-// };
 
 export interface PlaidAccount {
   id: string;
@@ -24,7 +17,6 @@ export interface PlaidAccount {
   subtype: string;
   verification_status: string;
 }
-
 
 export type PlaidAccountsResponse = {
   accounts: PlaidAccount[];
@@ -54,12 +46,33 @@ export type PlaidLinkResponse = {
   link_token: string;
 };
 
+export type Account = {
+  _id: string;
+  name: string;
+  type: string;
+  balance: number;
+  currency: string;
+  institution: string;
+  is_active: boolean;
+  plaid_account_id?: string;
+  plaid_mask?: string;
+  plaid_subtype?: string;
+};
+
+export type AccountsResponse = {
+  accounts: Account[];
+  count: number;
+};
+
 export type Transaction = {
+  _id: string;
   transaction_id: string;
   date: string;
   name: string;
   amount: number;
   category: string[];
+  account_id: string;
+  account?: Account;
 };
 
 export type TransactionsResponse = {
@@ -79,9 +92,47 @@ export type DashboardResponse = {
   recentTransactions: { amount: number; name: string; category: string }[];
   balance: number;
   monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
   dailyAvg: number; 
   monthAvg: { spent: number; earned: number };
   thisMonth: { spent: number; earned: number };
+};
+
+// CSV Import response type
+export type CSVImportResponse = {
+  success: boolean;
+  count: number;
+  skipped: number;
+  errors: number;
+  errorDetails?: any[];
+};
+
+export type AnalysisResponse = {
+  transactions: { amount: number; name: string; category: string }[];
+  balance: number;
+  monthlySpending: { month: string; spent: number; earned: number }[];
+  weeklySpending: { weekStarting: string; spent: number; earned: number }[];
+  dailyAvg: number;
+  monthAvg: { spent: number; earned: number };
+  yearAvg: { spent: number; earned: number }; 
+  weekAvg: { spent: number; earned: number };
+  thisMonth: { spent: number; earned: number };
+  recurringExpenses: {category: string, nextPaymentDate: string, frequency: string, name: string, amount: number}[]; 
+  recurringIncomeSources: {name: string, amount: number}[]; 
+  thisYear: { spent: number; earned: number }; 
+  thisWeek: { spent: number; earned: number };
+  spendingByCategory: { category: string, amount: number }[];
+  topSources: { 
+    thisWeek: TopSources;
+    thisMonth: TopSources;
+    thisYear: TopSources;
+  };
+};
+
+// Top sources (for analysis)
+type TopSources = {
+  topSpending: { name: string; amount: number }[];
+  topEarning: { name: string; amount: number }[];
 };
 
 // Update apiRequest function
@@ -116,14 +167,51 @@ export async function apiRequest<T>(
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    console.log('API Response Status:', response.status);
+    console.log('API Response Headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'API request failed');
+      console.error('API Error Data:', errorData);
+      throw new Error(errorData.message || errorData.error || 'API request failed');
     }
 
     return response.json();
   } catch (error) {
     console.error(`API ${method} ${endpoint} failed:`, error);
+    throw error;
+  }
+}
+
+// Function for uploading files (like CSV)
+export async function uploadFile<T>(
+  endpoint: string,
+  formData: FormData,
+): Promise<T> {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  let url = `${BASE_URL}${endpoint}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'File upload failed');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error(`File upload to ${endpoint} failed:`, error);
     throw error;
   }
 }
