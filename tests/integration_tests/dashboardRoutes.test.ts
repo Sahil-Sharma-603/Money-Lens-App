@@ -1,65 +1,120 @@
-const request = require("supertest");
-const express = require("express");
-const dashboardRoutes = require("../../backend/routes/dashboardRoutes");
-const { getDashboardData } = require("../../backend/logic/dashboardLogic");
-const auth = require("../../backend/middleware/auth.middleware");
 
-jest.mock("../../backend/logic/dashboardLogic");
-jest.mock("../../backend/middleware/auth.middleware", () => (req, res, next) => {
-  req.user = { _id: "IAM_FAKE" };
-  next();
-});
+import request from 'supertest';
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import * as db from './testdb';
+import dashboardRoutes from '../../backend/routes/dashboardRoutes';
+import User from '../../backend/models/User.model';
+import { Transaction } from '../../backend/models/Transaction.model';
+process.env.JWT_SECRET = 'test_jwt_secret';
+const mongoose = require('../../backend/models/User.model').model('User').base;
 
+// Setup test app
 const app = express();
 app.use(express.json());
-app.use("/api", dashboardRoutes);
+app.use('/api', dashboardRoutes);
 
-describe("Dashboard API Integration Tests", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+describe('Dashboard Integration Test', () => {
+  let userId: string;
+  let token: string;
+
+  const createToken = (id: string) =>
+    jwt.sign({ userId: id },
+        process.env.JWT_SECRET!,
+        { expiresIn: '1h' }
+    );
+
+  beforeAll(async () => {
+    await db.connect();
   });
 
-  describe("GET /api/dashboard", () => {
-    it("should return dashboard data for an authenticated user", async () => {
-      const mockDashboardData = {
-        todaySpending: 100,
-        recentTransactions: [{ amount: 20, name: "Coffee", category: "Food" }],
-        balance: 500,
-        monthlySpending: [],
-        transactions: [],
-      };
+  afterEach(async () => {
+    await db.clearDatabase();
+  });
 
-      getDashboardData.mockResolvedValue(mockDashboardData);
+  afterAll(async () => {
+    await db.closeDatabase();
+  });
 
-      const response = await request(app)
-        .get("/api/dashboard")
-        .set("Authorization", "Bearer mocktoken");
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual(mockDashboardData);
-      expect(getDashboardData).toHaveBeenCalledWith("IAM_FAKE", "Bearer mocktoken");
+  test('should return dashboard data for valid user and token', async () => {
+    // Create a user
+    const user = await User.create({
+      firstName: 'Test',
+      lastName: 'User',
+      email: 'testuser@example.com',
+      firebaseUid: 'uid123',
     });
 
-    it("should return 404 if user data is not found", async () => {
-      getDashboardData.mockResolvedValue({ error: "User not found" });
+    userId = user._id.toString();
+    token = createToken(userId);
 
-      const response = await request(app)
-        .get("/api/dashboard")
-        .set("Authorization", "Bearer mocktoken");
+    // Create valid ObjectId for account_id
+    const fakeAccountId = new mongoose.Types.ObjectId();
 
-      expect(response.status).toBe(404);
-      expect(response.body).toEqual({ error: "User not found" });
-    });
+    await Transaction.create([
+      {
+        user_id: userId,
+        name: 'Coffee',
+        amount: 4.5,
+        date: new Date().toISOString().split('T')[0],
+        category: ['Food', 'Coffee'],
+        transaction_type: 'place',
+        transaction_id: 'txn_001',
+        iso_currency_code: 'USD',
+        account_id: fakeAccountId,
+      },
+      {
+        user_id: userId,
+        name: 'Freelance',
+        amount: -200,
+        date: new Date().toISOString().split('T')[0],
+        category: ['Income', 'Freelance'],
+        transaction_type: 'digital',
+        transaction_id: 'txn_002',
+        iso_currency_code: 'USD',
+        account_id: fakeAccountId,
+      },
+    ]);
 
-    it("should return 500 if an error occurs", async () => {
-      getDashboardData.mockRejectedValue(new Error("Database failure"));
+    const response = await request(app)
+      .get('/api/dashboard')
+      .set('Authorization', `Bearer ${token}`);
 
-      const response = await request(app)
-        .get("/api/dashboard")
-        .set("Authorization", "Bearer mocktoken");
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('balance');
+    expect(response.body).toHaveProperty('monthlySpending');
+    expect(response.body).toHaveProperty('weeklySpending');
+    expect(response.body).toHaveProperty('todaySpending');
+    expect(response.body).toHaveProperty('recentTransactions');
+    expect(response.body).toHaveProperty('thisMonth');
+    expect(response.body).toHaveProperty('monthAvg');
+    expect(response.body).toHaveProperty('dailyAvg');
+  });
 
-      expect(response.status).toBe(500);
-      expect(response.body).toEqual({ message: "Database failure" });
-    });
+  test('should return 404 if user not found', async () => {
+    const fakeId = '507f1f77bcf86cd799439011';
+    const fakeToken = createToken(fakeId);
+
+    const response = await request(app)
+      .get('/api/dashboard')
+      .set('Authorization', `Bearer ${fakeToken}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toMatch(/user not found/i);
+  });
+
+  test('should return 401 if no token provided', async () => {
+    const response = await request(app).get('/api/dashboard');
+    expect(response.status).toBe(401);
+    expect(response.body.error).toMatch(/authentication token missing/i);
+  });
+
+  test('should return 401 for invalid token', async () => {
+    const response = await request(app)
+      .get('/api/dashboard')
+      .set('Authorization', 'Bearer badtoken');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error).toMatch(/invalid authentication token/i);
   });
 });
