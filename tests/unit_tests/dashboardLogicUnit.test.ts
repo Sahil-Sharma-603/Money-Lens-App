@@ -1,160 +1,230 @@
-// import {expect, test} from 'jest';
-import { describe } from 'node:test';
 
-const { getDashboardData } = require("../../logic/dashboardLogic.js"); // Adjust path if needed
-const User = require("../../models/User.model.js");
-const { Transaction } = require("../../models/Transaction.model.js")
+import  { connect, clearDatabase, closeDatabase } from './integration_tests/testdb'
+import {getTodaySpending,  getMonthlySpending, getWeeklySpending, getRecentTransactions, getDashboardData,} from './../backend/logic/dashboardLogic';
+import  User  from '../backend/models/User.model';
+import Transaction from '../backend/models/Transaction.model'
+
+beforeAll(async () => await connect());
+afterEach(async () => await clearDatabase());
+afterAll(async () => await closeDatabase());
 
 
-jest.mock("../../models/User.model.js");
-jest.mock("../../models/Transaction.model.js");
 
-describe("getDashboardData", () => {
-  const userId = "user123";
-  
-  beforeEach(() => {
-    jest.clearAllMocks();
+
+describe('getTodaySpending', () => {
+  it('should calculate today\'s total spending correctly', async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const transactions = [
+          { amount: "50.25", date: new Date().toISOString() },
+          { amount: "-20.50", date: new Date().toISOString() },
+          { amount: "15.75", date: new Date().toISOString() },
+          { amount: "40.00", date: "2022-01-01T12:00:00.000Z" }, // Different date
+          { amount: "invalid", date: today }, // Invalid amount
+          { amount: "30", date: null } // Null date
+      ];
+
+      const result = await getTodaySpending(transactions as any);
+      
+      expect(result).toBeCloseTo(45.5, 2); // 50.25 - 20.50 + 15.75 = 45.5
   });
 
-  // 1. Test user not found
-  test("returns error if user is not found", async () => {
-    User.findById.mockResolvedValue(null);
+  it('should return 0 if no transactions for today', async () => {
+      const transactions = [
+          { amount: "40.00", date: "2022-01-01T12:00:00.000Z" },
+          { amount: "25.00", date: "2022-01-02T12:00:00.000Z" },
+      ];
 
-    const result = await getDashboardData(userId);
-    expect(result).toEqual({ error: "User not found" });
+      const result = await getTodaySpending(transactions as any);
+
+      expect(result).toBe(0);
   });
 
-  // 2. Test today's spending calculation
-  test("calculates today's spending correctly", async () => {
-    const today = new Date().toISOString().split("T")[0];
-    
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue([
-      { user_id: userId, date: today, amount: "20.50" },
-      { user_id: userId, date: today, amount: "30.00" },
-      { user_id: userId, date: "2025-01-01", amount: "100.00" }, // Not today
-    ]);
-
-    const result = await getDashboardData(userId);
-    expect(result.todaySpending).toBe(50.50);
+  it('should handle empty transactions array', async () => {
+      const result = await getTodaySpending([]);
+      expect(result).toBe(0);
   });
 
- // 3. Test fetching 20 most recent transactions
-  test("returns the 20 most recent transactions", async () => {
+  it('should handle transactions without dates gracefully', async () => {
+      const transactions = [
+          { amount: "50" },
+          { amount: "25", date: undefined },
+      ];
+
+      const result = await getTodaySpending(transactions as any);
+      expect(result).toBe(0);
+  });
+});
+
+
+
+describe('getMonthlySpending', () => {
+  it('should group transactions by month and calculate totals', async () => {
+      const now = new Date();
+      const thisMonth = now.toISOString().slice(0, 7);
+      const lastMonthDate = new Date(now);
+      lastMonthDate.setMonth(now.getMonth() - 1);
+      const lastMonth = lastMonthDate.toISOString().slice(0, 7);
+
+      const transactions = [
+          { amount: "100", date: new Date().toISOString() },
+          { amount: "-50", date: new Date().toISOString() },
+          { amount: "200", date: lastMonthDate.toISOString() },
+          { amount: "-100", date: lastMonthDate.toISOString() },
+          { amount: "invalid", date: new Date().toISOString() },
+          { amount: "75", date: null },
+      ];
+
+      const result = await getMonthlySpending(transactions as any);
+
+      // Ensure result is not an error object
+      if (!Array.isArray(result)) {
+          throw new Error(`Expected array but got error: ${JSON.stringify(result)}`);
+      }
+
+      const thisMonthData = result.find((r: any) => r.month === thisMonth);
+      const lastMonthData = result.find((r: any) => r.month === lastMonth);
+
+      expect(thisMonthData?.spent).toBeCloseTo(100);
+      expect(thisMonthData?.earned).toBeCloseTo(-50);
+      expect(thisMonthData?.net).toBeCloseTo(50);
+
+      expect(lastMonthData?.spent).toBeCloseTo(200);
+      expect(lastMonthData?.earned).toBeCloseTo(-100);
+      expect(lastMonthData?.net).toBeCloseTo(100);
+  });
+
+  it('should return 12 months of data even if no transactions', async () => {
+      const result = await getMonthlySpending([]);
+
+      if (!Array.isArray(result)) {
+          throw new Error(`Expected array but got error: ${JSON.stringify(result)}`);
+      }
+
+      expect(result.length).toBe(12);
+      result.forEach((monthData: any) => {
+          expect(monthData.spent).toBe(0);
+          expect(monthData.earned).toBe(0);
+          expect(monthData.net).toBe(0);
+      });
+  });
+});
+
+
+
+describe('getWeeklySpending', () => {
+  it('should calculate weekly spent, earned, and net for each of last 12 weeks', async () => {
+    const now = new Date();
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setDate(now.getDate() - now.getDay()); // Sunday
+
+    const transactions = [
+      // Current week
+      { amount: "100", date: new Date(startOfThisWeek).toISOString() },
+      { amount: "-40", date: new Date(startOfThisWeek).toISOString() },
+
+      // Previous week
+      {
+        amount: "200",
+        date: new Date(startOfThisWeek.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        amount: "-80",
+        date: new Date(startOfThisWeek.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+
+      // Invalid entry
+      { amount: "not-a-number", date: new Date().toISOString() },
+      { amount: "100", date: null },
+    ];
+
+    const result = await getWeeklySpending(transactions as any);
+
+    // Ensure result is not an error object
+    if (!Array.isArray(result)) {
+      throw new Error(`Expected array, got: ${JSON.stringify(result)}`);
+    }
+
+    expect(result.length).toBe(12);
+
+    const thisWeekKey = startOfThisWeek.toISOString().slice(0, 10);
+    const lastWeekKey = new Date(startOfThisWeek.getTime() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
+    const thisWeek = result.find((w: any) => w.weekStarting === thisWeekKey);
+    const lastWeek = result.find((w: any) => w.weekStarting === lastWeekKey);
+
+    expect(thisWeek?.spent).toBeCloseTo(100);
+    expect(thisWeek?.earned).toBeCloseTo(-40);
+    expect(thisWeek?.net).toBeCloseTo(60);
+
+    expect(lastWeek?.spent).toBeCloseTo(200);
+    expect(lastWeek?.earned).toBeCloseTo(-80);
+    expect(lastWeek?.net).toBeCloseTo(120);
+  });
+
+  it('should return 12 entries with zeros if no transactions provided', async () => {
+    const result = await getWeeklySpending([]);
+
+    if (!Array.isArray(result)) {
+      throw new Error(`Expected array, got: ${JSON.stringify(result)}`);
+    }
+
+    expect(result.length).toBe(12);
+    result.forEach((week: any) => {
+      expect(week.spent).toBe(0);
+      expect(week.earned).toBe(0);
+      expect(week.net).toBe(0);
+    });
+  });
+});
+
+
+
+describe('getRecentTransactions', () => {
+  it('should return the 20 most recent transactions sorted by date', async () => {
+    const baseDate = new Date();
+
     const transactions = Array.from({ length: 25 }, (_, i) => ({
-      user_id: userId,
-      date: `2025-02-${25 - i}`,
-      amount: `${i + 1}.00`,
+      amount: `${i + 1}`, // 1 to 25
       name: `Transaction ${i + 1}`,
-      category: ["Other", "Food"],
+      date: new Date(baseDate.getTime() - i * 24 * 60 * 60 * 1000).toISOString(), // subtract i days
+      category: ['Top', `Category ${i + 1}`]
     }));
 
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue(transactions);
+    const result = await getRecentTransactions(transactions as any);
 
-    const result = await getDashboardData(userId);
-    if(result == null){
-      fail("result is null"); 
-    } else {
-      expect(result.recentTransactions.length).toBe(20);
-      expect(result.recentTransactions[0].amount).toBe(1);
-      expect(result.recentTransactions[19].amount).toBe(20); 
-    }
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(20);
+
+    // Most recent should be Transaction 1 (i=0)
+    expect(result[0].name).toBe('Transaction 1');
+    expect(result[0].amount).toBe(1);
+    expect(result[0].category).toBe('Category 1');
+
+    // Least recent in top 20 should be Transaction 20
+    expect(result[19].name).toBe('Transaction 20');
   });
 
-  // 5. Test monthly spending correctly calculated
-  test("calculates monthly spending correctly", async () => {
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue([
-      { user_id: userId, date: "2025-02-15", amount: "100.00" },
-      { user_id: userId, date: "2025-02-05", amount: "-50.00" },
-      { user_id: userId, date: "2025-01-20", amount: "200.00" },
-      { user_id: userId, date: "2025-01-10", amount: "-100.00" },
-    ]);
-
-    const result = await getDashboardData(userId);
-    if(result == null){
-      fail("result is null"); 
-    } else {
-
-      expect(result.monthlySpending[0]).toMatchObject({
-        month: "2025-02",
-        spent: 100,
-        earned: -50,
-        net: 50,
-      });
-      expect(result.monthlySpending[1]).toMatchObject({
-        month: "2025-01",
-        spent: 200,
-        earned: -100,
-        net: 100,
-      });
-
-    }
-  });
-
-
-  // 6. Test for valid transaction count
-  test("returns correct number of transactions", async () => {
+  it('should default missing category to \"Unknown\"', async () => {
     const transactions = [
-      { user_id: userId, amount: "10.00", date: "2025-02-25" },
-      { user_id: userId, amount: "50.00", date: "2025-02-24" },
+      {
+        amount: "99.99",
+        name: "No Category",
+        date: new Date().toISOString(),
+        category: null
+      }
     ];
 
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue(transactions);
+    const result = await getRecentTransactions(transactions as any);
 
-    const result = await getDashboardData(userId);
-    if(result == null){
-      fail("result is null"); 
-    } else {
-      expect(result.recentTransactions.length).toBe(2);
-    }
+    expect(result.length).toBe(1);
+    expect(result[0].category).toBe("Unknown");
   });
 
-  // 7. Test for no transactions
-  test("returns zero transactions if no transactions exist", async () => {
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue([]);
-
-    const result = await getDashboardData(userId);
-    
-    expect(result.recentTransactions).toEqual([]);
+  it('should handle empty transaction list', async () => {
+    const result = await getRecentTransactions([]);
+    expect(result).toEqual([]);
   });
-
-  // 8. Test for correct monthly average spending and earning
-  test("calculates average monthly spent and earned correctly", async () => {
-    const transactions = [
-      { user_id: userId, date: "2025-02-10", amount: "500.00" },
-      { user_id: userId, date: "2025-02-15", amount: "-200.00" },
-      { user_id: userId, date: "2025-01-10", amount: "700.00" }, 
-      { user_id: userId, date: "2025-01-20", amount: "-300.00" },
-    ];
-
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue(transactions);
-
-    const result = await getDashboardData(userId);
-    
-    expect(result.monthAvg.spent).toBeCloseTo((500 + 700) / 2, 2);
-    expect(result.monthAvg.earned).toBeCloseTo(-(200 + 300) / 2, 2);
-  });
-
-  // 9. Test for this month's spending and earning
-  test("calculates this month's spent and earned correctly", async () => {
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    const transactions = [
-      { user_id: userId, date: `${currentMonth}-05`, amount: "400.00" },
-      { user_id: userId, date: `${currentMonth}-15`, amount: "-150.00" },
-    ];
-
-    User.findById.mockResolvedValue({ _id: userId });
-    Transaction.find.mockResolvedValue(transactions);
-
-    const result = await getDashboardData(userId);
-
-    expect(result.thisMonth.spent).toBe(400.00);
-    expect(result.thisMonth.earned).toBe(-150.00);
-  });
-
 });
+

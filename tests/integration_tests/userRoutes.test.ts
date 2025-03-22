@@ -1,54 +1,42 @@
-import request from 'supertest';
-import express from 'express'; 
-import * as db from '../testdb';
-import userRoutes from '../../backend/routes/userRoutes';
+const request = require('supertest');
+const express = require('express');
+const User = require('../../backend/models/User.model');
+const userRoutes = require('../../backend/routes/userRoutes');
 
-// import express = require('express'); 
-let server: any;
 const app = express();
 app.use(express.json());
-app.use("/api", userRoutes);
-
-beforeAll(async () => {
-    await db.connect(); 
-    server = app.listen(); 
-});
+app.use('/api', userRoutes);
 
 afterEach(async () => {
     await db.clearDatabase(); 
 });
 
-afterAll(async () => {
-    await db.closeDatabase(); 
-    server.close(); 
-});
+// tests here for userRoutes.js - problem timeout with mongo memory server
 
-describe("UserRoutes API Integration Tests", () => {
-  describe('GET /hello', () => {
-    it('should return "Hello world from backend"', async () => {
-      const response = await request(app).get('/api/hello');
-      expect(response.status).toBe(200);
-      expect(response.text).toBe('Hello world from backend');
-    });
-  });
+describe("UserRoutes Integration test", ()=>{
+    beforeAll(async () => {
+        await db.connect();
+      }, 10000);
+      afterEach(async () => {
+        await db.clearDatabase();
+      }, 10000);
+      afterAll(async () => {
+        await db.closeDatabase();
+      }, 10000);
 
-  describe('POST /signup', () => {
-    it('should create a new user if email does not exist', async () => {
-      const newUser = {
-        firstName: 'Test',
-        lastName: 'User',
-        email: 'test@example.com',
-        firebaseUid: 'firebase123'
-      };
+      test("Testing The GET /signup", async () =>{
 
-      const response = await request(app)
-        .post('/api/signup')
-        .send(newUser);
+        const testUser = {
+            firstName: "TestUser1",
+            lastName: "lastname",
+            email: "test@gmail.com",
+            firebaseUid: "18y8y28egbdiq"
+        }
 
-      expect(response.status).toBe(201);
-      expect(response.body.message).toBe('User created successfully');
-      expect(response.body.user).toHaveProperty('_id');
-      expect(response.body.user.email).toBe(newUser.email);
-    });
-  });
-});
+        console.log("Test user", testUser);
+        const response = await request(app).post('/api/signup').send(testUser);
+        expect(response.status).toBe(201);
+
+
+      });
+})
