@@ -17,7 +17,6 @@ router.get('/verify-token', auth, async (req, res) => {
   }
 });
 
-// async function testSignup() {
 //   try {
 //     const newUser = {
 //       firstName: 'Test',
@@ -45,7 +44,7 @@ router.post('/signup', async (req, res) => {
     
     // Check if user already exists
     // const existingUser =  await User.findOne({ email });
-    const existingUser =  await User.exists({ email });
+    const existingUser =  await User.findOne({ email });
 
     console.log('SIGN UP ROUTE', req);
     if (existingUser) {
