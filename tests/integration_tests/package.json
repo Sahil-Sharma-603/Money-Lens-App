@@ -6,7 +6,9 @@
     "author": "Jashanjot, Una, Aakash, Ginelle, Filip, Sahil",
     "scripts": {
         "start": "nodemon server.js",
-        "test": "jest"
+        "test": "jest",
+        "test:coverage": "jest --coverage"
+
     },
     "dependencies": {
         "body-parser": "^1.20.3",
