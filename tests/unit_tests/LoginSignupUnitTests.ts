@@ -2,10 +2,10 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
-import Home from '../../src/app/page'; // Login page
-import SignupPage from '../../src/app/pages/signup/page';
-import ForgotPassword from '../../src/app/pages/forgot-password/page';
-import { apiRequest } from '../../src/app/assets/utilities/API_HANDLER';
+import Home from '../../frontend/src/app/page'; // Login page
+import SignupPage from '../../frontend/src/app/pages/signup/page';
+import ForgotPassword from '../../frontend/src/app/pages/forgot-password/page';
+import { apiRequest } from '../../frontend/src/app/assets/utilities/API_HANDLER';
 
 // Mock the imports
 jest.mock('next/navigation', () => ({
@@ -20,7 +20,7 @@ jest.mock('firebase/auth', () => ({
   auth: jest.fn(),
 }));
 
-jest.mock('../app/assets/utilities/API_HANDLER', () => ({
+jest.mock('../../frontend/app/assets/utilities/API_HANDLER', () => ({
   apiRequest: jest.fn(),
 }));
 

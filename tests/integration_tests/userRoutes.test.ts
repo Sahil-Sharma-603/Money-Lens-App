@@ -1,4 +1,9 @@
 
+const request = require('supertest');
+const express = require('express');
+const User = require('../../backend/models/User.model');
+const userRoutes = require('../../backend/routes/userRoutes');
+
 import request from 'supertest';
 import express from 'express';
 import * as db from './testdb';
@@ -7,14 +12,17 @@ import jwt from 'jsonwebtoken';
 import User from '../../backend/models/User.model';
 process.env.JWT_SECRET = 'test_jwt_secret';
 
+
 const app = express();
 app.use(express.json());
 app.use('/api', userRoutes);
+
 
 describe("UserRoutes Integration test", () => {
   beforeAll(async () => {
     await db.connect();
   }, 10000);
+
 
   afterEach(async () => {
     await db.clearDatabase();
@@ -160,6 +168,7 @@ describe('GET /verify-token', () => {
         expect(response.status).toBe(404);
         expect(response.body.error.toLowerCase()).toMatch(/not found/);
       });
-    
+
       
   });
+

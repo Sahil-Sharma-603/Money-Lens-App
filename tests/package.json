@@ -39,7 +39,8 @@
         "testEnvironment": "node",
         "testMatch": [
             "**/*.test.ts",
-            "**/*.test.tsx"
+            "**/*.test.tsx",
+            "**/*.test.ts"
         ],
         "testPathIgnorePatterns": [
             "/node_modules/"
