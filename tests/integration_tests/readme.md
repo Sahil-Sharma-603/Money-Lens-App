@@ -4,6 +4,7 @@ Steps to run the tests
 -- use these following command on terminal in tests folder to download modules.
 1) `npm install --save-dev ts-jest typescript`
 2) `npm install --save-dev jest supertest`
+3) `npm install multer`
 
 -- use following to run the tests.
 
