@@ -13,7 +13,11 @@ FNDA:1,(anonymous_1)
 FNDA:0,(anonymous_2)
 FNDA:0,(anonymous_3)
 FNDA:1,(anonymous_4)
+<<<<<<< HEAD
 FNDA:11,(anonymous_5)
+=======
+FNDA:5,(anonymous_5)
+>>>>>>> 37e2c81 (test for sign up completed)
 DA:35,1
 DA:36,1
 DA:40,1
@@ -39,15 +43,26 @@ DA:69,1
 DA:71,1
 DA:73,0
 DA:77,1
+<<<<<<< HEAD
 DA:78,11
 DA:79,11
 DA:80,33
 DA:81,33
+=======
+DA:78,5
+DA:79,5
+DA:80,5
+DA:81,5
+>>>>>>> 37e2c81 (test for sign up completed)
 LF:29
 LH:22
 BRDA:50,0,0,1
 BRDA:68,1,0,1
+<<<<<<< HEAD
 BRDA:80,2,0,33
+=======
+BRDA:80,2,0,5
+>>>>>>> 37e2c81 (test for sign up completed)
 BRF:3
 BRH:3
 end_of_record
