@@ -229,8 +229,6 @@ router.put('/:id', auth, async (req, res) => {
     const updateFields = {};
     if (title) updateFields.title = title;
     if (description !== undefined) updateFields.description = description;
-    if (targetAmount) updateFields.targetAmount = Number(targetAmount);
-    if (currentAmount !== undefined) updateFields.currentAmount = Number(currentAmount);
     if (targetDate) updateFields.targetDate = new Date(targetDate);
     if (type) {
       updateFields.type = type;
@@ -241,13 +239,26 @@ router.put('/:id', auth, async (req, res) => {
         updateFields.category = undefined;
       }
     }
+    
+    // Handle targetAmount and currentAmount updates together
+    if (targetAmount !== undefined) {
+      updateFields.targetAmount = Number(targetAmount);
+    }
+    if (currentAmount !== undefined) {
+      updateFields.currentAmount = Number(currentAmount);
+    }
+    
     updateFields.updatedAt = new Date();
     
     // Find and update the goal
     const goal = await Goal.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       updateFields,
-      { new: true, runValidators: true } // Return updated document and run validators
+      { 
+        new: true, 
+        runValidators: true,
+        context: 'query' // This ensures validators have access to the full document
+      }
     );
     
     if (!goal) {
