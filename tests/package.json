@@ -6,8 +6,8 @@
     "author": "Jashanjot, Una, Aakash, Ginelle, Filip, Sahil",
     "scripts": {
         "start": "nodemon server.js",
-        "test": "jest",
-        "test:coverage": "jest --coverage"
+        "test": "NODE_ENV=test jest",
+        "test:coverage": "NODE_ENV=test jest --coverage"
     },
     "dependencies": {
         "body-parser": "^1.20.3",
