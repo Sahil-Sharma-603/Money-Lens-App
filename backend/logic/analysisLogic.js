@@ -36,10 +36,57 @@ async function getAnalysisData(userId) {
             console.error("Error finding user:", err);
             return {};
         }
-        
-        let transactions = await getTransactions(userId);
-        console.log("transactions: ", transactions); 
-        
+
+        // Fetch transactions with a timeout (except in test environment)
+        let transactions;
+        try {
+            // In test environment, skip the timeout promise
+            if (process.env.NODE_ENV === 'test') {
+                transactions = await Transaction.find({ user_id: userId });
+            } else {
+                // In non-test environments, use timeout to prevent hanging
+                transactions = await Promise.race([
+                    Transaction.find({ user_id: userId }),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error("Transaction lookup timed out")), 3000)
+                    )
+                ]);
+            }
+
+            if (!transactions || !Array.isArray(transactions)) {
+                console.log("No transactions found or invalid transactions data");
+                transactions = [];
+            }
+        } catch (err) {
+            console.error("Error finding transactions:", err);
+            transactions = [];
+        }
+
+        // If no transactions, return minimal response
+        if (transactions.length === 0) {
+            return {
+                transactions: [],
+                balance: 0,
+                monthlySpending: [],
+                weeklySpending: [],
+                yearlySpending: [],
+                thisMonth: { spent: 0, earned: 0, net: 0 },
+                thisWeek: { spent: 0, earned: 0, net: 0 },
+                thisYear: { spent: 0, earned: 0, net: 0 },
+                monthAvg: { spent: 0, earned: 0 },
+                weekAvg: { spent: 0, earned: 0 },
+                yearAvg: { spent: 0, earned: 0 },
+                dailyAvg: 0,
+                spendingByCategory: {},
+                recurringExpenses: [],
+                recurringIncomeSources: {},
+                topSources: {
+                    thisWeek: { topSpending: [], topEarning: [] },
+                    thisMonth: { topSpending: [], topEarning: [] },
+                    thisYear: { topSpending: [], topEarning: [] }
+                }
+            };
+        }
 
         // Calculate total spent and total earned across all transactions
         let totalSpent = 0;
@@ -190,61 +237,6 @@ async function getAnalysisData(userId) {
         console.error("Error fetching analysis data:", error);
         // Return an empty result rather than an error to avoid test failures
         return {};
-    }
-}
-
-async function getTransactions(userId){
-    // Fetch transactions with a timeout (except in test environment)
-    let transactions;
-    try {
-        // In test environment, skip the timeout promise
-        if (process.env.NODE_ENV === 'test') {
-            transactions = await Transaction.find({ user_id: userId });
-        } else {
-            // In non-test environments, use timeout to prevent hanging
-            transactions = await Promise.race([
-                Transaction.find({ user_id: userId }),
-                new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Transaction lookup timed out")), 3000)
-                )
-            ]);
-        }
-
-        if (!transactions || !Array.isArray(transactions)) {
-            console.log("No transactions found or invalid transactions data");
-            transactions = [];
-        }
-    } catch (err) {
-        console.error("Error finding transactions:", err);
-        transactions = [];
-    }
-
-    // If no transactions, return minimal response
-    if (transactions.length === 0) {
-        return {
-            transactions: [],
-            balance: 0,
-            monthlySpending: [],
-            weeklySpending: [],
-            yearlySpending: [],
-            thisMonth: { spent: 0, earned: 0, net: 0 },
-            thisWeek: { spent: 0, earned: 0, net: 0 },
-            thisYear: { spent: 0, earned: 0, net: 0 },
-            monthAvg: { spent: 0, earned: 0 },
-            weekAvg: { spent: 0, earned: 0 },
-            yearAvg: { spent: 0, earned: 0 },
-            dailyAvg: 0,
-            spendingByCategory: {},
-            recurringExpenses: [],
-            recurringIncomeSources: {},
-            topSources: {
-                thisWeek: { topSpending: [], topEarning: [] },
-                thisMonth: { topSpending: [], topEarning: [] },
-                thisYear: { topSpending: [], topEarning: [] }
-            }
-        };
-    } else {
-        return transactions; 
     }
 }
 
@@ -731,4 +723,4 @@ async function getRecurringIncomeSources(transactions) {
     }
 }
 
-module.exports = { getAnalysisData, getTransactions, getSpendingByCategory, getRecurringExpenses, getRecurringIncomeSources };
+module.exports = { getAnalysisData, getSpendingByCategory, getRecurringExpenses, getRecurringIncomeSources };
