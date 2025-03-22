@@ -4,7 +4,9 @@ const goalSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    minlength: [1, 'Title cannot be empty'],
+    maxlength: [100, 'Title cannot exceed 100 characters']
   },
   description: {
     type: String,
@@ -12,16 +14,30 @@ const goalSchema = new mongoose.Schema({
   },
   targetAmount: {
     type: Number,
-    required: true
+    required: true,
+    min: [0, 'Target amount cannot be negative']
   },
   currentAmount: {
     type: Number,
     required: true,
-    default: 0
+    default: 0,
+    min: [0, 'Current amount cannot be negative'],
+    validate: {
+      validator: function(v) {
+        return v <= this.targetAmount;
+      },
+      message: 'Current amount cannot exceed target amount'
+    }
   },
   targetDate: {
     type: Date,
-    required: true
+    required: true,
+    validate: {
+      validator: function(v) {
+        return v > new Date();
+      },
+      message: 'Target date must be in the future'
+    }
   },
   category: {
     type: String,
