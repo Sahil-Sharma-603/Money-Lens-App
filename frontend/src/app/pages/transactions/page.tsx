@@ -362,6 +362,7 @@ export default function Transaction() {
   return (
     <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
+      <div style={{ flex: '1', display: 'flex', flexDirection: 'column'}}>
         <h2>Transactions</h2>
 
         {/* Floating Bulk Actions */}
@@ -432,6 +433,21 @@ export default function Transaction() {
               />
             </div>
           </div>
+
+          
+
+          <button
+            onClick={() => {
+              setCurrentPage(1); // Reset to page 1 when applying new filters
+              fetchStoredTransactions();
+            }}
+            disabled={isLoading}
+            style={style.fetchButton}
+          >
+            {isLoading ? 'Loading...' : 'Get Transactions'}
+          </button>
+        </div>
+
 
           {/* Advanced Filters Toggle */}
           <button
@@ -518,17 +534,13 @@ export default function Transaction() {
             </div>
           )}
 
-          <button
-            onClick={() => {
-              setCurrentPage(1); // Reset to page 1 when applying new filters
-              fetchStoredTransactions();
-            }}
-            disabled={isLoading}
-            style={style.fetchButton}
-          >
-            {isLoading ? 'Loading...' : 'Get Transactions'}
-          </button>
-        </div>
+
+
+
+
+
+
+        
 
         {transactions.length > 0 && (
           <div style={style.tableContainer}>
@@ -866,6 +878,7 @@ export default function Transaction() {
             </div>
           </div>
         )}
+        </div>
       </Card>
     </div>
   );
@@ -878,9 +891,15 @@ const style = {
     fontSize: '15px',
   },
   container: {
-    padding: '40px',
-    maxWidth: '800px',
-    margin: '0 auto',
+    paddingTop: '10px',
+    paddingRight: '10px',
+    paddingLeft: '10px',
+    // maxWidth: '800px',
+    // margin: '0 auto',
+    display: 'flex',
+    alignItems: 'left',
+    // backgroundColor: 'white',
+    gap: '20px',
   },
   actionButtonsContainer: {
     display: 'flex',
@@ -1048,15 +1067,22 @@ const style = {
     fontSize: '14px',
   },
   advancedFiltersToggle: {
-    backgroundColor: '#f8f9fa',
+    // backgroundColor: '#f8f9fa',
     border: '1px solid #dee2e6',
     borderRadius: '4px',
-    padding: '8px 16px',
-    marginBottom: '15px',
+    // padding: '8px 16px',
+    // marginBottom: '15px',
     cursor: 'pointer',
     color: '#495057',
     fontSize: '14px',
-    width: '100%',
+    // width: '200px',
+    // width: '100%',
+    backgroundColor: 'white',
+    width: 'auto',
+    height: '40px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    marginTop: '10px',
     textAlign: 'center' as const,
   },
   advancedFiltersContainer: {
@@ -1100,7 +1126,8 @@ const style = {
     borderRadius: '8px',
   },
   searchContainer: {
-    marginBottom: '20px',
+    minWidth: '250px',
+    // marginBottom: '20px',
   },
   searchInput: {
     padding: '8px',
@@ -1113,7 +1140,7 @@ const style = {
   datePickerContainer: {
     display: 'flex',
     gap: '20px',
-    marginBottom: '20px',
+    // marginBottom: '20px',
   },
   datePickerGroup: {
     display: 'flex',
@@ -1141,14 +1168,19 @@ const style = {
     opacity: 1,
   },
   fetchButton: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#0707e2',
     color: 'white',
-    padding: '12px 24px',
+    // padding: '12px 24px',
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
-    width: '100%',
+    width: 'auto',
+    height: '40px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    marginTop: '27px',
+    // width: '100%',
   },
   dashboardButton: {
     backgroundColor: '#666',
