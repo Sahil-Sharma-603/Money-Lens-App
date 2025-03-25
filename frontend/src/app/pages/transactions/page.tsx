@@ -349,6 +349,16 @@ export default function Transaction() {
     }
   };
 
+  const calculateSelectedSum = () => {
+    let sum = 0;
+    transactions.forEach((transaction) => {
+      if (selectedTransactions.has(transaction._id)) {
+        sum += transaction.amount;
+      }
+    });
+    return sum;
+  };
+
   return (
     <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
@@ -359,6 +369,16 @@ export default function Transaction() {
           <div style={style.floatingBulkActions}>
             <div style={style.selectedCount}>
               {selectedTransactions.size} transaction(s) selected
+            </div>
+            <div style={style.selectionTotal}>
+              Total:{' '}
+              <span
+                style={
+                  calculateSelectedSum() >= 0 ? style.positive : style.negative
+                }
+              >
+                ${Math.abs(calculateSelectedSum()).toFixed(2)}
+              </span>
             </div>
             <div style={style.bulkButtons}>
               <button
@@ -852,6 +872,11 @@ export default function Transaction() {
 }
 
 const style = {
+  selectionTotal: {
+    fontWeight: 'bold',
+    marginBottom: '8px',
+    fontSize: '15px',
+  },
   container: {
     padding: '40px',
     maxWidth: '800px',
