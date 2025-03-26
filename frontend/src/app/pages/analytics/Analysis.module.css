@@ -43,3 +43,9 @@
 .expensesTable tr:hover {
     background: rgba(0, 31, 63, 0.05);
 }
+
+.recurringExpensesScroll {
+    flex: 1; 
+    overflow-y: "auto"; 
+    max-height: "300px"; 
+}
