@@ -11,6 +11,9 @@ import { Building, Plus, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
+import styles from '../../assets/page.module.css';
+import Card from '../../components/Card';
+import { TextField, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
 
 export default function Home() {
   const router = useRouter();
@@ -261,7 +264,7 @@ export default function Home() {
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
-      <div style={styles.container}>
+      <Card className={styles.fullPageCard}>
         <div
           style={{
             display: 'flex',
@@ -272,20 +275,22 @@ export default function Home() {
         >
           <p>Loading...</p>
         </div>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className={styles.dashboard}>
+    <Card className={styles.fullPageCard}>
+    <div style={localStyles.container}>
       {isLoading && (
-        <div style={styles.loaderStyle}>
+        <div style={localStyles.loaderStyle}>
           Updating your account, please wait (Max: 30 seconds)...
         </div>
       )}
-      <h1 style={styles.title}>Bank Account Connection</h1>
+      <h1 style={localStyles.title}>Bank Account Connection</h1>
       <button
-        style={styles.importButton}
+        style={localStyles.importButton}
         onClick={() => setShowCSVImport(!showCSVImport)}
       >
         {showCSVImport ? 'Cancel Import' : 'Show CSV Import'}
@@ -297,20 +302,20 @@ export default function Home() {
         />
       )}
       {/* Accounts Section */}
-      <div style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.subtitle}>Your Accounts</h2>
-          <div style={styles.headerButtons}>
+      <div style={localStyles.section}>
+        <div style={localStyles.sectionHeader}>
+          <h2 style={localStyles.subtitle}>Your Accounts</h2>
+          <div style={localStyles.headerButtons}>
             <button
               onClick={() => setShowCreateAccountModal(true)}
-              style={styles.plaidButton}
+              style={localStyles.plaidButton}
             >
               <Plus size={16} style={{ marginRight: '8px' }} />
               Create Account
             </button>
             <button
               onClick={() => open()}
-              style={styles.plaidButton}
+              style={localStyles.plaidButton}
               disabled={!linkToken || !ready || isLoading}
             >
               <Building size={16} style={{ marginRight: '8px' }} />
@@ -320,7 +325,7 @@ export default function Home() {
         </div>
 
         {accounts.length === 0 ? (
-          <div style={styles.emptyState}>
+          <div style={localStyles.emptyState}>
             <p>
               You don't have any accounts yet. Create a manual account or
               connect to your bank.
@@ -329,27 +334,27 @@ export default function Home() {
         ) : (
           <>
             {/* Manual Accounts */}
-            <div style={styles.accountsSection}>
-              <h3 style={styles.accountsSubtitle}>Manual Accounts</h3>
-              <div style={styles.accountsList}>
+            <div style={localStyles.accountsSection}>
+              <h3 style={localStyles.accountsSubtitle}>Manual Accounts</h3>
+              <div style={localStyles.accountsList}>
                 {accounts
                   .filter((account) => account.type !== 'plaid')
                   .map((account) => (
-                    <div key={account._id} style={styles.accountItem}>
-                      <div style={styles.accountInfo}>
+                    <div key={account._id} style={localStyles.accountItem}>
+                      <div style={localStyles.accountInfo}>
                         <strong>{account.name}</strong>
-                        <span style={styles.accountType}>{account.type}</span>
+                        <span style={localStyles.accountType}>{account.type}</span>
                       </div>
-                      <div style={styles.accountBalance}>
+                      <div style={localStyles.accountBalance}>
                         {account.currency} {account.balance.toFixed(2)}
                       </div>
-                      <div style={styles.accountActions}>
+                      <div style={localStyles.accountActions}>
                         <button
                           onClick={() => {
                             setAccountToDelete(account);
                             setShowDeleteConfirmation(true);
                           }}
-                          style={styles.deleteButton}
+                          style={localStyles.deleteButton}
                           disabled={isLoading}
                         >
                           <Trash size={16} style={{ marginRight: '4px' }} />
@@ -361,7 +366,7 @@ export default function Home() {
 
                 {accounts.filter((account) => account.type !== 'plaid')
                   .length === 0 && (
-                  <div style={styles.emptyAccountsMessage}>
+                  <div style={localStyles.emptyAccountsMessage}>
                     No manual accounts yet. Create one to get started.
                   </div>
                 )}
@@ -369,30 +374,30 @@ export default function Home() {
             </div>
 
             {/* Plaid Accounts */}
-            <div style={styles.accountsSection}>
-              <h3 style={styles.accountsSubtitle}>Connected Bank Accounts</h3>
-              <div style={styles.accountsList}>
+            <div style={localStyles.accountsSection}>
+              <h3 style={localStyles.accountsSubtitle}>Connected Bank Accounts</h3>
+              <div style={localStyles.accountsList}>
                 {accounts
                   .filter((account) => account.type === 'plaid')
                   .map((account) => (
-                    <div key={account._id} style={styles.accountItem}>
-                      <div style={styles.accountInfo}>
+                    <div key={account._id} style={localStyles.accountItem}>
+                      <div style={localStyles.accountInfo}>
                         <strong>{account.name}</strong>
                         {account.plaid_mask && (
-                          <span style={styles.accountNumber}>
+                          <span style={localStyles.accountNumber}>
                             •••• {account.plaid_mask}
                           </span>
                         )}
                         {account.plaid_subtype && (
-                          <span style={styles.accountType}>
+                          <span style={localStyles.accountType}>
                             {account.plaid_subtype}
                           </span>
                         )}
                       </div>
-                      <div style={styles.accountBalance}>
+                      <div style={localStyles.accountBalance}>
                         {account.currency} {account.balance.toFixed(2)}
                       </div>
-                      <div style={styles.accountInstitution}>
+                      <div style={localStyles.accountInstitution}>
                         {account.institution}
                       </div>
                     </div>
@@ -400,7 +405,7 @@ export default function Home() {
 
                 {accounts.filter((account) => account.type === 'plaid')
                   .length === 0 && (
-                  <div style={styles.emptyAccountsMessage}>
+                  <div style={localStyles.emptyAccountsMessage}>
                     No bank accounts connected. Use the "Connect Bank" button to
                     link your accounts.
                   </div>
@@ -408,10 +413,10 @@ export default function Home() {
               </div>
 
               {hasPlaidConnection && (
-                <div style={styles.buttonGroup}>
+                <div style={localStyles.buttonGroup}>
                   <button
                     onClick={handleDisconnect}
-                    style={styles.disconnectButton}
+                    style={localStyles.disconnectButton}
                     disabled={isLoading}
                   >
                     {isLoading
@@ -422,7 +427,7 @@ export default function Home() {
                   <button
                     onClick={fetchHistoricalTransactions}
                     style={{
-                      ...styles.plaidButton,
+                      ...localStyles.plaidButton,
                       marginLeft: '10px',
                       backgroundColor: '#4285F4',
                     }}
@@ -441,31 +446,31 @@ export default function Home() {
 
       {/* Create Account Modal */}
       {showCreateAccountModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+        <div style={localStyles.modalOverlay}>
+          <div style={localStyles.modalContent}>
             <h3>Create a New Account</h3>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Account Name:</label>
+            <div style={localStyles.formGroup}>
+              <label style={localStyles.label}>Account Name:</label>
               <input
                 type="text"
                 value={newAccount.name}
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, name: e.target.value })
                 }
-                style={styles.input}
+                style={localStyles.input}
                 placeholder="e.g., My Checking Account"
               />
             </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Account Type:</label>
+            <div style={localStyles.formGroup}>
+              <label style={localStyles.label}>Account Type:</label>
               <select
                 value={newAccount.type}
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, type: e.target.value })
                 }
-                style={styles.input}
+                style={localStyles.input}
               >
                 <option value="checking">Checking</option>
                 <option value="savings">Savings</option>
@@ -477,8 +482,8 @@ export default function Home() {
               </select>
             </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Starting Balance:</label>
+            <div style={localStyles.formGroup}>
+              <label style={localStyles.label}>Starting Balance:</label>
               <input
                 type="number"
                 step="0.01"
@@ -489,18 +494,18 @@ export default function Home() {
                     balance: parseFloat(e.target.value),
                   })
                 }
-                style={styles.input}
+                style={localStyles.input}
               />
             </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Currency:</label>
+            <div style={localStyles.formGroup}>
+              <label style={localStyles.label}>Currency:</label>
               <select
                 value={newAccount.currency}
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, currency: e.target.value })
                 }
-                style={styles.input}
+                style={localStyles.input}
               >
                 <option value="USD">USD - US Dollar</option>
                 <option value="CAD">CAD - Canadian Dollar</option>
@@ -511,29 +516,29 @@ export default function Home() {
               </select>
             </div>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Institution (optional):</label>
+            <div style={localStyles.formGroup}>
+              <label style={localStyles.label}>Institution (optional):</label>
               <input
                 type="text"
                 value={newAccount.institution}
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, institution: e.target.value })
                 }
-                style={styles.input}
+                style={localStyles.input}
                 placeholder="e.g., Chase, Bank of America"
               />
             </div>
 
-            <div style={styles.modalButtons}>
+            <div style={localStyles.modalButtons}>
               <button
                 onClick={() => setShowCreateAccountModal(false)}
-                style={styles.cancelButton}
+                style={localStyles.cancelButton}
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateAccount}
-                style={styles.saveButton}
+                style={localStyles.saveButton}
                 disabled={isLoading || !newAccount.name}
               >
                 {isLoading ? 'Creating...' : 'Create Account'}
@@ -545,32 +550,32 @@ export default function Home() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmation && accountToDelete && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+        <div style={localStyles.modalOverlay}>
+          <div style={localStyles.modalContent}>
             <h3>Confirm Account Deletion</h3>
 
-            <p style={styles.warningText}>
+            <p style={localStyles.warningText}>
               Are you sure you want to delete the account "
               {accountToDelete.name}"?
             </p>
-            <p style={styles.warningText}>
+            <p style={localStyles.warningText}>
               All transactions associated with this account will also be
               deleted. This action cannot be undone.
             </p>
 
-            <div style={styles.modalButtons}>
+            <div style={localStyles.modalButtons}>
               <button
                 onClick={() => {
                   setShowDeleteConfirmation(false);
                   setAccountToDelete(null);
                 }}
-                style={styles.cancelButton}
+                style={localStyles.cancelButton}
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAccount}
-                style={styles.deleteConfirmButton}
+                style={localStyles.deleteConfirmButton}
                 disabled={isLoading}
               >
                 {isLoading ? 'Deleting...' : 'Delete Account'}
@@ -580,10 +585,12 @@ export default function Home() {
         </div>
       )}
     </div>
+    </Card>
+    </div>
   );
 }
 
-const styles = {
+const localStyles = {
   container: {
     padding: '40px',
     maxWidth: '900px',
@@ -602,7 +609,6 @@ const styles = {
   section: {
     marginBottom: '30px',
     padding: '20px',
-    backgroundColor: '#f5f5f5',
     borderRadius: '8px',
   },
   searchContainer: {
@@ -629,13 +635,18 @@ const styles = {
   label: {
     marginBottom: '5px',
     color: '#666',
+    minWidth: '130px',
+    textAlign: 'right' as const,
   },
   input: {
     padding: '8px',
     borderRadius: '4px',
-    border: '1px solid #ddd',
+    // border: '2px solid #ddd',
     fontSize: '16px',
+    flex: 1,
+    textAlign: 'right' as const,
   },
+  
   plaidButton: {
     backgroundColor: '#00b300',
     color: 'white',
@@ -851,6 +862,10 @@ const styles = {
   },
   formGroup: {
     marginBottom: '20px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '20px',
   },
   modalButtons: {
     display: 'flex',
