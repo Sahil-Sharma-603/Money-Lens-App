@@ -21,7 +21,7 @@
 - Goals - link a savings goal to a savings account and have mini-goals within the saving goal for
   specific things and divided by percentage - Aakash
 - Show/hide sidebar - Una
-- Transactions: sum selected transactions - Jashan
+- Transactions: sum selected transactions - Jashan ✅
 - Manual input account balance - Jashan
 - Custom scroll bar - Jashan
 
@@ -36,7 +36,7 @@
 - Horizontal scroll bar - Una
 - Remove console logs - Everyone/Ginelle 
 - Move search and transaction list under the Transactions header - Una
-- Make sure transactions are accurately a debit/credit (CSV import) - Jashan
+- Make sure transactions are accurately a debit/credit (CSV import) - Jashan ✅
 - Sidebar selected page - change to be like the hover for a selected page - Una
 - percentages on category chart, UI container - Una
 - recurring expenses - container scroll bar - Una
