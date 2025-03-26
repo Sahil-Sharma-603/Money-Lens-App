@@ -31,7 +31,9 @@ export default function GoalsPage() {
         const response = await apiRequest('/goals', { requireAuth: true });
     
         // Log response for debugging
+        console.log('Raw response as text:', response.text);
         console.log('Raw response:', response);
+        // console.log('JSON.parse response:', JSON.parse(response.text));
     
         if (!response.ok) {
           console.error('Response not OK:', response.status, response.statusText);

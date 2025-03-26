@@ -75,33 +75,50 @@ router.post('/test-create', async (req, res) => {
 });
 
 // GET all goals for the authenticated user
-router.get('/goals', auth, async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     console.log('Goals GET request received');
-    console.log('User ID from token:', req.user?.id);
+    console.log('User ID from token:', req.user._id);
+    console.log('User ID ? from token:', req.user?._id);
+
+    // const goals = await Goal.find({ userId: req.user._id });
+
+    // const goals = await apiRequest<GoalsResponse>('/goals', {
+    //   method: 'GET',
+    //   requireAuth: true, // Make sure the token is included in the request
+    // });
+    const authToken = req.headers.authorization;
+    const goals = await getGoals(req.user._id, authToken); 
+
+    console.log("Goals enroute: ", goals); 
+
+    if (goals) {
+      // console.log(`Found ${goals.length} goals for user`);
     
-    const goals = await Goal.find({ userId: req.user._id });
+      // // Transform _id to id for frontend compatibility
+      // const transformedGoals = goals.map(goal => ({
+      //   id: goal._id.toString(),
+      //   title: goal.title,
+      //   description: goal.description,
+      //   targetAmount: goal.targetAmount,
+      //   currentAmount: goal.currentAmount,
+      //   targetDate: goal.targetDate,
+      //   category: goal.category,
+      //   type: goal.type,
+      //   userId: goal.userId, 
+      //   accountId: goal.accountId || [], 
+      //   createdAt: goal.createdAt,
+      //   updatedAt: goal.updatedAt, 
+      //   savingSubGoals: goal.savingSubGoals || []
+      // }));
+      
+      // res.json(transformedGoals);
+
+      res.json(goals); 
+    } else {
+      res.json();
+    }
     
-    console.log(`Found ${goals.length} goals for user`);
-    
-    // Transform _id to id for frontend compatibility
-    const transformedGoals = goals.map(goal => ({
-      id: goal._id.toString(),
-      title: goal.title,
-      description: goal.description,
-      targetAmount: goal.targetAmount,
-      currentAmount: goal.currentAmount,
-      targetDate: goal.targetDate,
-      category: goal.category,
-      type: goal.type,
-      userId: goal.userId, 
-      accountId: goal.accountId, 
-      createdAt: goal.createdAt,
-      updatedAt: goal.updatedAt, 
-      savingSubGoals: goal.savingSubGoals
-    }));
-    
-    res.json(transformedGoals);
   } catch (error) {
     console.error('Error fetching goals:', error);
     res.status(500).json({ error: 'Server error', message: error.message });

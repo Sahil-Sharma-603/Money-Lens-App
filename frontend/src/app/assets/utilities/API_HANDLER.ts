@@ -130,28 +130,18 @@ export type AnalysisResponse = {
 };
 
 
-export type GoalsResponse = {
-
-}; 
+export type GoalsResponse = Goal[];  
 export type GoalType = 'Savings' | 'Spending Limit';
 export type SpendingPeriod = 'Daily' | 'Monthly' | 'Weekly' | 'Yearly';
-
-// export interface Goal {
-//   id: string;
-//   title: string;
-//   targetAmount: number;
-//   currentAmount: number;
-//   targetDate: Date;
-//   category?: string;
-//   type: GoalType;
-//   spendingPeriod?: SpendingPeriod;
-//   description?: string;
-//   createdAt?: Date;
-//   updatedAt?: Date;
-// } 
+export type SubGoals = {
+  _id: string; 
+  name: string; 
+  amount: number; 
+  percent: number; 
+};
 
 export type Goal = {
-  id: string;
+  _id: string;
   name: string;
   targetAmount: number;
   currentAmount: number;
@@ -159,6 +149,9 @@ export type Goal = {
   category: string;
   type: 'Savings' | 'Spending Limit';
   spendingPeriod?: 'Monthly' | 'Weekly' | 'Yearly';
+  userId: string; 
+  accountId: string[]; 
+  savingSubGoals: SubGoals[]; 
 };
 
 // Top sources (for analysis)
