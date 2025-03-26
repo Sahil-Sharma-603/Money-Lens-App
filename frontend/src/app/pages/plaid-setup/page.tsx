@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import styles from '../../assets/page.module.css';
 import Card from '../../components/Card';
-import { TextField, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import { TextField, MenuItem, Select, InputLabel, FormControl, Box, Button } from '@mui/material';
 
 export default function Home() {
   const router = useRouter();
@@ -264,6 +264,7 @@ export default function Home() {
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
+      <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
         <div
           style={{
@@ -276,6 +277,7 @@ export default function Home() {
           <p>Loading...</p>
         </div>
       </Card>
+      </div>
     );
   }
 
@@ -289,12 +291,13 @@ export default function Home() {
         </div>
       )}
       <h1 style={localStyles.title}>Bank Account Connection</h1>
-      <button
-        style={localStyles.importButton}
+      <Button
+        variant="contained"
+        color="primary"
         onClick={() => setShowCSVImport(!showCSVImport)}
       >
         {showCSVImport ? 'Cancel Import' : 'Show CSV Import'}
-      </button>
+      </Button>
       {showCSVImport && (
         <CSVImportForm
           onClose={() => setShowCSVImport(false)}
@@ -306,21 +309,24 @@ export default function Home() {
         <div style={localStyles.sectionHeader}>
           <h2 style={localStyles.subtitle}>Your Accounts</h2>
           <div style={localStyles.headerButtons}>
-            <button
-              onClick={() => setShowCreateAccountModal(true)}
-              style={localStyles.plaidButton}
-            >
-              <Plus size={16} style={{ marginRight: '8px' }} />
-              Create Account
-            </button>
-            <button
-              onClick={() => open()}
-              style={localStyles.plaidButton}
-              disabled={!linkToken || !ready || isLoading}
-            >
-              <Building size={16} style={{ marginRight: '8px' }} />
-              Connect Bank
-            </button>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Plus size={16} />}
+            onClick={() => setShowCreateAccountModal(true)}
+          >
+            Create Account
+          </Button>
+
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Building size={16} />}
+            onClick={() => open()}
+            // disabled={!linkToken || !ready}
+          >
+            Connect Bank
+          </Button>
           </div>
         </div>
 
@@ -349,17 +355,19 @@ export default function Home() {
                         {account.currency} {account.balance.toFixed(2)}
                       </div>
                       <div style={localStyles.accountActions}>
-                        <button
-                          onClick={() => {
-                            setAccountToDelete(account);
-                            setShowDeleteConfirmation(true);
-                          }}
-                          style={localStyles.deleteButton}
-                          disabled={isLoading}
-                        >
-                          <Trash size={16} style={{ marginRight: '4px' }} />
-                          Delete
-                        </button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        startIcon={<Trash size={16} />}
+                        onClick={() => {
+                          setAccountToDelete(account);
+                          setShowDeleteConfirmation(true);
+                        }}
+                        disabled={isLoading}
+                      >
+                        Delete
+                      </Button>
                       </div>
                     </div>
                   ))}
@@ -414,29 +422,23 @@ export default function Home() {
 
               {hasPlaidConnection && (
                 <div style={localStyles.buttonGroup}>
-                  <button
+                  <Button
+                    variant="contained"
+                    color="error"
                     onClick={handleDisconnect}
-                    style={localStyles.disconnectButton}
                     disabled={isLoading}
                   >
-                    {isLoading
-                      ? 'Processing...'
-                      : 'Disconnect All Bank Accounts'}
-                  </button>
+                    {isLoading ? 'Processing...' : 'Disconnect All Bank Accounts'}
+                  </Button>
 
-                  <button
+                  <Button
+                    variant="contained"
+                    sx={{ backgroundColor: '#4285F4', '&:hover': { backgroundColor: '#357ae8' } }}
                     onClick={fetchHistoricalTransactions}
-                    style={{
-                      ...localStyles.plaidButton,
-                      marginLeft: '10px',
-                      backgroundColor: '#4285F4',
-                    }}
                     disabled={isLoading}
                   >
-                    {isLoading
-                      ? 'Processing...'
-                      : 'Fetch Historical Transactions (24 Months)'}
-                  </button>
+                    {isLoading ? 'Processing...' : 'Fetch Historical Transactions (24 Months)'}
+                  </Button>
                 </div>
               )}
             </div>
@@ -448,102 +450,122 @@ export default function Home() {
       {showCreateAccountModal && (
         <div style={localStyles.modalOverlay}>
           <div style={localStyles.modalContent}>
-            <h3>Create a New Account</h3>
+          <h3 style={{marginBottom: 10}}>Create a New Account</h3>
 
-            <div style={localStyles.formGroup}>
-              <label style={localStyles.label}>Account Name:</label>
-              <input
-                type="text"
-                value={newAccount.name}
-                onChange={(e) =>
-                  setNewAccount({ ...newAccount, name: e.target.value })
-                }
-                style={localStyles.input}
-                placeholder="e.g., My Checking Account"
-              />
-            </div>
+          <form
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateAccount();
+            }}
+          >
+            <TextField
+              label="Account Name"
+              variant="outlined"
+              size="small"
+              value={newAccount.name}
+              onChange={(e) =>
+                setNewAccount({ ...newAccount, name: e.target.value })
+              }
+              placeholder="e.g., My Checking Account"
+              fullWidth
+              required
+            />
 
-            <div style={localStyles.formGroup}>
-              <label style={localStyles.label}>Account Type:</label>
-              <select
+            <FormControl fullWidth required>
+              <InputLabel id="account-type-label">Account Type</InputLabel>
+              <Select
+                labelId="account-type-label"
+                label="Account Type"
                 value={newAccount.type}
+                size="small"
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, type: e.target.value })
                 }
-                style={localStyles.input}
+                fullWidth
               >
-                <option value="checking">Checking</option>
-                <option value="savings">Savings</option>
-                <option value="credit">Credit Card</option>
-                <option value="loan">Loan</option>
-                <option value="investment">Investment</option>
-                <option value="cash">Cash</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+                <MenuItem value="checking">Checking</MenuItem>
+                <MenuItem value="savings">Savings</MenuItem>
+                <MenuItem value="credit">Credit Card</MenuItem>
+                <MenuItem value="loan">Loan</MenuItem>
+                <MenuItem value="investment">Investment</MenuItem>
+                <MenuItem value="cash">Cash</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
 
-            <div style={localStyles.formGroup}>
-              <label style={localStyles.label}>Starting Balance:</label>
-              <input
-                type="number"
-                step="0.01"
-                value={newAccount.balance}
-                onChange={(e) =>
-                  setNewAccount({
-                    ...newAccount,
-                    balance: parseFloat(e.target.value),
-                  })
-                }
-                style={localStyles.input}
-              />
-            </div>
+            <TextField
+              label="Starting Balance"
+              variant="outlined"
+              type="number"
+              size="small"
+              value={newAccount.balance}
+              onChange={(e) =>
+                setNewAccount({
+                  ...newAccount,
+                  balance: parseFloat(e.target.value),
+                })
+              }
+              fullWidth
+            />
 
-            <div style={localStyles.formGroup}>
-              <label style={localStyles.label}>Currency:</label>
-              <select
+            <FormControl fullWidth>
+              <InputLabel id="currency-label">Currency</InputLabel>
+              <Select
+                labelId="currency-label"
+                label="Currency"
+                size="small"
                 value={newAccount.currency}
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, currency: e.target.value })
                 }
-                style={localStyles.input}
+                fullWidth
               >
-                <option value="USD">USD - US Dollar</option>
-                <option value="CAD">CAD - Canadian Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="GBP">GBP - British Pound</option>
-                <option value="AUD">AUD - Australian Dollar</option>
-                <option value="JPY">JPY - Japanese Yen</option>
-              </select>
-            </div>
+                <MenuItem value="USD">USD - US Dollar</MenuItem>
+                <MenuItem value="CAD">CAD - Canadian Dollar</MenuItem>
+                <MenuItem value="EUR">EUR - Euro</MenuItem>
+                <MenuItem value="GBP">GBP - British Pound</MenuItem>
+                <MenuItem value="AUD">AUD - Australian Dollar</MenuItem>
+                <MenuItem value="JPY">JPY - Japanese Yen</MenuItem>
+              </Select>
+            </FormControl>
 
-            <div style={localStyles.formGroup}>
-              <label style={localStyles.label}>Institution (optional):</label>
-              <input
-                type="text"
-                value={newAccount.institution}
-                onChange={(e) =>
-                  setNewAccount({ ...newAccount, institution: e.target.value })
-                }
-                style={localStyles.input}
-                placeholder="e.g., Chase, Bank of America"
-              />
-            </div>
+            <TextField
+              label="Institution (optional)"
+              variant="outlined"
+              size="small"
+              value={newAccount.institution}
+              onChange={(e) =>
+                setNewAccount({ ...newAccount, institution: e.target.value })
+              }
+              placeholder="e.g., Chase, Bank of America"
+              fullWidth
+            />
 
-            <div style={localStyles.modalButtons}>
-              <button
+            {/* Save / Cancel Buttons */}
+            <Box
+              display="flex"
+              justifyContent="flex-end"
+              gap={2}
+              marginTop="20px"
+            >
+              <Button
+                variant="outlined"
                 onClick={() => setShowCreateAccountModal(false)}
-                style={localStyles.cancelButton}
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleCreateAccount}
-                style={localStyles.saveButton}
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                type="submit"
                 disabled={isLoading || !newAccount.name}
               >
                 {isLoading ? 'Creating...' : 'Create Account'}
-              </button>
-            </div>
+              </Button>
+            </Box>
+          </form>
+
           </div>
         </div>
       )}
@@ -564,22 +586,24 @@ export default function Home() {
             </p>
 
             <div style={localStyles.modalButtons}>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirmation(false);
-                  setAccountToDelete(null);
-                }}
-                style={localStyles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                style={localStyles.deleteConfirmButton}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Deleting...' : 'Delete Account'}
-              </button>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setShowDeleteConfirmation(false);
+                setAccountToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleDeleteAccount}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Deleting...' : 'Delete Account'}
+            </Button>
             </div>
           </div>
         </div>
@@ -592,14 +616,12 @@ export default function Home() {
 
 const localStyles = {
   container: {
-    padding: '40px',
-    maxWidth: '900px',
-    margin: '0 auto',
+    // maxWidth: '900px',
+    // margin: '0 auto',
   },
   title: {
     fontSize: '24px',
-    marginBottom: '30px',
-    color: '#333',
+    marginBottom: '15px',
   },
   subtitle: {
     fontSize: '20px',
