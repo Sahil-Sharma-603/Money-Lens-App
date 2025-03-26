@@ -114,6 +114,7 @@ router.get('/', auth, async (req, res) => {
       
       // res.json(transformedGoals);
 
+      // res.json(JSON.stringify(goals)); 
       res.json(goals); 
     } else {
       res.json();
