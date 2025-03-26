@@ -274,3 +274,20 @@
   border-radius: 4px;
   font-size: 1rem;
 }
+
+.savingsGoal {
+  display: flex; 
+  flex-direction: column;
+}
+
+.subGoals {
+  display: flex;
+  flex-direction: row;
+  padding: 10px 0px 10px 0px; 
+}
+
+.subGoalsInput {
+  display: flex;
+  flex-direction: column;
+  padding-right: 10px;
+}

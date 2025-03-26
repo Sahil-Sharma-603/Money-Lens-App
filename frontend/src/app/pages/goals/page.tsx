@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import styles from '../../assets/styles/goals.module.css';
+import styles from './goals.module.css';
 import pageStyles from '../../assets/page.module.css';
-import GoalCard from '../../components/GoalCard';
-import GoalForm from '../../components/GoalForm';
+import GoalCard from './components/GoalCard';
+import GoalForm from './components/GoalForm';
 import { Goal, apiRequest } from '../../assets/utilities/API_HANDLER';
-import GoalDetails from '../../components/GoalDetails';
+import GoalDetails from './components/GoalDetails';
 import Card from '../../components/Card';
-import AddMoneyForm from '../../components/AddMoneyForm';
+import AddMoneyForm from './components/AddMoneyForm';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -26,21 +26,29 @@ export default function GoalsPage() {
       try {
         setIsLoading(true);
         setError(null);
-        
+    
         console.log('Fetching goals from API...');
-        const data = await apiRequest<Goal[]>('/goals', {
-          requireAuth: true
-        });
-        
-        console.log('Goals data received:', data);
-        
-        // Convert string dates back to Date objects
-        const goalsWithDates = data.map((goal: any) => ({
+        const response = await apiRequest('/goals', { requireAuth: true });
+    
+        // Log response for debugging
+        console.log('Raw response:', response);
+    
+        if (!response.ok) {
+          console.error('Response not OK:', response.status, response.statusText);
+          throw new Error(`API error: ${response.status} ${response.statusText}`);
+        }
+    
+        const text = await response.text(); // Get raw response text
+        console.log('Raw response text:', text);
+    
+        // Try to parse it as JSON
+        const data = JSON.parse(text);
+        console.log('Parsed JSON data:', data);
+    
+        setGoals(data.map((goal: any) => ({
           ...goal,
-          targetDate: new Date(goal.targetDate)
-        }));
-        
-        setGoals(goalsWithDates);
+          targetDate: new Date(goal.targetDate),
+        })));
       } catch (error) {
         console.error('Error fetching goals:', error);
         setError('Failed to load your goals. Please try again later.');
@@ -48,7 +56,7 @@ export default function GoalsPage() {
         setIsLoading(false);
       }
     };
-
+  
     fetchGoals();
   }, []);
 
@@ -106,6 +114,31 @@ export default function GoalsPage() {
       setIsLoading(false);
     }
   };
+
+  // Add a subgoal
+  const addSubGoal = async (goalId: string, subGoalData: any) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+  
+      console.log("Adding sub-goal:", subGoalData);
+  
+      const updatedGoal = await apiRequest<Goal>(`/goals/${goalId}/subgoal`, {
+        method: "POST",
+        body: subGoalData,
+        requireAuth: true,
+      });
+  
+      setGoals(goals.map((goal) => (goal.id === goalId ? updatedGoal : goal)));
+      setError("Sub-goal added successfully!");
+    } catch (error) {
+      console.error("Error adding sub-goal:", error);
+      setError("Failed to add sub-goal. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
 
   // Delete a goal from MongoDB
   const deleteGoal = async (goalId: string) => {
@@ -222,7 +255,11 @@ export default function GoalsPage() {
             <div>
               <button 
                 className={styles.addButton}
-                onClick={() => setIsAddingGoal(true)}
+                onClick={() => {
+                  if (!isLoading) { // Check if already loading to prevent unnecessary re-renders
+                    setIsAddingGoal(true);
+                  }
+                }}
                 disabled={isLoading}
               >
                 Add New Goal

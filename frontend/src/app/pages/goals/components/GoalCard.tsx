@@ -1,6 +1,6 @@
 import React from 'react';
-import styles from '../assets/styles/goals.module.css';
-import { Goal } from '../types/goals';
+import styles from '../goals.module.css';
+import { Goal } from '../../../types/goals';
 
 interface GoalCardProps {
   goal: Goal;

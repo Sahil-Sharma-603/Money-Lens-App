@@ -1,8 +1,8 @@
 // frontend/src/app/components/GoalDetails.tsx
 import React from 'react';
-import styles from '../assets/styles/goals.module.css';
-import Card from './Card';
-import { Goal } from '../types/goals';
+import styles from '../goals.module.css';
+import Card from '../../../components/Card';
+import { Goal } from '../../../types/goals';
 
 interface GoalDetailsProps {
   goal: Goal;

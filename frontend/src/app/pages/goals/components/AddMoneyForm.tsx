@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import styles from '../assets/styles/goals.module.css';
-import Card from './Card';
-import { Goal } from '../assets/utilities/API_HANDLER';
+import styles from '../goals.module.css';
+import Card from '../../../components/Card';
+import { Goal } from '../../../assets/utilities/API_HANDLER';
 
 interface AddMoneyFormProps {
   goal: Goal;

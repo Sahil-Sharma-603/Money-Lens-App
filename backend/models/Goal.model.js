@@ -1,5 +1,30 @@
 const mongoose = require('mongoose');
 
+const savingSubGoalSchema = new mongoose.Schema({
+  goalId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,  // Ensure that a goalId is provided
+    ref: 'Goal'  // You can use the 'Goal' model to reference it
+  },
+  name: {
+    type: String,
+    required: true,  // Ensure that a name is provided
+  },
+  amount: {
+    type: Number,
+    required: true,  // Ensure that an amount is provided
+    min: 0  // Ensure that amount is a positive number
+  },
+  percent: {
+    type: Number,
+    required: true,  // Ensure that a percentage is provided
+    min: 0,
+    max: 100  // Ensure percentage is between 0 and 100
+  }
+}, {
+  timestamps: true // Optionally, to automatically add createdAt and updatedAt
+});
+
 const goalSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -55,15 +80,25 @@ const goalSchema = new mongoose.Schema({
     required: true,
     ref: 'User'
   },
+  accountId: [{
+    type: mongoose.Schema.Types.ObjectId,
+    
+  }],  
   createdAt: {
     type: Date,
     default: Date.now
   },
   updatedAt: {
     type: Date
+  }, 
+  savingSubGoals: {
+    goals: [savingSubGoalSchema]
   }
 });
 
-const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);
 
-module.exports = Goal;
+
+const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);
+const SubSavingGoal = mongoose.models.SubSavingGoal || mongoose.model('SubSavingGoal', savingSubGoalSchema);
+
+module.exports = Goal, SubSavingGoal;
