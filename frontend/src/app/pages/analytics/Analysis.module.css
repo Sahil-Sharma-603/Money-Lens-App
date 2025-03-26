@@ -11,9 +11,8 @@
 
   .pieChart {
     position: relative; 
-    margin: 20px; 
-    min-height: 200px;
-    min-width: 300px; 
+    height: auto;
+    min-width: 200px; 
   }
 
 

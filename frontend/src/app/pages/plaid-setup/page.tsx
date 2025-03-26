@@ -11,6 +11,9 @@ import { Building, Plus, Trash } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
+import styles from '../../assets/page.module.css';
+import Card from '../../components/Card';
+import { TextField, MenuItem, Select, InputLabel, FormControl, Box, Button } from '@mui/material';
 
 export default function Home() {
   const router = useRouter();
@@ -261,7 +264,8 @@ export default function Home() {
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
-      <div style={styles.container}>
+      <div className={styles.dashboard}>
+      <Card className={styles.fullPageCard}>
         <div
           style={{
             display: 'flex',
@@ -272,24 +276,28 @@ export default function Home() {
         >
           <p>Loading...</p>
         </div>
+      </Card>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className={styles.dashboard}>
+    <Card className={styles.fullPageCard}>
+    <div style={localStyles.container}>
       {isLoading && (
-        <div style={styles.loaderStyle}>
+        <div style={localStyles.loaderStyle}>
           Updating your account, please wait (Max: 30 seconds)...
         </div>
       )}
-      <h1 style={styles.title}>Bank Account Connection</h1>
-      <button
-        style={styles.importButton}
+      <h1 style={localStyles.title}>Bank Account Connection</h1>
+      <Button
+        variant="contained"
+        color="primary"
         onClick={() => setShowCSVImport(!showCSVImport)}
       >
         {showCSVImport ? 'Cancel Import' : 'Show CSV Import'}
-      </button>
+      </Button>
       {showCSVImport && (
         <CSVImportForm
           onClose={() => setShowCSVImport(false)}
@@ -297,30 +305,33 @@ export default function Home() {
         />
       )}
       {/* Accounts Section */}
-      <div style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.subtitle}>Your Accounts</h2>
-          <div style={styles.headerButtons}>
-            <button
-              onClick={() => setShowCreateAccountModal(true)}
-              style={styles.plaidButton}
-            >
-              <Plus size={16} style={{ marginRight: '8px' }} />
-              Create Account
-            </button>
-            <button
-              onClick={() => open()}
-              style={styles.plaidButton}
-              disabled={!linkToken || !ready || isLoading}
-            >
-              <Building size={16} style={{ marginRight: '8px' }} />
-              Connect Bank
-            </button>
+      <div style={localStyles.section}>
+        <div style={localStyles.sectionHeader}>
+          <h2 style={localStyles.subtitle}>Your Accounts</h2>
+          <div style={localStyles.headerButtons}>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Plus size={16} />}
+            onClick={() => setShowCreateAccountModal(true)}
+          >
+            Create Account
+          </Button>
+
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<Building size={16} />}
+            onClick={() => open()}
+            // disabled={!linkToken || !ready}
+          >
+            Connect Bank
+          </Button>
           </div>
         </div>
 
         {accounts.length === 0 ? (
-          <div style={styles.emptyState}>
+          <div style={localStyles.emptyState}>
             <p>
               You don't have any accounts yet. Create a manual account or
               connect to your bank.
@@ -329,39 +340,41 @@ export default function Home() {
         ) : (
           <>
             {/* Manual Accounts */}
-            <div style={styles.accountsSection}>
-              <h3 style={styles.accountsSubtitle}>Manual Accounts</h3>
-              <div style={styles.accountsList}>
+            <div style={localStyles.accountsSection}>
+              <h3 style={localStyles.accountsSubtitle}>Manual Accounts</h3>
+              <div style={localStyles.accountsList}>
                 {accounts
                   .filter((account) => account.type !== 'plaid')
                   .map((account) => (
-                    <div key={account._id} style={styles.accountItem}>
-                      <div style={styles.accountInfo}>
+                    <div key={account._id} style={localStyles.accountItem}>
+                      <div style={localStyles.accountInfo}>
                         <strong>{account.name}</strong>
-                        <span style={styles.accountType}>{account.type}</span>
+                        <span style={localStyles.accountType}>{account.type}</span>
                       </div>
-                      <div style={styles.accountBalance}>
+                      <div style={localStyles.accountBalance}>
                         {account.currency} {account.balance.toFixed(2)}
                       </div>
-                      <div style={styles.accountActions}>
-                        <button
-                          onClick={() => {
-                            setAccountToDelete(account);
-                            setShowDeleteConfirmation(true);
-                          }}
-                          style={styles.deleteButton}
-                          disabled={isLoading}
-                        >
-                          <Trash size={16} style={{ marginRight: '4px' }} />
-                          Delete
-                        </button>
+                      <div style={localStyles.accountActions}>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        size="small"
+                        startIcon={<Trash size={16} />}
+                        onClick={() => {
+                          setAccountToDelete(account);
+                          setShowDeleteConfirmation(true);
+                        }}
+                        disabled={isLoading}
+                      >
+                        Delete
+                      </Button>
                       </div>
                     </div>
                   ))}
 
                 {accounts.filter((account) => account.type !== 'plaid')
                   .length === 0 && (
-                  <div style={styles.emptyAccountsMessage}>
+                  <div style={localStyles.emptyAccountsMessage}>
                     No manual accounts yet. Create one to get started.
                   </div>
                 )}
@@ -369,30 +382,30 @@ export default function Home() {
             </div>
 
             {/* Plaid Accounts */}
-            <div style={styles.accountsSection}>
-              <h3 style={styles.accountsSubtitle}>Connected Bank Accounts</h3>
-              <div style={styles.accountsList}>
+            <div style={localStyles.accountsSection}>
+              <h3 style={localStyles.accountsSubtitle}>Connected Bank Accounts</h3>
+              <div style={localStyles.accountsList}>
                 {accounts
                   .filter((account) => account.type === 'plaid')
                   .map((account) => (
-                    <div key={account._id} style={styles.accountItem}>
-                      <div style={styles.accountInfo}>
+                    <div key={account._id} style={localStyles.accountItem}>
+                      <div style={localStyles.accountInfo}>
                         <strong>{account.name}</strong>
                         {account.plaid_mask && (
-                          <span style={styles.accountNumber}>
+                          <span style={localStyles.accountNumber}>
                             •••• {account.plaid_mask}
                           </span>
                         )}
                         {account.plaid_subtype && (
-                          <span style={styles.accountType}>
+                          <span style={localStyles.accountType}>
                             {account.plaid_subtype}
                           </span>
                         )}
                       </div>
-                      <div style={styles.accountBalance}>
+                      <div style={localStyles.accountBalance}>
                         {account.currency} {account.balance.toFixed(2)}
                       </div>
-                      <div style={styles.accountInstitution}>
+                      <div style={localStyles.accountInstitution}>
                         {account.institution}
                       </div>
                     </div>
@@ -400,7 +413,7 @@ export default function Home() {
 
                 {accounts.filter((account) => account.type === 'plaid')
                   .length === 0 && (
-                  <div style={styles.emptyAccountsMessage}>
+                  <div style={localStyles.emptyAccountsMessage}>
                     No bank accounts connected. Use the "Connect Bank" button to
                     link your accounts.
                   </div>
@@ -408,30 +421,24 @@ export default function Home() {
               </div>
 
               {hasPlaidConnection && (
-                <div style={styles.buttonGroup}>
-                  <button
+                <div style={localStyles.buttonGroup}>
+                  <Button
+                    variant="contained"
+                    color="error"
                     onClick={handleDisconnect}
-                    style={styles.disconnectButton}
                     disabled={isLoading}
                   >
-                    {isLoading
-                      ? 'Processing...'
-                      : 'Disconnect All Bank Accounts'}
-                  </button>
+                    {isLoading ? 'Processing...' : 'Disconnect All Bank Accounts'}
+                  </Button>
 
-                  <button
+                  <Button
+                    variant="contained"
+                    sx={{ backgroundColor: '#4285F4', '&:hover': { backgroundColor: '#357ae8' } }}
                     onClick={fetchHistoricalTransactions}
-                    style={{
-                      ...styles.plaidButton,
-                      marginLeft: '10px',
-                      backgroundColor: '#4285F4',
-                    }}
                     disabled={isLoading}
                   >
-                    {isLoading
-                      ? 'Processing...'
-                      : 'Fetch Historical Transactions (24 Months)'}
-                  </button>
+                    {isLoading ? 'Processing...' : 'Fetch Historical Transactions (24 Months)'}
+                  </Button>
                 </div>
               )}
             </div>
@@ -441,158 +448,180 @@ export default function Home() {
 
       {/* Create Account Modal */}
       {showCreateAccountModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <h3>Create a New Account</h3>
+        <div style={localStyles.modalOverlay}>
+          <div style={localStyles.modalContent}>
+          <h3 style={{marginBottom: 10}}>Create a New Account</h3>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Account Name:</label>
-              <input
-                type="text"
-                value={newAccount.name}
-                onChange={(e) =>
-                  setNewAccount({ ...newAccount, name: e.target.value })
-                }
-                style={styles.input}
-                placeholder="e.g., My Checking Account"
-              />
-            </div>
+          <form
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateAccount();
+            }}
+          >
+            <TextField
+              label="Account Name"
+              variant="outlined"
+              size="small"
+              value={newAccount.name}
+              onChange={(e) =>
+                setNewAccount({ ...newAccount, name: e.target.value })
+              }
+              placeholder="e.g., My Checking Account"
+              fullWidth
+              required
+            />
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Account Type:</label>
-              <select
+            <FormControl fullWidth required>
+              <InputLabel id="account-type-label">Account Type</InputLabel>
+              <Select
+                labelId="account-type-label"
+                label="Account Type"
                 value={newAccount.type}
+                size="small"
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, type: e.target.value })
                 }
-                style={styles.input}
+                fullWidth
               >
-                <option value="checking">Checking</option>
-                <option value="savings">Savings</option>
-                <option value="credit">Credit Card</option>
-                <option value="loan">Loan</option>
-                <option value="investment">Investment</option>
-                <option value="cash">Cash</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
+                <MenuItem value="checking">Checking</MenuItem>
+                <MenuItem value="savings">Savings</MenuItem>
+                <MenuItem value="credit">Credit Card</MenuItem>
+                <MenuItem value="loan">Loan</MenuItem>
+                <MenuItem value="investment">Investment</MenuItem>
+                <MenuItem value="cash">Cash</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Starting Balance:</label>
-              <input
-                type="number"
-                step="0.01"
-                value={newAccount.balance}
-                onChange={(e) =>
-                  setNewAccount({
-                    ...newAccount,
-                    balance: parseFloat(e.target.value),
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
+            <TextField
+              label="Starting Balance"
+              variant="outlined"
+              type="number"
+              size="small"
+              value={newAccount.balance}
+              onChange={(e) =>
+                setNewAccount({
+                  ...newAccount,
+                  balance: parseFloat(e.target.value),
+                })
+              }
+              fullWidth
+            />
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Currency:</label>
-              <select
+            <FormControl fullWidth>
+              <InputLabel id="currency-label">Currency</InputLabel>
+              <Select
+                labelId="currency-label"
+                label="Currency"
+                size="small"
                 value={newAccount.currency}
                 onChange={(e) =>
                   setNewAccount({ ...newAccount, currency: e.target.value })
                 }
-                style={styles.input}
+                fullWidth
               >
-                <option value="USD">USD - US Dollar</option>
-                <option value="CAD">CAD - Canadian Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="GBP">GBP - British Pound</option>
-                <option value="AUD">AUD - Australian Dollar</option>
-                <option value="JPY">JPY - Japanese Yen</option>
-              </select>
-            </div>
+                <MenuItem value="USD">USD - US Dollar</MenuItem>
+                <MenuItem value="CAD">CAD - Canadian Dollar</MenuItem>
+                <MenuItem value="EUR">EUR - Euro</MenuItem>
+                <MenuItem value="GBP">GBP - British Pound</MenuItem>
+                <MenuItem value="AUD">AUD - Australian Dollar</MenuItem>
+                <MenuItem value="JPY">JPY - Japanese Yen</MenuItem>
+              </Select>
+            </FormControl>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Institution (optional):</label>
-              <input
-                type="text"
-                value={newAccount.institution}
-                onChange={(e) =>
-                  setNewAccount({ ...newAccount, institution: e.target.value })
-                }
-                style={styles.input}
-                placeholder="e.g., Chase, Bank of America"
-              />
-            </div>
+            <TextField
+              label="Institution (optional)"
+              variant="outlined"
+              size="small"
+              value={newAccount.institution}
+              onChange={(e) =>
+                setNewAccount({ ...newAccount, institution: e.target.value })
+              }
+              placeholder="e.g., Chase, Bank of America"
+              fullWidth
+            />
 
-            <div style={styles.modalButtons}>
-              <button
+            {/* Save / Cancel Buttons */}
+            <Box
+              display="flex"
+              justifyContent="flex-end"
+              gap={2}
+              marginTop="20px"
+            >
+              <Button
+                variant="outlined"
                 onClick={() => setShowCreateAccountModal(false)}
-                style={styles.cancelButton}
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleCreateAccount}
-                style={styles.saveButton}
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                type="submit"
                 disabled={isLoading || !newAccount.name}
               >
                 {isLoading ? 'Creating...' : 'Create Account'}
-              </button>
-            </div>
+              </Button>
+            </Box>
+          </form>
+
           </div>
         </div>
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmation && accountToDelete && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+        <div style={localStyles.modalOverlay}>
+          <div style={localStyles.modalContent}>
             <h3>Confirm Account Deletion</h3>
 
-            <p style={styles.warningText}>
+            <p style={localStyles.warningText}>
               Are you sure you want to delete the account "
               {accountToDelete.name}"?
             </p>
-            <p style={styles.warningText}>
+            <p style={localStyles.warningText}>
               All transactions associated with this account will also be
               deleted. This action cannot be undone.
             </p>
 
-            <div style={styles.modalButtons}>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirmation(false);
-                  setAccountToDelete(null);
-                }}
-                style={styles.cancelButton}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                style={styles.deleteConfirmButton}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Deleting...' : 'Delete Account'}
-              </button>
+            <div style={localStyles.modalButtons}>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setShowDeleteConfirmation(false);
+                setAccountToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleDeleteAccount}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Deleting...' : 'Delete Account'}
+            </Button>
             </div>
           </div>
         </div>
       )}
     </div>
+    </Card>
+    </div>
   );
 }
 
-const styles = {
+const localStyles = {
   container: {
-    padding: '40px',
-    maxWidth: '900px',
-    margin: '0 auto',
+    // maxWidth: '900px',
+    // margin: '0 auto',
   },
   title: {
     fontSize: '24px',
-    marginBottom: '30px',
-    color: '#333',
+    marginBottom: '15px',
   },
   subtitle: {
     fontSize: '20px',
@@ -602,7 +631,6 @@ const styles = {
   section: {
     marginBottom: '30px',
     padding: '20px',
-    backgroundColor: '#f5f5f5',
     borderRadius: '8px',
   },
   searchContainer: {
@@ -629,13 +657,18 @@ const styles = {
   label: {
     marginBottom: '5px',
     color: '#666',
+    minWidth: '130px',
+    textAlign: 'right' as const,
   },
   input: {
     padding: '8px',
     borderRadius: '4px',
-    border: '1px solid #ddd',
+    // border: '2px solid #ddd',
     fontSize: '16px',
+    flex: 1,
+    textAlign: 'right' as const,
   },
+  
   plaidButton: {
     backgroundColor: '#00b300',
     color: 'white',
@@ -851,6 +884,10 @@ const styles = {
   },
   formGroup: {
     marginBottom: '20px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '20px',
   },
   modalButtons: {
     display: 'flex',
