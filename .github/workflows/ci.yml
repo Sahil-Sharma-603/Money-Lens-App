@@ -37,23 +37,17 @@ jobs:
         run: |
           cd frontend
           npm run build
-
+          
       - name: Run Tests
         run: |
           cd tests
           npm install
           npm test
-
+          
       - name: Generate Test Coverage Report
         run: |
           cd tests
           npm run test:coverage
-
-      - name: Upload Test Coverage Reports
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-coverage-report
-          path: tests/coverage/
 
   assign-reviewers:
     if: github.event_name == 'pull_request'
