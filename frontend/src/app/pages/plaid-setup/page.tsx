@@ -48,6 +48,12 @@ export default function Home() {
   // Delete confirmation
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  
+  // Initial balance setup state for Plaid accounts
+  const [showInitialBalanceModal, setShowInitialBalanceModal] = useState(false);
+  const [plaidAccountsToSetup, setPlaidAccountsToSetup] = useState<Account[]>([]);
+  const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
+  const [initialBalanceInput, setInitialBalanceInput] = useState('');
 
   // Check authentication first
   useEffect(() => {
@@ -188,17 +194,19 @@ export default function Home() {
       try {
         await fetchAccounts();
 
-        // After fetching accounts, ask user to set initial balances for each new Plaid account
+        // After fetching accounts, show a modal for setting initial balances for all Plaid accounts
         if (response.accounts && response.accounts.length > 0) {
-          alert(
-            'Please set the current balance for each of your connected accounts. This balance will be the starting point, and only transactions after this point will update your balance.'
+          // Filter only Plaid accounts
+          const plaidAccounts = response.accounts.filter(
+            (account: Account) => account.type === 'plaid'
           );
-
-          // Set state to show balance setup modal for each account
-          for (const account of response.accounts) {
-            if (account.type === 'plaid') {
-              await promptForInitialBalance(account);
-            }
+          
+          if (plaidAccounts.length > 0) {
+            // Set up the accounts to be configured
+            setPlaidAccountsToSetup(plaidAccounts);
+            setCurrentAccountIndex(0);
+            setInitialBalanceInput('');
+            setShowInitialBalanceModal(true);
           }
         }
       } catch (error) {
@@ -210,43 +218,39 @@ export default function Home() {
       setIsLoading(false);
     }
   };
-
-  // Function to prompt user for initial balance and update it
-  const promptForInitialBalance = async (account: Account) => {
-    const initialBalance = prompt(
-      `Please enter the current balance for "${account.name}" (${
-        account.plaid_mask ? '••••' + account.plaid_mask : ''
-      }):`
-    );
-
-    if (initialBalance === null) {
-      // User cancelled, show warning and return
-      alert(
-        `Warning: You must set an initial balance for your account "${account.name}" for accurate tracking.`
-      );
-      return;
-    }
-
-    const balanceValue = parseFloat(initialBalance);
-
+  
+  // Function to handle setting an initial balance for the current account
+  const handleSetInitialBalance = async () => {
+    const currentAccount = plaidAccountsToSetup[currentAccountIndex];
+    const balanceValue = parseFloat(initialBalanceInput);
+    
     if (isNaN(balanceValue)) {
       alert('Please enter a valid number for the balance.');
-      return promptForInitialBalance(account);
+      return;
     }
-
+    
     try {
       // Call API to set initial balance
-      await apiRequest(`/accounts/${account._id}/initial-balance`, {
+      await apiRequest(`/accounts/${currentAccount._id}/initial-balance`, {
         method: 'PUT',
         body: { initial_balance: balanceValue },
       });
-
+      
       await fetchAccounts();
+      
+      // Move to the next account or close the modal
+      if (currentAccountIndex < plaidAccountsToSetup.length - 1) {
+        setCurrentAccountIndex(currentAccountIndex + 1);
+        setInitialBalanceInput('');
+      } else {
+        // All accounts have been set up
+        setShowInitialBalanceModal(false);
+        setPlaidAccountsToSetup([]);
+        alert('All account balances have been set successfully!');
+      }
     } catch (error) {
       console.error('Error setting initial balance:', error);
-      alert(
-        `Failed to set initial balance for ${account.name}. Please try again.`
-      );
+      alert(`Failed to set initial balance for ${currentAccount.name}. Please try again.`);
     }
   };
 
@@ -688,6 +692,83 @@ export default function Home() {
                     {isLoading ? 'Deleting...' : 'Delete Account'}
                   </Button>
                 </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Initial Balance Setup Modal for Plaid Accounts */}
+          {showInitialBalanceModal && plaidAccountsToSetup.length > 0 && (
+            <div style={localStyles.modalOverlay}>
+              <div style={localStyles.modalContent}>
+                <h3 style={{ marginBottom: 20 }}>Set Initial Account Balance</h3>
+                
+                <p style={{ marginBottom: 20 }}>
+                  Please enter the current balance for your account. This balance will be used as the starting point,
+                  and only transactions after this point will update your balance.
+                </p>
+                
+                {currentAccountIndex < plaidAccountsToSetup.length && (
+                  <div>
+                    <div style={{ marginBottom: 20 }}>
+                      <h4 style={{ marginBottom: 5 }}>
+                        {plaidAccountsToSetup[currentAccountIndex].name}
+                        {plaidAccountsToSetup[currentAccountIndex].plaid_mask && 
+                          ` (••••${plaidAccountsToSetup[currentAccountIndex].plaid_mask})`}
+                      </h4>
+                      <span style={{ fontSize: '14px', color: '#666' }}>
+                        {plaidAccountsToSetup[currentAccountIndex].plaid_subtype || 'Account'} at {plaidAccountsToSetup[currentAccountIndex].institution || 'Bank'}
+                      </span>
+                      <p style={{ marginTop: 10, color: '#888', fontSize: '14px' }}>
+                        Account {currentAccountIndex + 1} of {plaidAccountsToSetup.length}
+                      </p>
+                    </div>
+                    
+                    <TextField
+                      label="Current Balance"
+                      variant="outlined"
+                      type="number"
+                      size="medium"
+                      value={initialBalanceInput}
+                      onChange={(e) => setInitialBalanceInput(e.target.value)}
+                      fullWidth
+                      autoFocus
+                      placeholder="Enter the current balance"
+                      InputProps={{
+                        startAdornment: <span style={{ marginRight: 8 }}>
+                          {plaidAccountsToSetup[currentAccountIndex].currency || 'USD'}
+                        </span>,
+                      }}
+                    />
+                    
+                    <Box
+                      display="flex"
+                      justifyContent="flex-end"
+                      gap={2}
+                      marginTop="30px"
+                    >
+                      <Button
+                        variant="outlined"
+                        color="inherit"
+                        onClick={() => {
+                          // If user skips, we'll use 0 as the default
+                          setInitialBalanceInput('0');
+                          handleSetInitialBalance();
+                        }}
+                      >
+                        Skip
+                      </Button>
+                      
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSetInitialBalance}
+                        disabled={isLoading || initialBalanceInput === ''}
+                      >
+                        {isLoading ? 'Saving...' : 'Save Balance'}
+                      </Button>
+                    </Box>
+                  </div>
+                )}
               </div>
             </div>
           )}
