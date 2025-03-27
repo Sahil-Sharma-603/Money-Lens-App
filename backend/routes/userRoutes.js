@@ -2,6 +2,8 @@ const express = require('express');
 const User = require('./../models/User.model');
 const jwt = require('jsonwebtoken');
 const auth = require('./../middleware/auth.middleware');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 const router = express.Router();
 
@@ -121,6 +123,77 @@ router.get('/user', auth, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Setup 2FA
+router.post('/setup-2fa', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate secret
+    const secret = speakeasy.generateSecret({
+      name: `MoneyLens:${user.email}`
+    });
+
+    // Save secret to user
+    user.twoFactorSecret = secret.base32;
+    await user.save();
+
+    // Generate QR code
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    res.json({ qrCodeUrl });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Verify 2FA
+router.post('/verify-2fa', async (req, res) => {
+  try {
+    const { email, token } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: token
+    });
+
+    if (verified) {
+      user.twoFactorEnabled = true;
+      await user.save();
+    }
+
+    res.json({ verified });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Check if 2FA is required
+router.post('/check-2fa', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ requires2FA: user.twoFactorEnabled });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
