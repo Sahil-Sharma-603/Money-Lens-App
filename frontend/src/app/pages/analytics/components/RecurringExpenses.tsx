@@ -40,27 +40,29 @@ const RecurringExpenses = ({ recurringExpenses}: RecurringExpensesProps) => {
     return (
         <Card style={{ flex: 1, display: "flex", flexDirection: "column", padding: "20px" }}>
             <h4 style={{ fontWeight: "600", fontSize: "0.9rem", marginBottom: 15 }}>Recurring Expenses</h4> 
-            <table className={styles.expensesTable}>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Amount</th>
-                        <th>Frequency</th>
-                        <th>Next Payment Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {recurringExpenses.map((expense, index) => (
-                        <tr key={index}>
-                            <td>{expense.name}</td>
-                            <td>${expense.amount ? expense.amount.toFixed(2) : 'N/A'}</td>
-                            <td>{expense.frequency || 'Monthly'}</td>
-                            <td>{expense.nextPaymentDate}</td>
+            <div className={styles.recurringExpensesScroll}>
+                <table className={styles.expensesTable}>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Amount</th>
+                            <th>Frequency</th>
+                            <th>Next Payment Date</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-{/*             
+                    </thead>
+                    <tbody>
+                        {recurringExpenses.map((expense, index) => (
+                            <tr key={index}>
+                                <td>{expense.name}</td>
+                                <td>${expense.amount ? expense.amount.toFixed(2) : 'N/A'}</td>
+                                <td>{expense.frequency || 'Monthly'}</td>
+                                <td>{expense.nextPaymentDate}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+{/*         
             <div  style={{ flex: 1, minHeight: "350px", minWidth: "300px"}}> 
                 <ResponsiveContainer width="100%" height="100%">
                     <h4>expenses</h4>
