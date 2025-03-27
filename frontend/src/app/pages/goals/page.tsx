@@ -20,38 +20,63 @@ export default function GoalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [addingMoneyToGoal, setAddingMoneyToGoal] = useState<Goal | null>(null);
 
-  // Fetch goals from MongoDB when component mounts
   useEffect(() => {
 
 
-    const fetchGoals = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+//my version
+  //   const fetchGoals = async () => {
+  //     try {
+  //       setIsLoading(true);
+  //       setError(null);
 
-        console.log('Fetching goals from API...');
-        // const response = await apiRequest('/goals', { requireAuth: true });
-        const data = await apiRequest('/goals', { requireAuth: true });
-        console.log('Parsed JSON data:', data);
+  //       console.log('Fetching goals from API...');
+  //       // const response = await apiRequest('/goals', { requireAuth: true });
+  //       const data = await apiRequest('/goals', { requireAuth: true });
+  //       console.log('Parsed JSON data:', data);
 
-        setGoals(data.map((goal) => ({
-          ...goal,
-          targetDate: new Date(goal.targetDate),
-        })));
-      } catch (error) {
-        console.error('Error fetching goals:', error);
-        setError('Failed to load your goals. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  //       setGoals(data.map((goal) => ({
+  //         ...goal,
+  //         targetDate: new Date(goal.targetDate),
+  //       })));
+  //     } catch (error) {
+  //       console.error('Error fetching goals:', error);
+  //       setError('Failed to load your goals. Please try again later.');
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
 
-    fetchGoals();
-  }, []);
+  //   fetchGoals();
+  // }, []);
 
 
 
   
+//sahil's version
+  const fetchGoals = async () => {
+   try {
+     setIsLoading(true);
+     setError(null);
+    const data = await apiRequest('/goals', { requireAuth: true });
+    // Map _id to id and convert targetDate to Date object
+    const mappedData = data.map(goal => ({
+       ...goal,
+       id: goal._id.toString(),
+       targetDate: new Date(goal.targetDate)
+    }));
+    setGoals(mappedData);
+  } catch (error) {
+    console.error('Error fetching goals:', error);
+    setError('Failed to load your goals. Please try again later.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+fetchGoals();
+}, []);
+
+
 
   const calculateProgress = (current: number, target: number) => {
     return Math.min((current / target) * 100, 100);
@@ -64,7 +89,9 @@ export default function GoalsPage() {
     return diffDays > 0 ? `${diffDays} days remaining` : 'Past due';
   };
 
-  // Save a new goal to MongoDB
+  // Adding new goal based on the two different goal forms saving and spending limit
+  // saving new goal to mongo db 
+  //
   const addGoal = async (formData: any) => {
     try {
       setIsLoading(true);
@@ -72,16 +99,21 @@ export default function GoalsPage() {
       
       console.log('Adding new goal, original form data:', formData);
       
-      // Create the goal object with proper structure
+      // Build the new goal object conditionally
       const newGoal = {
         title: formData.title,
         description: formData.description || "",
         targetAmount: Number(formData.targetAmount),
         currentAmount: Number(formData.currentAmount) || 0,
-        targetDate: new Date(formData.targetDate),
         type: formData.type || "Savings",
-        // Only include category for savings goals
-        ...(formData.type === 'Savings' ? { category: formData.category } : {})
+        ...(formData.type === 'Savings' ? { 
+              targetDate: new Date(formData.targetDate),
+              category: formData.category 
+        } : {
+              // For Spending Limit goals, do not include targetDate
+              limitAmount: Number(formData.limitAmount),
+              interval: formData.interval
+        })
       };
       
       console.log('Formatted goal data to be sent:', newGoal);
@@ -94,12 +126,14 @@ export default function GoalsPage() {
       
       console.log('Goal saved successfully:', savedGoal);
       
-      // Convert string date back to Date object
-      savedGoal.targetDate = new Date(savedGoal.targetDate);
+      // If needed, convert targetDate back to Date object
+      if (savedGoal.targetDate) {
+        savedGoal.targetDate = new Date(savedGoal.targetDate);
+      }
       
       setGoals([...goals, savedGoal]);
-      setIsAddingGoal(false);  // Close the form
-      setError('Goal created successfully!'); // Show success message
+      setIsAddingGoal(false);
+      setError('Goal created successfully!');
     } catch (error) {
       console.error('Error adding goal:', error);
       setError(`Failed to save your goal: ${error.message || 'Unknown error'}`);
@@ -107,7 +141,7 @@ export default function GoalsPage() {
       setIsLoading(false);
     }
   };
-
+  
   // Add a subgoal
   const addSubGoal = async (goalId: string, subGoalData: any) => {
     try {
@@ -224,20 +258,26 @@ export default function GoalsPage() {
   };
 
   // Sort goals based on the selected criteria
+
   const sortedGoals = [...goals].sort((a, b) => {
     switch (sortBy) {
-      case 'date':
-        return a.targetDate.getTime() - b.targetDate.getTime();
-      case 'progress':
+      case 'date': {
+        const aTime = a.targetDate ? new Date(a.targetDate).getTime() : Infinity;
+        const bTime = b.targetDate ? new Date(b.targetDate).getTime() : Infinity;
+        return aTime - bTime;
+      }
+      case 'progress': {
         const progressA = calculateProgress(a.currentAmount, a.targetAmount);
         const progressB = calculateProgress(b.currentAmount, b.targetAmount);
         return progressB - progressA;
+      }
       case 'amount':
         return b.targetAmount - a.targetAmount;
       default:
         return 0;
     }
   });
+  
 
   return (
     <div className={pageStyles.dashboard}>
@@ -249,7 +289,7 @@ export default function GoalsPage() {
               <button 
                 className={styles.addButton}
                 onClick={() => {
-                  if (!isLoading) { // Check if already loading to prevent unnecessary re-renders
+                  if (!isLoading) { 
                     setIsAddingGoal(true);
                   }
                 }}
