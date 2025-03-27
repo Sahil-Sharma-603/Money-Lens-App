@@ -2,76 +2,15 @@
 const User = require('../models/User.model'); 
 const Transaction = require('../models/Transaction.model'); 
 const Account = require('../models/Account.model'); 
-const Goal = require('../models/Goal.model');
+const {Goal} = require('../models/Goal.model');
 
-
-// async function getGoals(userId){
-//     try {
-//         // ensure the user exists
-//         let dbUser = await User.findById(userId);
-//         if (!dbUser) {
-//             return { error: "User not found" };
-//         }
-
-//         // Find user by ID without a timeout in tests
-//         try {
-//             // In test environment, skip the timeout promise
-//             if (process.env.NODE_ENV === 'test') {
-//                 dbUser = await User.findById(userId);
-//             } else {
-//                 // In non-test environments, use timeout to prevent hanging
-//                 dbUser = await Promise.race([
-//                     User.findById(userId),
-//                     new Promise((_, reject) => 
-//                         setTimeout(() => reject(new Error("User lookup timed out")), 3000)
-//                     )
-//                 ]);
-//             }
-
-//             if (!dbUser) {
-//                 console.log(`User not found for id: ${userId}`);
-//                 return {};
-//             }
-//         } catch (err) {
-//             console.error("Error finding user:", err);
-//             return {};
-//         }
-
-//         // Fetch goals with a timeout (except in test environment)
-//         let goals;
-//         try {
-//             // In test environment, skip the timeout promise
-//             if (process.env.NODE_ENV === 'test') {
-//                 goals = await Goal.find({ user_id: userId });
-//             } else {
-//                 // In non-test environments, use timeout to prevent hanging
-//                 goals = await Promise.race([
-//                     Goal.find({ user_id: userId }),
-//                     new Promise((_, reject) => 
-//                         setTimeout(() => reject(new Error("Goal lookup timed out")), 3000)
-//                     )
-//                 ]);
-//             }
-//             console.log("Goals found: ", goals); 
-//             if (!goals || !Array.isArray(goals)) {
-//                 console.log("No goals found or invalid goal data");
-//                 goals = [];
-//             }
-//         } catch (err) {
-//             console.error("Error finding goals:", err);
-//             goals = [];
-//         }
-//     } catch (err) {
-//         console.error("Error finding goals:", err);
-//     }
-// }; 
 
 async function getGoals(userId) {
     try {
         // Ensure the user exists
         let dbUser = await User.findById(userId);
         if (!dbUser) {
-            return { error: "User not found" };
+            return { error: "User not found for id", userId };
         }
 
         // Fetch goals with a timeout (except in test environment)
@@ -79,14 +18,17 @@ async function getGoals(userId) {
         try {
             // In test environment, skip the timeout promise
             if (process.env.NODE_ENV === 'test') {
-                goals = await Goal.find({ userId }).populate('savingSubGoals.goals'); // Populate savingSubGoals field
+                goals = await Goal.find({ userId });
+
             } else {
                 // In non-test environments, use timeout to prevent hanging
                 goals = await Promise.race([
-                    Goal.find({ userId }).populate('savingSubGoals.goals'),  // Populate savingSubGoals
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Goal lookup timed out")), 3000)
-                    )
+                  
+                        Goal.find({ userId }),
+                        new Promise((_, reject) =>
+                          setTimeout(() => reject(new Error("Goal lookup timed out")), 3000)
+                        )
+
                 ]);
             }
 
@@ -99,10 +41,12 @@ async function getGoals(userId) {
             return goals;
         } catch (err) {
             console.error("Error finding goals:", err);
-            goals = [];
+            // goals = [];
+            return [];
         }
     } catch (err) {
         console.error("Error finding goals:", err);
+        return [];
     }
 };
 
@@ -333,13 +277,16 @@ async function addSubGoalToGoal(goalId, subgoalData) {
       }
   
       // Add new goal to the goals array
-      goal.savingSubGoals.push(subgoalData);
+      goal.subGoals.push(subgoalData);
   
       // Save the updated user document
       await goal.save();
       console.log("Subgoal added successfully:", subgoalData);
+      return goal;
+
     } catch (error) {
       console.error("Error adding goal:", error);
+      throw error;
     }
   }
   

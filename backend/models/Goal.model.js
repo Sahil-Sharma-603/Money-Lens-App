@@ -1,29 +1,23 @@
+
 const mongoose = require('mongoose');
 
-const savingSubGoalSchema = new mongoose.Schema({
-  goalId: {
-    type: mongoose.Schema.Types.ObjectId,
-    required: true,  // Ensure that a goalId is provided
-    ref: 'Goal'  // You can use the 'Goal' model to reference it
-  },
+const subGoalSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,  // Ensure that a name is provided
+    required: true,
   },
   amount: {
     type: Number,
-    required: true,  // Ensure that an amount is provided
-    min: 0  // Ensure that amount is a positive number
-  },
-  percent: {
-    type: Number,
-    required: true,  // Ensure that a percentage is provided
+    required: true,
     min: 0,
-    max: 100  // Ensure percentage is between 0 and 100
+  },
+  percentage: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100,
   }
-}, {
-  timestamps: true // Optionally, to automatically add createdAt and updatedAt
-});
+}, { timestamps: true });
 
 const goalSchema = new mongoose.Schema({
   title: {
@@ -35,7 +29,7 @@ const goalSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    trim: true
+    trim: true,
   },
   targetAmount: {
     type: Number,
@@ -56,7 +50,8 @@ const goalSchema = new mongoose.Schema({
   },
   targetDate: {
     type: Date,
-    required: true,
+    required: function(){return this.type === 'Savings';},
+
     validate: {
       validator: function(v) {
         return v > new Date();
@@ -82,23 +77,31 @@ const goalSchema = new mongoose.Schema({
   },
   accountId: [{
     type: mongoose.Schema.Types.ObjectId,
-    
-  }],  
+  }],
+  // New fields to match GoalForm.tsx:
+  selectedAccount: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Account'
+  },
+  limitAmount: {
+    type: Number,
+    default: 0
+  },
+  interval: {
+    type: String,
+    enum: ['Date', 'Daily', 'Weekly', 'Monthly', 'Annually'],
+    default: 'Date'
+  },
+  // Instead of savingSubGoals with a nested structure, use a flat array
+  subGoals: [subGoalSchema],
   createdAt: {
     type: Date,
     default: Date.now
   },
   updatedAt: {
     type: Date
-  }, 
-  savingSubGoals: {
-    goals: [savingSubGoalSchema]
   }
 });
 
-
-
 const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);
-const SubSavingGoal = mongoose.models.SubSavingGoal || mongoose.model('SubSavingGoal', savingSubGoalSchema);
-
-module.exports = {Goal, SubSavingGoal};
+module.exports = { Goal };

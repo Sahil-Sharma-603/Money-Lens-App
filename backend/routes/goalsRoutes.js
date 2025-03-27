@@ -19,7 +19,7 @@ router.get('/auth-check', auth, (req, res) => {
   });
 });
 
-// POST create a new goal - temporary test version without auth
+// POST create a new goal - temporary test version without auth ---------Testing **************
 router.post('/test-create', async (req, res) => {
   try {
     console.log('POST test-create endpoint hit');
@@ -81,38 +81,13 @@ router.get('/', auth, async (req, res) => {
     console.log('User ID from token:', req.user._id);
     console.log('User ID ? from token:', req.user?._id);
 
-    // const goals = await Goal.find({ userId: req.user._id });
-
-    // const goals = await apiRequest<GoalsResponse>('/goals', {
-    //   method: 'GET',
-    //   requireAuth: true, // Make sure the token is included in the request
-    // });
+ 
     const authToken = req.headers.authorization;
     const goals = await getGoals(req.user._id, authToken); 
 
     console.log("Goals enroute: ", goals); 
 
     if (goals) {
-      // console.log(`Found ${goals.length} goals for user`);
-    
-      // // Transform _id to id for frontend compatibility
-      // const transformedGoals = goals.map(goal => ({
-      //   id: goal._id.toString(),
-      //   title: goal.title,
-      //   description: goal.description,
-      //   targetAmount: goal.targetAmount,
-      //   currentAmount: goal.currentAmount,
-      //   targetDate: goal.targetDate,
-      //   category: goal.category,
-      //   type: goal.type,
-      //   userId: goal.userId, 
-      //   accountId: goal.accountId || [], 
-      //   createdAt: goal.createdAt,
-      //   updatedAt: goal.updatedAt, 
-      //   savingSubGoals: goal.savingSubGoals || []
-      // }));
-      
-      // res.json(transformedGoals);
 
       res.json(goals); 
     } else {
@@ -125,88 +100,107 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// POST create a new goal
+
+// Post creating a new goal
+// Saving it Mongo DB
+//  Sending the reponse back to frontend
 router.post('/', auth, async (req, res) => {
   try {
     console.log('POST request to create goal received');
     console.log('Request body:', req.body);
     console.log('User object from auth:', req.user);
     
-    // Validate that all required fields are present
-    const { title, description, targetAmount, currentAmount, targetDate, category, type } = req.body;
+    const { 
+      title, 
+      description, 
+      targetAmount, 
+      currentAmount, 
+      targetDate, 
+      category, 
+      type, 
+      selectedAccount, 
+      limitAmount, 
+      interval, 
+      subGoals 
+    } = req.body;
     
+    // Basic validations...
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
     }
-    
-    // if (!targetAmount) {
-    //   return res.status(400).json({ error: 'Target amount is required' });
-    // }
     if (targetAmount === undefined || targetAmount === null || targetAmount === '') {
       return res.status(400).json({ error: 'Target amount is required' });
     }
-    
-    if (!targetDate) {
+    // For Savings goals, targetDate must be provided.
+    if (type === 'Savings' && !targetDate) {
       return res.status(400).json({ error: 'Target date is required' });
     }
-    
     if (type === 'Savings' && !category) {
       return res.status(400).json({ error: 'Category is required for savings goals' });
     }
-    
     if (!req.user || !req.user._id) {
       return res.status(400).json({ error: 'User ID is missing from authentication' });
     }
     
-    // Create the new goal
-    const newGoal = new Goal({
+    // Build the new goal data object conditionally
+    const newGoalData = {
       title,
       description: description || '',
       targetAmount: Number(targetAmount),
       currentAmount: currentAmount ? Number(currentAmount) : 0,
-      targetDate: new Date(targetDate),
-      category: type === 'Savings' ? category : undefined,
-      accountid: [], 
       type: type || 'Savings',
-      userId: req.user._id,
-      createdAt: new Date(), 
-      savingSubGoals: []
-    });
+      selectedAccount: selectedAccount || undefined,
+      limitAmount: type === 'Spending Limit' ? Number(limitAmount) : 0,
+      interval: type === 'Spending Limit' ? (interval || 'Date') : 'Date',
+      subGoals: Array.isArray(subGoals) ? subGoals : [],
+      userId: req.user._id
+    };
+
+    // Only include targetDate and category for Savings goals
+    if (type === 'Savings') {
+      newGoalData.targetDate = new Date(targetDate);
+      newGoalData.category = category;
+    }
     
+    const newGoal = new Goal(newGoalData);
     console.log('Goal to be saved:', {
       title: newGoal.title,
       targetAmount: newGoal.targetAmount,
       type: newGoal.type,
       category: newGoal.category,
+      selectedAccount: newGoal.selectedAccount,
+      limitAmount: newGoal.limitAmount,
+      interval: newGoal.interval,
+      subGoals: newGoal.subGoals,
       userId: newGoal.userId
     });
     
-    // Save to database
     const savedGoal = await newGoal.save();
     console.log('Goal saved successfully with ID:', savedGoal._id);
     
-    // Return the created goal
     res.status(201).json({
       id: savedGoal._id.toString(),
       title: savedGoal.title,
       description: savedGoal.description,
       targetAmount: savedGoal.targetAmount,
       currentAmount: savedGoal.currentAmount,
-      targetDate: savedGoal.targetDate,
+      targetDate: savedGoal.targetDate, // Will only exist for Savings goals
       category: savedGoal.category,
       type: savedGoal.type,
+      selectedAccount: savedGoal.selectedAccount,
+      limitAmount: savedGoal.limitAmount,
+      interval: savedGoal.interval,
+      subGoals: savedGoal.subGoals,
       createdAt: savedGoal.createdAt
     });
   } catch (error) {
     console.error('Error creating goal:', error);
     
-    // Handle validation errors
     if (error.name === 'ValidationError') {
       const validationErrors = Object.keys(error.errors).map(key => ({
         field: key,
         message: error.errors[key].message
       }));
-      
       return res.status(400).json({ 
         error: 'Validation error', 
         details: validationErrors 
