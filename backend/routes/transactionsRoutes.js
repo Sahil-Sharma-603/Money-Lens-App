@@ -364,8 +364,9 @@ router.post('/import-csv', auth, upload.single('file'), async (req, res) => {
           continue;
         }
 
-        amount = -1 * amount;
-
+        if (mapping.debit !== undefined) {
+          amount = -1 * amount;
+        }
         // Generate a transaction object and add to batch array
         transactionsToImport.push({
           user_id: req.user._id,
