@@ -296,24 +296,53 @@ export default function GoalForm({ onClose, onSubmit }) {
   const [goalAmount, setGoalAmount] = useState(initialGoal?.goalAmount ||0);
   const [limitAmount, setLimitAmount] = useState(0);
   const [category, setCategory] = useState('');
+  const [targetDate, setTargetDate]= useState(); 
   const [interval, setInterval] = useState('Daily');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingGoal, setIsAddingGoal] = useState(false); 
+  const [subGoalAmount, setSubGoalAmount] = useState(); 
 
   // Fetch accounts
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const response = await apiRequest('/accounts', { requireAuth: true });
-        // Check if 'accounts' is present in the response object
-        setAccounts(Array.isArray(response.accounts) ? response.accounts : []);
-      } catch (error) {
-        setError('Failed to load accounts.');
-      }
-    };
-    fetchAccounts();
-  }, []);
+  // useEffect(() => {
+  //   const fetchAccounts = async () => {
+  //     try {
+  //       const response = await apiRequest('/accounts', { requireAuth: true });
+  //       // Check if 'accounts' is present in the response object
+  //       setAccounts(Array.isArray(response.accounts) ? response.accounts : []);
+  //     } catch (error) {
+  //       setError('Failed to load accounts.');
+  //     }
+  //   };
+  //   fetchAccounts();
+  // }, []);
+
+  // useEffect(() => {
+
+    
+
+  //   fetchAccounts();
+  // }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      
+      console.log('Fetching accounts for goals form from API...');
+      // const response = await apiRequest('/goals', { requireAuth: true });
+      const data = await apiRequest('/accounts', { requireAuth: true });
+      console.log('Parsed JSON data:', data);
+
+      // setAccounts(data.map((account) => ({
+      //   ...account,
+      // })));
+      setAccounts(data ); 
+    } catch (error) {
+      console.error('Error fetching accounts for goals form:', error);
+      setError('Failed to load your accounts. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle subgoal addition/removal
   const addSubGoal = () => {
@@ -322,7 +351,11 @@ export default function GoalForm({ onClose, onSubmit }) {
     }
   };
 
-  
+  //Auto-adjust amount on percent change for subgoals
+  const adjustAmount = (index, percent) => {
+    setSubGoalAmount(goalAmount*percent/100); 
+    handleSubGoalChange(index, 'percentage', percent)
+  }; 
 
   const removeSubGoal = (index) => {
     const newSubGoals = subGoals.filter((_, i) => i !== index);
@@ -398,7 +431,7 @@ export default function GoalForm({ onClose, onSubmit }) {
     <div className={styles.modalOverlay} >
       <div className={styles.modalContent}>
          <h2>{initialGoal ? 'Edit Goal' : 'Add New Goal'}</h2>
-    <form className={styles.form} onLoad={setIsAddingGoal(true)} onSubmit={handleSubmit}>
+         <form className={styles.form} onSubmit={handleSubmit}>
       <h1>Add New Goal</h1>
       <div className={`${styles.savingsGoal} ${styles.formGroup}`}>
         <label htmlFor="goalType">Goal Type</label>
@@ -418,14 +451,34 @@ export default function GoalForm({ onClose, onSubmit }) {
 
         {goalType === 'Savings' && (
           <>
-            <label htmlFor="goalAmount">Goal Amount</label>
-            <input
-              type="number"
-              id="goalAmount"
-              value={goalAmount}
-              onChange={(e) => setGoalAmount(Number(e.target.value))}
-              required
-            />
+            <div className={styles.goalAmount}>
+              <label htmlFor="goalAmount">Goal Amount</label>
+              <input
+                type="number"
+                id="goalAmount"
+                value={goalAmount}
+                onChange={(e) => setGoalAmount(Number(e.target.value))}
+                required
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+             <label>Target Date</label>
+             <input
+                type="date"
+                value={
+                  targetDate
+                    ? targetDate.toISOString().split('T')[0]
+                    : ''
+                }
+                min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                onChange={(e) => {
+                  const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
+                  setTargetDate(selectedDate);
+                }}
+                required
+              />
+           </div>
 
             <label htmlFor="selectedAccount">Account</label>
             <select
@@ -434,15 +487,16 @@ export default function GoalForm({ onClose, onSubmit }) {
               onChange={(e) => setSelectedAccount(e.target.value)}
               required
             >
-              {accounts.map((account) => (
+              {fetchAccounts().map((account) => (
                 <option key={account.id} value={account.id}>
                   {account.name}
                 </option>
               ))}
             </select>
 
+
             {/* Subgoals */}
-            <h3>Sub-Goals</h3>
+            <h3 style={{ paddingTop: '20px' }}>Sub-Goals</h3>
             {subGoals.map((subGoal, index) => (
               <div key={index} className={styles.subGoals}>
                 <div className={styles.subGoalsInput}>
@@ -450,7 +504,7 @@ export default function GoalForm({ onClose, onSubmit }) {
                   <input
                     id = "sub-goal-name"
                     type="text"
-                    placeholder="Sub-goal Name"
+                    placeholder="Name"
                     value={subGoal.name}
                     onChange={(e) => handleSubGoalChange(index, 'name', e.target.value)}
                   />
@@ -473,7 +527,7 @@ export default function GoalForm({ onClose, onSubmit }) {
                     type="number"
                     placeholder="Percentage"
                     value={subGoal.percentage}
-                    onChange={(e) => handleSubGoalChange(index, 'percentage', e.target.value)}
+                    onChange={(e) => handleSubGoalChange(index,'percent', e.target.value)}
                     onBlur={updateSubGoalPercentages}
                   />
                 </div>
@@ -518,6 +572,29 @@ export default function GoalForm({ onClose, onSubmit }) {
               <option value="Monthly">Monthly</option>
               <option value="Annually">Annually</option>
             </select>
+
+            {interval === "Date" && (
+              <>
+                <div className={styles.formGroup}>
+                <label>Target Date</label>
+                <input
+                  type="date"
+                  value={
+                    targetDate
+                      ? targetDate.toISOString().split('T')[0]
+                      : ''
+                  }
+                  min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                  onChange={(e) => {
+                    const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
+                    setTargetDate(selectedDate);
+                  }}
+                  required
+                />
+                </div>
+              </>
+            )}
+
           </>
         )}
       </div>
@@ -528,7 +605,7 @@ export default function GoalForm({ onClose, onSubmit }) {
       <button
         type="button"
         className={styles.cancelButton} // Add your styling here for the cancel button
-        onClick={() => setIsAddingGoal(false)} // Or use a function to close the modal
+        onClick={onClose } // Or use a function to close the modal
       >
         Cancel
       </button>
