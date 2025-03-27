@@ -13,7 +13,15 @@ import { useEffect, useState } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import styles from '../../assets/page.module.css';
 import Card from '../../components/Card';
-import { TextField, MenuItem, Select, InputLabel, FormControl, Box, Button } from '@mui/material';
+import {
+  TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Box,
+  Button,
+} from '@mui/material';
 
 export default function Home() {
   const router = useRouter();
@@ -40,6 +48,12 @@ export default function Home() {
   // Delete confirmation
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  
+  // Initial balance setup state for Plaid accounts
+  const [showInitialBalanceModal, setShowInitialBalanceModal] = useState(false);
+  const [plaidAccountsToSetup, setPlaidAccountsToSetup] = useState<Account[]>([]);
+  const [currentAccountIndex, setCurrentAccountIndex] = useState(0);
+  const [initialBalanceInput, setInitialBalanceInput] = useState('');
 
   // Check authentication first
   useEffect(() => {
@@ -167,7 +181,7 @@ export default function Home() {
     console.log('Plaid onSuccess – public_token:', public_token);
     setIsLoading(true);
     try {
-      await apiRequest('/plaid/set_access_token', {
+      const response = await apiRequest('/plaid/set_access_token', {
         method: 'POST',
         body: { public_token },
       });
@@ -179,6 +193,22 @@ export default function Home() {
       // Fetch and update all accounts immediately
       try {
         await fetchAccounts();
+
+        // After fetching accounts, show a modal for setting initial balances for all Plaid accounts
+        if (response.accounts && response.accounts.length > 0) {
+          // Filter only Plaid accounts
+          const plaidAccounts = response.accounts.filter(
+            (account: Account) => account.type === 'plaid'
+          );
+          
+          if (plaidAccounts.length > 0) {
+            // Set up the accounts to be configured
+            setPlaidAccountsToSetup(plaidAccounts);
+            setCurrentAccountIndex(0);
+            setInitialBalanceInput('');
+            setShowInitialBalanceModal(true);
+          }
+        }
       } catch (error) {
         console.error('Error updating accounts after connection:', error);
       }
@@ -186,6 +216,41 @@ export default function Home() {
       console.error('Error during Plaid flow:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  // Function to handle setting an initial balance for the current account
+  const handleSetInitialBalance = async () => {
+    const currentAccount = plaidAccountsToSetup[currentAccountIndex];
+    const balanceValue = parseFloat(initialBalanceInput);
+    
+    if (isNaN(balanceValue)) {
+      alert('Please enter a valid number for the balance.');
+      return;
+    }
+    
+    try {
+      // Call API to set initial balance
+      await apiRequest(`/accounts/${currentAccount._id}/initial-balance`, {
+        method: 'PUT',
+        body: { initial_balance: balanceValue },
+      });
+      
+      await fetchAccounts();
+      
+      // Move to the next account or close the modal
+      if (currentAccountIndex < plaidAccountsToSetup.length - 1) {
+        setCurrentAccountIndex(currentAccountIndex + 1);
+        setInitialBalanceInput('');
+      } else {
+        // All accounts have been set up
+        setShowInitialBalanceModal(false);
+        setPlaidAccountsToSetup([]);
+        alert('All account balances have been set successfully!');
+      }
+    } catch (error) {
+      console.error('Error setting initial balance:', error);
+      alert(`Failed to set initial balance for ${currentAccount.name}. Please try again.`);
     }
   };
 
@@ -265,351 +330,450 @@ export default function Home() {
   if (isCheckingAuth) {
     return (
       <div className={styles.dashboard}>
-      <Card className={styles.fullPageCard}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-        >
-          <p>Loading...</p>
-        </div>
-      </Card>
+        <Card className={styles.fullPageCard}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+            }}
+          >
+            <p>Loading...</p>
+          </div>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className={styles.dashboard}>
-    <Card className={styles.fullPageCard}>
-    <div style={localStyles.container}>
-      {isLoading && (
-        <div style={localStyles.loaderStyle}>
-          Updating your account, please wait (Max: 30 seconds)...
-        </div>
-      )}
-      <h1 style={localStyles.title}>Bank Account Connection</h1>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => setShowCSVImport(!showCSVImport)}
-      >
-        {showCSVImport ? 'Cancel Import' : 'Show CSV Import'}
-      </Button>
-      {showCSVImport && (
-        <CSVImportForm
-          onClose={() => setShowCSVImport(false)}
-          onSuccess={handleCSVImportSuccess}
-        />
-      )}
-      {/* Accounts Section */}
-      <div style={localStyles.section}>
-        <div style={localStyles.sectionHeader}>
-          <h2 style={localStyles.subtitle}>Your Accounts</h2>
-          <div style={localStyles.headerButtons}>
+      <Card className={styles.fullPageCard}>
+        <div style={localStyles.container}>
+          {isLoading && (
+            <div style={localStyles.loaderStyle}>
+              Updating your account, please wait (Max: 30 seconds)...
+            </div>
+          )}
+          <h1 style={localStyles.title}>Bank Account Connection</h1>
           <Button
             variant="contained"
-            color="success"
-            startIcon={<Plus size={16} />}
-            onClick={() => setShowCreateAccountModal(true)}
+            color="primary"
+            onClick={() => setShowCSVImport(!showCSVImport)}
           >
-            Create Account
+            {showCSVImport ? 'Cancel Import' : 'Show CSV Import'}
           </Button>
+          {showCSVImport && (
+            <CSVImportForm
+              onClose={() => setShowCSVImport(false)}
+              onSuccess={handleCSVImportSuccess}
+            />
+          )}
+          {/* Accounts Section */}
+          <div style={localStyles.section}>
+            <div style={localStyles.sectionHeader}>
+              <h2 style={localStyles.subtitle}>Your Accounts</h2>
+              <div style={localStyles.headerButtons}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<Plus size={16} />}
+                  onClick={() => setShowCreateAccountModal(true)}
+                >
+                  Create Account
+                </Button>
 
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<Building size={16} />}
-            onClick={() => open()}
-            // disabled={!linkToken || !ready}
-          >
-            Connect Bank
-          </Button>
-          </div>
-        </div>
-
-        {accounts.length === 0 ? (
-          <div style={localStyles.emptyState}>
-            <p>
-              You don't have any accounts yet. Create a manual account or
-              connect to your bank.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Manual Accounts */}
-            <div style={localStyles.accountsSection}>
-              <h3 style={localStyles.accountsSubtitle}>Manual Accounts</h3>
-              <div style={localStyles.accountsList}>
-                {accounts
-                  .filter((account) => account.type !== 'plaid')
-                  .map((account) => (
-                    <div key={account._id} style={localStyles.accountItem}>
-                      <div style={localStyles.accountInfo}>
-                        <strong>{account.name}</strong>
-                        <span style={localStyles.accountType}>{account.type}</span>
-                      </div>
-                      <div style={localStyles.accountBalance}>
-                        {account.currency} {account.balance.toFixed(2)}
-                      </div>
-                      <div style={localStyles.accountActions}>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        startIcon={<Trash size={16} />}
-                        onClick={() => {
-                          setAccountToDelete(account);
-                          setShowDeleteConfirmation(true);
-                        }}
-                        disabled={isLoading}
-                      >
-                        Delete
-                      </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                {accounts.filter((account) => account.type !== 'plaid')
-                  .length === 0 && (
-                  <div style={localStyles.emptyAccountsMessage}>
-                    No manual accounts yet. Create one to get started.
-                  </div>
-                )}
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<Building size={16} />}
+                  onClick={() => open()}
+                  // disabled={!linkToken || !ready}
+                >
+                  Connect Bank
+                </Button>
               </div>
             </div>
 
-            {/* Plaid Accounts */}
-            <div style={localStyles.accountsSection}>
-              <h3 style={localStyles.accountsSubtitle}>Connected Bank Accounts</h3>
-              <div style={localStyles.accountsList}>
-                {accounts
-                  .filter((account) => account.type === 'plaid')
-                  .map((account) => (
-                    <div key={account._id} style={localStyles.accountItem}>
-                      <div style={localStyles.accountInfo}>
-                        <strong>{account.name}</strong>
-                        {account.plaid_mask && (
-                          <span style={localStyles.accountNumber}>
-                            •••• {account.plaid_mask}
-                          </span>
-                        )}
-                        {account.plaid_subtype && (
-                          <span style={localStyles.accountType}>
-                            {account.plaid_subtype}
-                          </span>
-                        )}
-                      </div>
-                      <div style={localStyles.accountBalance}>
-                        {account.currency} {account.balance.toFixed(2)}
-                      </div>
-                      <div style={localStyles.accountInstitution}>
-                        {account.institution}
-                      </div>
-                    </div>
-                  ))}
-
-                {accounts.filter((account) => account.type === 'plaid')
-                  .length === 0 && (
-                  <div style={localStyles.emptyAccountsMessage}>
-                    No bank accounts connected. Use the "Connect Bank" button to
-                    link your accounts.
-                  </div>
-                )}
+            {accounts.length === 0 ? (
+              <div style={localStyles.emptyState}>
+                <p>
+                  You don't have any accounts yet. Create a manual account or
+                  connect to your bank.
+                </p>
               </div>
+            ) : (
+              <>
+                {/* Manual Accounts */}
+                <div style={localStyles.accountsSection}>
+                  <h3 style={localStyles.accountsSubtitle}>Manual Accounts</h3>
+                  <div style={localStyles.accountsList}>
+                    {accounts
+                      .filter((account) => account.type !== 'plaid')
+                      .map((account) => (
+                        <div key={account._id} style={localStyles.accountItem}>
+                          <div style={localStyles.accountInfo}>
+                            <strong>{account.name}</strong>
+                            <span style={localStyles.accountType}>
+                              {account.type}
+                            </span>
+                          </div>
+                          <div style={localStyles.accountBalance}>
+                            {account.currency} {account.balance.toFixed(2)}
+                          </div>
+                          <div style={localStyles.accountActions}>
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              startIcon={<Trash size={16} />}
+                              onClick={() => {
+                                setAccountToDelete(account);
+                                setShowDeleteConfirmation(true);
+                              }}
+                              disabled={isLoading}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
 
-              {hasPlaidConnection && (
-                <div style={localStyles.buttonGroup}>
+                    {accounts.filter((account) => account.type !== 'plaid')
+                      .length === 0 && (
+                      <div style={localStyles.emptyAccountsMessage}>
+                        No manual accounts yet. Create one to get started.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Plaid Accounts */}
+                <div style={localStyles.accountsSection}>
+                  <h3 style={localStyles.accountsSubtitle}>
+                    Connected Bank Accounts
+                  </h3>
+                  <div style={localStyles.accountsList}>
+                    {accounts
+                      .filter((account) => account.type === 'plaid')
+                      .map((account) => (
+                        <div key={account._id} style={localStyles.accountItem}>
+                          <div style={localStyles.accountInfo}>
+                            <strong>{account.name}</strong>
+                            {account.plaid_mask && (
+                              <span style={localStyles.accountNumber}>
+                                •••• {account.plaid_mask}
+                              </span>
+                            )}
+                            {account.plaid_subtype && (
+                              <span style={localStyles.accountType}>
+                                {account.plaid_subtype}
+                              </span>
+                            )}
+                          </div>
+                          <div style={localStyles.accountBalance}>
+                            {account.currency} {account.balance.toFixed(2)}
+                          </div>
+                          <div style={localStyles.accountInstitution}>
+                            {account.institution}
+                          </div>
+                        </div>
+                      ))}
+
+                    {accounts.filter((account) => account.type === 'plaid')
+                      .length === 0 && (
+                      <div style={localStyles.emptyAccountsMessage}>
+                        No bank accounts connected. Use the "Connect Bank"
+                        button to link your accounts.
+                      </div>
+                    )}
+                  </div>
+
+                  {hasPlaidConnection && (
+                    <div style={localStyles.buttonGroup}>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleDisconnect}
+                        disabled={isLoading}
+                      >
+                        {isLoading
+                          ? 'Processing...'
+                          : 'Disconnect All Bank Accounts'}
+                      </Button>
+
+                      <Button
+                        variant="contained"
+                        sx={{
+                          backgroundColor: '#4285F4',
+                          '&:hover': { backgroundColor: '#357ae8' },
+                        }}
+                        onClick={fetchHistoricalTransactions}
+                        disabled={isLoading}
+                      >
+                        {isLoading
+                          ? 'Processing...'
+                          : 'Fetch Historical Transactions (24 Months)'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Create Account Modal */}
+          {showCreateAccountModal && (
+            <div style={localStyles.modalOverlay}>
+              <div style={localStyles.modalContent}>
+                <h3 style={{ marginBottom: 10 }}>Create a New Account</h3>
+
+                <form
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px',
+                  }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleCreateAccount();
+                  }}
+                >
+                  <TextField
+                    label="Account Name"
+                    variant="outlined"
+                    size="small"
+                    value={newAccount.name}
+                    onChange={(e) =>
+                      setNewAccount({ ...newAccount, name: e.target.value })
+                    }
+                    placeholder="e.g., My Checking Account"
+                    fullWidth
+                    required
+                  />
+
+                  <FormControl fullWidth required>
+                    <InputLabel id="account-type-label">
+                      Account Type
+                    </InputLabel>
+                    <Select
+                      labelId="account-type-label"
+                      label="Account Type"
+                      value={newAccount.type}
+                      size="small"
+                      onChange={(e) =>
+                        setNewAccount({ ...newAccount, type: e.target.value })
+                      }
+                      fullWidth
+                    >
+                      <MenuItem value="checking">Checking</MenuItem>
+                      <MenuItem value="savings">Savings</MenuItem>
+                      <MenuItem value="credit">Credit Card</MenuItem>
+                      <MenuItem value="loan">Loan</MenuItem>
+                      <MenuItem value="investment">Investment</MenuItem>
+                      <MenuItem value="cash">Cash</MenuItem>
+                      <MenuItem value="other">Other</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <TextField
+                    label="Starting Balance"
+                    variant="outlined"
+                    type="number"
+                    size="small"
+                    value={newAccount.balance}
+                    onChange={(e) =>
+                      setNewAccount({
+                        ...newAccount,
+                        balance: parseFloat(e.target.value),
+                      })
+                    }
+                    fullWidth
+                  />
+
+                  <FormControl fullWidth>
+                    <InputLabel id="currency-label">Currency</InputLabel>
+                    <Select
+                      labelId="currency-label"
+                      label="Currency"
+                      size="small"
+                      value={newAccount.currency}
+                      onChange={(e) =>
+                        setNewAccount({
+                          ...newAccount,
+                          currency: e.target.value,
+                        })
+                      }
+                      fullWidth
+                    >
+                      <MenuItem value="USD">USD - US Dollar</MenuItem>
+                      <MenuItem value="CAD">CAD - Canadian Dollar</MenuItem>
+                      <MenuItem value="EUR">EUR - Euro</MenuItem>
+                      <MenuItem value="GBP">GBP - British Pound</MenuItem>
+                      <MenuItem value="AUD">AUD - Australian Dollar</MenuItem>
+                      <MenuItem value="JPY">JPY - Japanese Yen</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <TextField
+                    label="Institution (optional)"
+                    variant="outlined"
+                    size="small"
+                    value={newAccount.institution}
+                    onChange={(e) =>
+                      setNewAccount({
+                        ...newAccount,
+                        institution: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., Chase, Bank of America"
+                    fullWidth
+                  />
+
+                  {/* Save / Cancel Buttons */}
+                  <Box
+                    display="flex"
+                    justifyContent="flex-end"
+                    gap={2}
+                    marginTop="20px"
+                  >
+                    <Button
+                      variant="outlined"
+                      onClick={() => setShowCreateAccountModal(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      type="submit"
+                      disabled={isLoading || !newAccount.name}
+                    >
+                      {isLoading ? 'Creating...' : 'Create Account'}
+                    </Button>
+                  </Box>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteConfirmation && accountToDelete && (
+            <div style={localStyles.modalOverlay}>
+              <div style={localStyles.modalContent}>
+                <h3>Confirm Account Deletion</h3>
+
+                <p style={localStyles.warningText}>
+                  Are you sure you want to delete the account "
+                  {accountToDelete.name}"?
+                </p>
+                <p style={localStyles.warningText}>
+                  All transactions associated with this account will also be
+                  deleted. This action cannot be undone.
+                </p>
+
+                <div style={localStyles.modalButtons}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      setShowDeleteConfirmation(false);
+                      setAccountToDelete(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+
                   <Button
                     variant="contained"
                     color="error"
-                    onClick={handleDisconnect}
+                    onClick={handleDeleteAccount}
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Processing...' : 'Disconnect All Bank Accounts'}
-                  </Button>
-
-                  <Button
-                    variant="contained"
-                    sx={{ backgroundColor: '#4285F4', '&:hover': { backgroundColor: '#357ae8' } }}
-                    onClick={fetchHistoricalTransactions}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Processing...' : 'Fetch Historical Transactions (24 Months)'}
+                    {isLoading ? 'Deleting...' : 'Delete Account'}
                   </Button>
                 </div>
-              )}
+              </div>
             </div>
-          </>
-        )}
-      </div>
-
-      {/* Create Account Modal */}
-      {showCreateAccountModal && (
-        <div style={localStyles.modalOverlay}>
-          <div style={localStyles.modalContent}>
-          <h3 style={{marginBottom: 10}}>Create a New Account</h3>
-
-          <form
-            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleCreateAccount();
-            }}
-          >
-            <TextField
-              label="Account Name"
-              variant="outlined"
-              size="small"
-              value={newAccount.name}
-              onChange={(e) =>
-                setNewAccount({ ...newAccount, name: e.target.value })
-              }
-              placeholder="e.g., My Checking Account"
-              fullWidth
-              required
-            />
-
-            <FormControl fullWidth required>
-              <InputLabel id="account-type-label">Account Type</InputLabel>
-              <Select
-                labelId="account-type-label"
-                label="Account Type"
-                value={newAccount.type}
-                size="small"
-                onChange={(e) =>
-                  setNewAccount({ ...newAccount, type: e.target.value })
-                }
-                fullWidth
-              >
-                <MenuItem value="checking">Checking</MenuItem>
-                <MenuItem value="savings">Savings</MenuItem>
-                <MenuItem value="credit">Credit Card</MenuItem>
-                <MenuItem value="loan">Loan</MenuItem>
-                <MenuItem value="investment">Investment</MenuItem>
-                <MenuItem value="cash">Cash</MenuItem>
-                <MenuItem value="other">Other</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Starting Balance"
-              variant="outlined"
-              type="number"
-              size="small"
-              value={newAccount.balance}
-              onChange={(e) =>
-                setNewAccount({
-                  ...newAccount,
-                  balance: parseFloat(e.target.value),
-                })
-              }
-              fullWidth
-            />
-
-            <FormControl fullWidth>
-              <InputLabel id="currency-label">Currency</InputLabel>
-              <Select
-                labelId="currency-label"
-                label="Currency"
-                size="small"
-                value={newAccount.currency}
-                onChange={(e) =>
-                  setNewAccount({ ...newAccount, currency: e.target.value })
-                }
-                fullWidth
-              >
-                <MenuItem value="USD">USD - US Dollar</MenuItem>
-                <MenuItem value="CAD">CAD - Canadian Dollar</MenuItem>
-                <MenuItem value="EUR">EUR - Euro</MenuItem>
-                <MenuItem value="GBP">GBP - British Pound</MenuItem>
-                <MenuItem value="AUD">AUD - Australian Dollar</MenuItem>
-                <MenuItem value="JPY">JPY - Japanese Yen</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Institution (optional)"
-              variant="outlined"
-              size="small"
-              value={newAccount.institution}
-              onChange={(e) =>
-                setNewAccount({ ...newAccount, institution: e.target.value })
-              }
-              placeholder="e.g., Chase, Bank of America"
-              fullWidth
-            />
-
-            {/* Save / Cancel Buttons */}
-            <Box
-              display="flex"
-              justifyContent="flex-end"
-              gap={2}
-              marginTop="20px"
-            >
-              <Button
-                variant="outlined"
-                onClick={() => setShowCreateAccountModal(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                type="submit"
-                disabled={isLoading || !newAccount.name}
-              >
-                {isLoading ? 'Creating...' : 'Create Account'}
-              </Button>
-            </Box>
-          </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirmation && accountToDelete && (
-        <div style={localStyles.modalOverlay}>
-          <div style={localStyles.modalContent}>
-            <h3>Confirm Account Deletion</h3>
-
-            <p style={localStyles.warningText}>
-              Are you sure you want to delete the account "
-              {accountToDelete.name}"?
-            </p>
-            <p style={localStyles.warningText}>
-              All transactions associated with this account will also be
-              deleted. This action cannot be undone.
-            </p>
-
-            <div style={localStyles.modalButtons}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setShowDeleteConfirmation(false);
-                setAccountToDelete(null);
-              }}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleDeleteAccount}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Deleting...' : 'Delete Account'}
-            </Button>
+          )}
+          
+          {/* Initial Balance Setup Modal for Plaid Accounts */}
+          {showInitialBalanceModal && plaidAccountsToSetup.length > 0 && (
+            <div style={localStyles.modalOverlay}>
+              <div style={localStyles.modalContent}>
+                <h3 style={{ marginBottom: 20 }}>Set Initial Account Balance</h3>
+                
+                <p style={{ marginBottom: 20 }}>
+                  Please enter the current balance for your account. This balance will be used as the starting point,
+                  and only transactions after this point will update your balance.
+                </p>
+                
+                {currentAccountIndex < plaidAccountsToSetup.length && (
+                  <div>
+                    <div style={{ marginBottom: 20 }}>
+                      <h4 style={{ marginBottom: 5 }}>
+                        {plaidAccountsToSetup[currentAccountIndex].name}
+                        {plaidAccountsToSetup[currentAccountIndex].plaid_mask && 
+                          ` (••••${plaidAccountsToSetup[currentAccountIndex].plaid_mask})`}
+                      </h4>
+                      <span style={{ fontSize: '14px', color: '#666' }}>
+                        {plaidAccountsToSetup[currentAccountIndex].plaid_subtype || 'Account'} at {plaidAccountsToSetup[currentAccountIndex].institution || 'Bank'}
+                      </span>
+                      <p style={{ marginTop: 10, color: '#888', fontSize: '14px' }}>
+                        Account {currentAccountIndex + 1} of {plaidAccountsToSetup.length}
+                      </p>
+                    </div>
+                    
+                    <TextField
+                      label="Current Balance"
+                      variant="outlined"
+                      type="number"
+                      size="medium"
+                      value={initialBalanceInput}
+                      onChange={(e) => setInitialBalanceInput(e.target.value)}
+                      fullWidth
+                      autoFocus
+                      placeholder="Enter the current balance"
+                      InputProps={{
+                        startAdornment: <span style={{ marginRight: 8 }}>
+                          {plaidAccountsToSetup[currentAccountIndex].currency || 'USD'}
+                        </span>,
+                      }}
+                    />
+                    
+                    <Box
+                      display="flex"
+                      justifyContent="flex-end"
+                      gap={2}
+                      marginTop="30px"
+                    >
+                      <Button
+                        variant="outlined"
+                        color="inherit"
+                        onClick={() => {
+                          // If user skips, we'll use 0 as the default
+                          setInitialBalanceInput('0');
+                          handleSetInitialBalance();
+                        }}
+                      >
+                        Skip
+                      </Button>
+                      
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSetInitialBalance}
+                        disabled={isLoading || initialBalanceInput === ''}
+                      >
+                        {isLoading ? 'Saving...' : 'Save Balance'}
+                      </Button>
+                    </Box>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
-    </div>
-    </Card>
+      </Card>
     </div>
   );
 }
@@ -668,7 +832,7 @@ const localStyles = {
     flex: 1,
     textAlign: 'right' as const,
   },
-  
+
   plaidButton: {
     backgroundColor: '#00b300',
     color: 'white',

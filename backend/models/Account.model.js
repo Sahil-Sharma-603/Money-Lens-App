@@ -28,6 +28,14 @@ const accountSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  initial_balance: {
+    type: Number,
+    default: 0,
+  },
+  balance_date: {
+    type: Date,
+    default: Date.now,
+  },
   currency: {
     type: String,
     default: 'USD',
@@ -76,9 +84,18 @@ accountSchema.pre('save', function (next) {
   next();
 });
 
-// Method to update account balance
+// Method to update account balance based on transactions
 accountSchema.methods.updateBalance = async function (amount) {
   this.balance += amount;
+  this.updated_at = Date.now();
+  return this.save();
+};
+
+// Method to set an initial balance for an account
+accountSchema.methods.setInitialBalance = async function (initialBalance) {
+  this.initial_balance = initialBalance;
+  this.balance = initialBalance;
+  this.balance_date = Date.now();
   this.updated_at = Date.now();
   return this.save();
 };

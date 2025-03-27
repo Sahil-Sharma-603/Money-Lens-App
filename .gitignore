@@ -30,3 +30,4 @@ yarn-error.log*
 *.swp
 *.swo
 .DS_Storetests/integration_tests/coverage/
+actions-runner/_work/Money-Lens-App/Money-Lens-App

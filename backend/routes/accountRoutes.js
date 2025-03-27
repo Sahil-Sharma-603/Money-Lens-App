@@ -175,7 +175,7 @@ router.get('/:id', auth, async (req, res) => {
  */
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { name, type, balance, currency, institution, is_active } = req.body;
+    const { name, type, balance, initial_balance, currency, institution, is_active } = req.body;
 
     // Find the account and make sure it belongs to the user
     const account = await Account.findOne({
@@ -193,7 +193,16 @@ router.put('/:id', auth, async (req, res) => {
     // Update fields if provided
     if (name) account.name = name;
     if (type) account.type = type;
-    if (balance !== undefined) account.balance = balance;
+    
+    // Handle balance update
+    if (initial_balance !== undefined && account.type === 'plaid') {
+      // If setting initial balance for a Plaid account
+      await account.setInitialBalance(initial_balance);
+    } else if (balance !== undefined) {
+      // For manual accounts, directly update balance
+      account.balance = balance;
+    }
+    
     if (currency) account.currency = currency;
     if (institution) account.institution = institution;
     if (is_active !== undefined) account.is_active = is_active;
@@ -209,6 +218,60 @@ router.put('/:id', auth, async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Error updating account',
+    });
+  }
+});
+
+/**
+ * @route PUT /api/accounts/:id/initial-balance
+ * @description Set the initial balance for a Plaid account
+ * @access Private
+ */
+router.put('/:id/initial-balance', auth, async (req, res) => {
+  try {
+    const { initial_balance } = req.body;
+
+    if (initial_balance === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'Initial balance is required',
+      });
+    }
+
+    // Find the account and make sure it belongs to the user
+    const account = await Account.findOne({
+      _id: req.params.id,
+      user_id: req.user._id,
+    });
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        error: 'Account not found or access denied',
+      });
+    }
+
+    // Only allowed for Plaid accounts
+    if (account.type !== 'plaid') {
+      return res.status(400).json({
+        success: false,
+        error: 'This endpoint is only for Plaid accounts',
+      });
+    }
+
+    // Set the initial balance which updates both initial_balance and current balance
+    await account.setInitialBalance(initial_balance);
+
+    res.json({
+      success: true,
+      message: 'Initial balance set successfully',
+      account,
+    });
+  } catch (error) {
+    console.error('Error setting initial balance:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Error setting initial balance',
     });
   }
 });

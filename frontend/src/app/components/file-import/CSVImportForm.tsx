@@ -28,7 +28,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   // Track total data rows in file
-  const [totalRows, setTotalRows] = useState<number>(0); 
+  const [totalRows, setTotalRows] = useState<number>(0);
 
   // Transaction fields
   const requiredFields = ['date', 'name', 'category'];
@@ -38,7 +38,6 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
 
-  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -66,10 +65,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         const hasHeader = true;
         const headerRow = hasHeader ? data[0] : [];
         const dataRows = hasHeader ? data.slice(1) : data;
-        
+
         // Set total rows in the file
         setTotalRows(dataRows.length);
-
 
         const previewData = showAllRows
           ? data
@@ -413,8 +411,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       {preview.length > 0 &&
                         preview[0].map((cell, i) => (
                           <option key={i} value={i}>
-                            {i + 1}. {cell.substring(0, 20)}
-                            {cell.length > 20 ? '...' : ''}
+                            {i + 1}. {cell}
                           </option>
                         ))}
                     </select>
@@ -445,7 +442,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                         <option value="">Select column</option>
                         {preview[0].map((header, i) => (
                           <option key={i} value={i}>
-                            {header}
+                            {1 + i}.{header}
                           </option>
                         ))}
                       </select>
@@ -471,7 +468,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                         <option value="">Select column</option>
                         {preview[0].map((header, i) => (
                           <option key={i} value={i}>
-                            {header}
+                            {1 + i}.{header}
                           </option>
                         ))}
                       </select>
