@@ -23,8 +23,8 @@
 - Show/hide sidebar - Una
 - Filtering transactions by account on transactions page - Jashan ✅
 - Transactions: sum selected transactions - Jashan ✅
-- Manual input account balance - Jashan
-- Custom scroll bar - Jashan
+- Manual input account balance - Jashan ✅
+- Custom scroll bar - Jashan ✅
 
 ## Bug Fixes: 
 
@@ -38,11 +38,12 @@
 - Remove console logs - Everyone/Ginelle 
 - Move search and transaction list under the Transactions header - Una
 - Make sure transactions are accurately a debit/credit (CSV import) - Jashan ✅
+- CSV Import Fixed for charts on the dashboard - Jashan ✅
+- CI unit testing - Jashan/Sahil
 - Sidebar selected page - change to be like the hover for a selected page - Una
 - percentages on category chart, UI container - Una
 - recurring expenses - container scroll bar - Una
 - recurring expenses - removed N/A items - Ginelle 
-- CI unit testing - Jashan/Sahil
 
 Regression Testing: 
 
