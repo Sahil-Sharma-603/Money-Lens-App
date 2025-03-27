@@ -8,6 +8,7 @@ import {
   AccountsResponse,
 } from '@/app/assets/utilities/API_HANDLER';
 import React, { useEffect, useState, useCallback } from 'react';
+import { Button } from '@mui/material';
 
 interface CSVImportFormProps {
   onClose: () => void;
@@ -274,8 +275,10 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
             style={styles.fileInput}
             id="csv-file-input"
           />
-          <label htmlFor="csv-file-input" style={styles.fileInputLabel}>
-            Select a CSV file
+          <label htmlFor="csv-file-input">
+            <Button variant="contained" component="span" color="primary">
+              Select a CSV file
+            </Button>
           </label>
           <p>or drag and drop a CSV file here</p>
         </div>
