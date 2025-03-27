@@ -96,6 +96,15 @@ Money-Lens-App/
 - Node: you must .env file that has MONGO_URI=mongodb+srv://<username>:<password>@cluster0.p23io.mongodb.net/Money-Lens-MongoDB?retryWrites=true&w=majority
 - Note: Replace `username` & `password` with actual credentials.
 
+### Two-Factor Authentication (2FA)
+
+The app includes Two-Factor Authentication using Google Authenticator. All necessary dependencies are included in the package.json files and will be installed with `npm install`. To use 2FA:
+
+1. Download Google Authenticator on your mobile device
+2. During signup, you'll be prompted to scan a QR code with Google Authenticator
+3. After scanning, enter the 6-digit code from Google Authenticator to complete setup
+4. For future logins, you'll need to enter the current code from Google Authenticator
+
 ##### Running Tests
 
 See our ![test plan](/documentation/architecture/Money-Lens_Test-Plan.pdf) for more details. 

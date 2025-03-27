@@ -19,15 +19,18 @@
     "lucide-react": "^0.476.0",
     "mongodb": "^6.13.0",
     "next": "15.1.6",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-plaid-link": "^3.6.1",
     "react-spinners": "^0.15.0",
-    "recharts": "^2.15.1"
+    "recharts": "^2.15.1",
+    "speakeasy": "^2.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
