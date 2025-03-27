@@ -22,6 +22,7 @@ export default function GoalsPage() {
 
   // Fetch goals from MongoDB when component mounts
   useEffect(() => {
+
   const fetchGoals = async () => {
     try {
       setIsLoading(true);
@@ -29,6 +30,7 @@ export default function GoalsPage() {
       console.log('Fetching goals from API...');
       const data = await apiRequest('/goals', { requireAuth: true });
       console.log('Parsed JSON data:', data);
+
 
       setGoals(data.map((goal) => ({
         ...goal,
