@@ -176,69 +176,69 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
 
-         <h2>{initialGoal ? 'Edit Goal' : 'Add New Goal'}</h2>
-         <form className={styles.form} onSubmit={handleSubmit}>
-      <h1>Add New Goal</h1>
-      <div className={`${styles.savingsGoal} ${styles.formGroup}`}>
-        <label htmlFor="goalType">Goal Type</label>
-        <select id="goalType" value={goalType} onChange={handleGoalTypeChange}>
-          <option value="Savings">Savings</option>
-          <option value="Spending Limit">Spending Limit</option>
-        </select>
-
-        <label htmlFor="goalName">Goal Name</label>
-        <input
-          type="text"
-          id="goalName"
-          value={goalName}
-          onChange={(e) => setGoalName(e.target.value)}
-          required
-        />
-
-        {goalType === 'Savings' && (
-          <>
-            <div className={styles.goalAmount}>
-              <label htmlFor="goalAmount">Goal Amount</label>
-              <input
-                type="number"
-                id="goalAmount"
-                value={goalAmount}
-                onChange={(e) => setGoalAmount(Number(e.target.value))}
-                required
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-             <label>Target Date</label>
-             <input
-                type="date"
-                value={
-                  targetDate
-                    ? targetDate.toISOString().split('T')[0]
-                    : ''
-                }
-                min={new Date().toISOString().split('T')[0]} // Prevent past dates
-                onChange={(e) => {
-                  const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
-                  setTargetDate(selectedDate);
-                }}
-                required
-              />
-           </div>
-
-            <label htmlFor="selectedAccount">Account</label>
-            <select
-              id="selectedAccount"
-              value={selectedAccount}
-              onChange={(e) => setSelectedAccount(e.target.value)}
-              required
-            >
-              {fetchAccounts().map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
+        <h2>{initialGoal ? 'Edit Goal' : 'Add New Goal'}</h2>
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <h1>Add New Goal</h1>
+          <div className={`${styles.savingsGoal} ${styles.formGroup}`}>
+            <label htmlFor="goalType">Goal Type</label>
+            <select id="goalType" value={goalType} onChange={handleGoalTypeChange}>
+              <option value="Savings">Savings</option>
+              <option value="Spending Limit">Spending Limit</option>
             </select>
+
+            <label htmlFor="goalName">Goal Name</label>
+            <input
+              type="text"
+              id="goalName"
+              value={goalName}
+              onChange={(e) => setGoalName(e.target.value)}
+              required
+            />
+
+            {goalType === 'Savings' && (
+              <>
+                <div className={styles.goalAmount}>
+                  <label htmlFor="goalAmount">Goal Amount</label>
+                  <input
+                    type="number"
+                    id="goalAmount"
+                    value={goalAmount}
+                    onChange={(e) => setGoalAmount(Number(e.target.value))}
+                    required
+                  />
+                </div>
+
+              <div className={styles.formGroup}>
+                <label>Target Date</label>
+                <input
+                    type="date"
+                    value={
+                      targetDate
+                        ? targetDate.toISOString().split('T')[0]
+                        : ''
+                    }
+                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                    onChange={(e) => {
+                      const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
+                      setTargetDate(selectedDate);
+                    }}
+                    required
+                  />
+              </div>
+
+              <label htmlFor="selectedAccount">Account</label>
+              <select
+                id="selectedAccount"
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                required
+              >
+                {fetchAccounts().map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
 
 
             {/* Subgoals */}
@@ -390,7 +390,10 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
                 </select>
               </>
             )}
-          </div>
+            </>
+          )}
+          
+          {/* </div> */}
           <button type="submit" disabled={isLoading}>
             Finish
           </button>
@@ -398,26 +401,30 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
             Cancel
           </button>
           {error && <div className={styles.error}>{error}</div>}
+        </div>
         </form>
 
 
 
       </div>
-      {/* Submit button */}
-      <button type="submit" disabled={isLoading}>Finish</button>
+      </div>
+    //   {/* Submit button */}
+    //   <button type="submit" disabled={isLoading}>Finish</button>
 
-      {/* Cancel button */}
-      <button
-        type="button"
-        className={styles.cancelButton} // Add your styling here for the cancel button
-        onClick={onClose } // Or use a function to close the modal
-      >
-        Cancel
-      </button>
-      {error && <div className={styles.error}>{error}</div>}
-    </form>
+    //   {/* Cancel button */}
+    //   <button
+    //     type="button"
+    //     className={styles.cancelButton} // Add your styling here for the cancel button
+    //     onClick={onClose } // Or use a function to close the modal
+    //   >
+    //     Cancel
+    //   </button>
+    //   {error && <div className={styles.error}>{error}</div>}
+    // </form>
+    // </div>
+  // </div>
+  
+        );
 
-    </div>
-  );
 }
 

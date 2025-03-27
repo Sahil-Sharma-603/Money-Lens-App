@@ -106,7 +106,7 @@ const goalSchema = new mongoose.Schema({
 const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);
 
 //my version
-const SubSavingGoal = mongoose.models.SubSavingGoal || mongoose.model('SubSavingGoal', savingSubGoalSchema);
+const SubSavingGoal = mongoose.models.SubSavingGoal || mongoose.model('SubSavingGoal', subGoalSchema);
 module.exports = {Goal, SubSavingGoal}; 
 
 //Sahil's version
