@@ -21,6 +21,7 @@
 - Goals - link a savings goal to a savings account and have mini-goals within the saving goal for
   specific things and divided by percentage - Aakash
 - Show/hide sidebar - Una
+- Filtering transactions by account on transactions page - Jashan ✅
 - Transactions: sum selected transactions - Jashan ✅
 - Manual input account balance - Jashan
 - Custom scroll bar - Jashan
