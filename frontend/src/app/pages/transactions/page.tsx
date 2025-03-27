@@ -38,10 +38,12 @@ export default function Transaction() {
   const [minAmount, setMinAmount] = useState<string>('');
   const [maxAmount, setMaxAmount] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [accountFilter, setAccountFilter] = useState<string>('');
   const [transactionType, setTransactionType] = useState<string>('all'); // 'all', 'credit', 'debit'
   const [sortOrder, setSortOrder] = useState<string>('newest'); // 'newest', 'oldest', 'largest', 'smallest'
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,6 +66,7 @@ export default function Transaction() {
   useEffect(() => {
     fetchStoredTransactions();
     fetchAvailableCategories();
+    fetchAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -74,6 +77,17 @@ export default function Transaction() {
       setAvailableCategories(response.categories || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Fetch accounts for the filter dropdown
+  const fetchAccounts = async () => {
+    try {
+      const response = await apiRequest<AccountsResponse>('/accounts');
+      // Only show active accounts
+      setAccounts(response.accounts.filter(account => account.is_active));
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
     }
   };
 
@@ -100,6 +114,7 @@ export default function Transaction() {
       if (minAmount) params.minAmount = minAmount;
       if (maxAmount) params.maxAmount = maxAmount;
       if (categoryFilter) params.category = categoryFilter;
+      if (accountFilter) params.accountId = accountFilter;
       if (transactionType !== 'all') params.type = transactionType;
 
       // Sorting
@@ -517,6 +532,21 @@ export default function Transaction() {
               </div>
 
               <div style={style.filterRow}>
+                <div style={style.filterGroup}>
+                  <label style={style.label}>Account:</label>
+                  <select
+                    value={accountFilter}
+                    onChange={(e) => setAccountFilter(e.target.value)}
+                    style={style.select}
+                  >
+                    <option value="">All Accounts</option>
+                    {accounts.map((account) => (
+                      <option key={account._id} value={account._id}>
+                        {account.name} ({account.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div style={style.filterGroup}>
                   <label style={style.label}>Sort By:</label>
                   <select

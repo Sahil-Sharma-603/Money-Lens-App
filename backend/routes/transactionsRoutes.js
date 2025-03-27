@@ -70,6 +70,11 @@ router.get('/stored', auth, async (req, res) => {
     const query = {
       user_id: userId,
     };
+    
+    // Add account filter if provided
+    if (req.query.accountId) {
+      query.account_id = req.query.accountId;
+    }
 
     // Add date range if provided
     if (fromDate || toDate) {
