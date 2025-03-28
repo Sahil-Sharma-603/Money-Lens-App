@@ -8,10 +8,12 @@ on:
     branches:
       - develop
       - main
+      - SonarCloud_CI
   push:
     branches:
       - develop
       - main
+      - SonarCloud_CI
 
 jobs:
   build-and-test:
@@ -58,6 +60,15 @@ jobs:
         run: |
           cd frontend
           npm run build
+
+      - name: Run SonarCloud Scan
+        uses: sonarsource/sonarqube-scan-action@v5.0.0
+        with:
+          args: >
+            -Dsonar.organization=money-lens
+            -Dsonar.projectKey=Money-Lens_Money-Lens-App
+            -Dsonar.projectName=Money-Lens-App
+            -Dsonar.coverageReportPaths=tests/coverage/lcov-report/index-lcov-report.json  
 
   assign-reviewers:
     if: github.event_name == 'pull_request'
