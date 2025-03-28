@@ -7,12 +7,14 @@ on:
   pull_request:
     branches:
       - develop
+      - main
   push:
     branches:
       - develop
+      - main
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,6 +34,16 @@ jobs:
         run: |
           cd frontend
           npm install --legacy-peer-dep
+
+      - name: Install Test Dependencies
+        run: |
+          cd tests
+          npm install
+
+      - name: Run Tests
+        run: |
+          cd tests
+          npm test
 
       - name: Build Frontend
         run: |
