@@ -7,9 +7,11 @@ on:
   pull_request:
     branches:
       - develop
+      - main
   push:
     branches:
       - develop
+      - main
 
 jobs:
   build-and-test:
@@ -33,6 +35,10 @@ jobs:
           cd frontend
           npm install --legacy-peer-dep
 
+      - name: Install Global TypeScript Types
+        run: |
+          npm install -g typescript @types/supertest @types/express @types/jest @types/node
+
       - name: Install Test Dependencies
         run: |
           cd tests
@@ -43,6 +49,9 @@ jobs:
       - name: Run Tests
         run: |
           cd tests
+          # Use tsc to compile TypeScript with the root tsconfig.json
+          npx tsc --noEmit
+          # Run the tests
           npm test
 
       - name: Build Frontend
