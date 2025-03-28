@@ -60,10 +60,8 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
   useEffect(() => {
       const fetchAccounts = async () => {
         try {
-          console.log('Fetching accounts...');
+          
           const data = await apiRequest('/accounts', { requireAuth: true });
-      
-          console.log('Raw response:', data);
       
           if (Array.isArray(data.accounts)) {
             setAccounts(data.accounts);
@@ -80,13 +78,10 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
       };
         
       fetchAccounts();
-      console.log('Accounts:', accounts);
+      
     }, []); 
 
 
-    useEffect(() => {
-      console.log('Updated accounts:', accounts); // Logs the updated accounts array after state change
-    }, [accounts]);
 
 
   const spendingView = (goal: Goal) => {
@@ -104,13 +99,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
       timeRemainingText = isPastDue ? `${Math.abs(days)} days overdue` : `${days} days remaining`;
     } 
 
-    // timeRemainingText = isPastDue ? `${Math.abs(days)} days overdue` : `${days} days remaining`;
-    // console.log("Account: ", account);
-    // console.log("Goal: ", goal);
-    // console.log("Account ID: ", goal.accountId);
-    // console.log("Account ID: ", account._id);
-    // console.log("Account Name: ", account.name);
-    // console.log("Goal Name: ", goal.name);
     return (
       <>
         {account.name && <p>Account: {account.name}</p>}
@@ -123,12 +111,6 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
       </>
     ); 
 
-    // return (
-    //   <div>
-    //     <p>Account: {goal.selectedAccount}</p>
-    //     <p>Interval: {goal.interval}</p>
-    //   </div>
-    // );
   }
   const savingsView = (goal: Goal) => { 
     const { days, isPastDue } = calculateTimeRemaining(new Date(goal.targetDate));
@@ -212,42 +194,8 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
     return Math.min((current / target) * 100, 100);
   };
 
-  // if (isSpendingLimit) {
-  //   // For Spending Limit goals, use limitAmount as target.
-  //   progress = calculateProgress(goal.currentAmount, goal.limitAmount);
-  //   progressText = `Spent: $${goal.currentAmount.toLocaleString()} / $${goal.limitAmount.toLocaleString()}`;
-  //   additionalInfo = (
-  //     <>
-  //       {goal.selectedAccount && <p>Account: {goal.selectedAccount}</p>}
-  //       {goal.interval && <p>Interval: {goal.interval}</p>}
-  //     </>
-  //   );
-  //   timeRemainingText = "N/A"; // No targetDate for Spending Limit goals
-  // } else {
-  //   // For Savings goals, use targetAmount and compute time remaining
-  //   progress = calculateProgress(goal.currentAmount, goal.targetAmount);
-  //   progressText = `Progress: $${goal.currentAmount.toLocaleString()} / $${goal.targetAmount.toLocaleString()}`;
-
-  //   if (goal.targetDate) {
-  //     const { days, isPastDue } = calculateTimeRemaining(new Date(goal.targetDate));
-  //     timeRemainingText = isPastDue ? `${Math.abs(days)} days overdue` : `${days} days remaining`;
-  //   } else {
-  //     timeRemainingText = "N/A";
-  //   }
-
-  //   additionalInfo = (
-  //     <>
-  //       <p>Category: {goal.category}</p>
-  //       <p>{timeRemainingText}</p>
-  //     </>
-  //   );
-
-
 
     
-  // }
-
-  
 
   return (
     <div className={`${styles.goalCard} ${isCompleted ? styles.completed : ''}`}>

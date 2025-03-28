@@ -22,9 +22,11 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     limitAmount: "0",
     category: '',
     interval: 'Daily',
-    subGoals: [{ id: Date.now(), name: '', amount: "0"}],
+    subGoals: [],
   };
-  const initialGoal = initialGoalProp || defaultInitialGoal;
+
+  const initialGoal = initialGoalProp ?? defaultInitialGoal;
+
 
   
   // Use strings for numeric fields so they can be cleared.
@@ -32,10 +34,10 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   const [accounts, setAccounts] = useState([]);
 
   const [selectedAccount, setSelectedAccount] = useState(null);
-  const [subGoals, setSubGoals] = useState([{ name: '', amount: 0 }]);
+  const [subGoals, setSubGoals] = useState(Array.isArray(initialGoal.subGoals) ? initialGoal.subGoals : []);
   const [goalName, setGoalName] = useState(initialGoal?.goalName || "");
-  const [goalAmount, setGoalAmount] = useState(initialGoal?.goalAmount || 0);
-  const [limitAmount, setLimitAmount] = useState(0);
+  const [goalAmount, setGoalAmount] = useState(Number(initialGoal?.goalAmount) || 0);
+  const [limitAmount, setLimitAmount] = useState(Number(initialGoal?.limitAmount) || 0);
   const [category, setCategory] = useState('');
   const [targetDate, setTargetDate]= useState(getNextMonthDate()); 
   const [interval, setInterval] = useState('Daily');
@@ -44,14 +46,20 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   const [subGoalAmount, setSubGoalAmount] = useState(); 
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [isMatchingTotals, setMatchingTotals] = useState(true); // State to track if sub-goal amounts match the total goal amount
-
+  const [newSubGoal, setNewSubGoal] = useState({
+    name: "",
+    currentAmount: 0,
+    goalAmount: 0,
+  });
+  const [hasSubGoals, setHasSubGoals] = useState(false); // State to track if sub-goals are present
+  const [updatedSubGoals, setUpdatedSubGoals] = useState([]); // State to track updated sub-goals
+  
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        console.log('Fetching accounts...');
+       
         const data = await apiRequest('/accounts', { requireAuth: true });
     
-        console.log('Raw response:', data);
     
         if (Array.isArray(data.accounts)) {
           setAccounts(data.accounts);
@@ -97,10 +105,29 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   
 
   const removeSubGoal = (index) => {
-    setSubGoals(subGoals.filter((_, i) => i !== index));
+    const updated = subGoals.filter((_, i) => i !== index);
+    setSubGoals(updated);
+    setUpdatedSubGoals(updated); // Update the state with the new sub-goals
+    console.log("Updated sub-goals after removal:", updatedSubGoals);
+  
+    if(updatedSubGoals.length === 0){
+      // setSubGoals([{ name: '', amount: 0 }]); // Reinitialize with a default sub-goal
+      setMatchingTotals(true); 
+    }
+    // Delay the total check until the state update is reflected
+    setTimeout(() => {
+      checkMatchingTotals();
+    }, 0);
   };
+  
 
   const checkMatchingTotals = () => {
+    console.log("subgoals", subGoals);
+    if(subGoals.length === 0){
+
+      setMatchingTotals(true); // No sub-goals, so they match by default
+      return;
+    }
     const totalSubGoalAmount = subGoals.reduce(
       (sum, sg) => sum + (parseFloat(sg.amount) || 0), // Ensure proper handling of numbers
       0
@@ -109,19 +136,31 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     console.log('Total Sub-Goal Amount:', totalSubGoalAmount);
     console.log('Total Goal Amount:', totalGoalAmount);
     setMatchingTotals(totalSubGoalAmount === totalGoalAmount);
-    console.log('Matching Totals:', isMatchingTotals);
+   
+    // console.log('Matching Totals:', isMatchingTotals);
     if(!isMatchingTotals){
       setError('Sub-goal amounts must match the total goal amount.');
     } else {
       setError(null);
     }
   };
+
+
+  
   useEffect(() => {
     checkMatchingTotals();
+    console.log("Checking matching totals in useEffect", isMatchingTotals);
   }, [goalAmount, subGoals]); // Check whenever goalAmount or subGoals change 
+
+
 
   // Update a sub-goal field.
   const handleSubGoalChange = (index, field, value) => {
+
+    //check if goal has subgoals initialized
+    if (!Array.isArray(subGoals) || subGoals.length === 0) {
+      setSubGoals([{ _id:  Date.now(),  name: '', amount: 0 }]); // Initialize with a default sub-goal
+    }
     const newSubGoals = [...subGoals];
     if (field === 'amount') {
       newSubGoals[index]['amount'] = parseFloat(value) || 0; // Update 'amount' instead of 'goalAmount'
@@ -132,25 +171,25 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     checkMatchingTotals(); // Check if totals match after updating
   };
 
-  // Update goal type and reset related fields.
-  const handleTypeChange = (e) => {
-    setType(e.target.value);
-    setSubGoals([{ name: '', amount: 0 }]);  // Use number instead of string
-    setTargetAmount(0);
-    setLimitAmount(0);
-  };
+  // // Update goal type and reset related fields.
+  // const handleTypeChange = (e) => {
+  //   setType(e.target.value);
+  //   setSubGoals([{ name: '', amount: 0 }]);  // Use number instead of string
+  //   setTargetAmount(0);
+  //   setLimitAmount(0);
+  // };
 
-  const handleSubGoalAmountChange = () => {
-    const totalSubGoalAmount = subGoals.reduce(
-      (sum, sg) => sum + (parseFloat(sg.amount) || 0), // Ensure proper handling of numbers
-      0
-    );
-    if (totalSubGoalAmount > parseFloat(goalAmount)) {
-      setError('Sub-goal amounts cannot exceed total goal amount.');
-    } else {
-      setError(null);
-    }
-  };
+  // const handleSubGoalAmountChange = () => {
+  //   const totalSubGoalAmount = subGoals.reduce(
+  //     (sum, sg) => sum + (parseFloat(sg.amount) || 0), // Ensure proper handling of numbers
+  //     0
+  //   );
+  //   if (totalSubGoalAmount > parseFloat(goalAmount)) {
+  //     setError('Sub-goal amounts cannot exceed total goal amount.');
+  //   } else {
+  //     setError(null);
+  //   }
+  // };
   
 
   
@@ -160,56 +199,49 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   };
   
 
-  const validateSubGoals = () => {
-    return subGoals.every((subGoal) => subGoal.name && subGoal.goalAmount >= 0 && subGoal.currentAmount >= 0);
-  };
-
+  // const validateSubGoals = () => {
+  //   return subGoals.every((subGoal) => subGoal.name && subGoal.goalAmount >= 0 && subGoal.currentAmount >= 0);
+  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
   
+    // Ensure the sub-goal amounts match the total goal amount before submission
+    const totalSubGoalAmount = subGoals.reduce((sum, sg) => sum + (parseFloat(sg.amount) || 0), 0);
+    const totalGoalAmount = parseFloat(goalAmount) || 0;
+  
+    if (!isMatchingTotals) {
+      setError('Sub-goal amounts must match the total goal amount.');
+      setIsLoading(false);
+      return;
+    }
+  
     try {
-      // Build the goal data object conditionally
-
-  //     if (!validateSubGoals()) {
-  //   setError("All sub-goals must have a name, goal amount, and current amount.");
-  //   return;
-  // }
-
-      console.log("trying to submit form"); 
       const goalData = {
         title: goalName || "",
-        targetAmount: parseFloat(goalAmount) || 0,
+        targetAmount: totalGoalAmount,
         currentAmount: 0,
         selectedAccount: selectedAccount || null,
-        type: type || "Savings", 
-
-        // Only include targetDate and category for Savings goals
+        type: type || "Savings",
         ...(type === 'Savings' ? { 
-            targetDate: targetDate || getNextMonthDate(),  // targetDate is already in YYYY-MM-DD format
-            subGoals: subGoals.map((sg) => ({
-              ...sg,
-              name: sg.name,
-              amount: sg.amount,
-              currentAmount: 0
-              
-            })),
+          targetDate: targetDate || getNextMonthDate(),
+          subGoals: subGoals.map((sg) => ({
+            ...sg,
+            name: sg.name,
+            amount: sg.amount,
+            currentAmount: 0
+          })),
         } : {
           category: category || "", 
           limitAmount: limitAmount || 0,
           interval: interval || "Monthly",
-          ...(interval === "Date" ? {
-            targetDate: targetDate || getNextMonthDate(), 
-          } : {
-            targetDate: getNextMonthDate(),
-          })
+          ...(interval === "Date" ? { targetDate: targetDate || getNextMonthDate() } : { targetDate: getNextMonthDate() })
         })
       };
-
-      console.log("trying to submit form", goalData);
   
+      console.log("Submitting form:", goalData);
       await onSubmit(goalData);
       onClose();
     } catch (error) {
@@ -218,6 +250,67 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
       setIsLoading(false);
     }
   };
+  
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+  //   setError(null);
+  
+  //   try {
+  //     // Build the goal data object conditionally
+
+  // //     if (!validateSubGoals()) {
+  // //   setError("All sub-goals must have a name, goal amount, and current amount.");
+  // //   return;
+  // // }
+
+  //     console.log("trying to submit form"); 
+  //     const goalData = {
+  //       title: goalName || "",
+  //       targetAmount: parseFloat(goalAmount) || 0,
+  //       currentAmount: 0,
+  //       selectedAccount: selectedAccount || null,
+  //       type: type || "Savings", 
+
+  //       // Only include targetDate and category for Savings goals
+  //       ...(type === 'Savings' ? { 
+  //           targetDate: targetDate || getNextMonthDate(),  // targetDate is already in YYYY-MM-DD format
+  //           subGoals: subGoals.map((sg) => ({
+  //             ...sg,
+  //             name: sg.name,
+  //             amount: sg.amount,
+  //             currentAmount: 0
+              
+  //           })),
+  //       } : {
+  //         category: category || "", 
+  //         limitAmount: limitAmount || 0,
+  //         interval: interval || "Monthly",
+  //         ...(interval === "Date" ? {
+  //           targetDate: targetDate || getNextMonthDate(), 
+  //         } : {
+  //           targetDate: getNextMonthDate(),
+  //         })
+  //       })
+  //     };
+
+  //     console.log("trying to submit form", goalData);
+  
+  //     try {
+  //       console.log("Submitting goal data:", goalData);
+  //       await onSubmit(goalData);
+  //       onClose();
+  //     } catch (error) {
+  //       console.error("Submission error:", error);
+  //       setError('Failed to create goal.');
+  //     }
+  //   } catch (error) {
+  //     setError('Failed to create goal.');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
 
 
@@ -252,7 +345,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
                   <input
                     type="number"
                     id="goalAmount"
-                    value={goalAmount}
+                    value={goalAmount === 0 ? '' : goalAmount}
                     onChange={(e) => setGoalAmount(Number(e.target.value))}
                     required
                   />
@@ -314,7 +407,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
                     id="sub-goal-amount"
                     type="number"
                     placeholder="Amount"
-                    value={subGoal.amount}  // Ensure we're using 'amount'
+                    value={subGoal.amount === 0 ? '' : subGoal.amount}  // Ensure we're using 'amount'
                     onChange={(e) => handleSubGoalChange(index, 'amount', e.target.value)}  // Correctly update 'amount'
                     // onBlur={handleSubGoalAmountChange}  // Optional: for validation
                   />
@@ -340,37 +433,24 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
             <input
               type='number'
               id="limit"
-              value={limitAmount}
+              value={limitAmount === 0 ? '' : limitAmount}
               onChange={(e) => setLimitAmount(parseFloat(e.target.value))}
               required
             />
             </div>
 
             <label htmlFor="category">Category</label>
-            {/* <select
-              id="category"
+            <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              required
             >
               <option value="">Select Category</option>
-              <option value="Food">Food</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Entertainment">Shopping</option>
-              <option value="Entertainment">Other</option>
-            </select> */}
-
-            <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                  >
-                    <option value="">Select Category</option>
-                    {availableCategories.map((category, index) => (
-                      <option key={index} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
+              {availableCategories.map((category, index) => (
+                <option key={index} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
 
             <label htmlFor="interval">Target Interval</label>
             <select id="interval" value={interval} onChange={(e) => setInterval(e.target.value)} required>
@@ -399,49 +479,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
               </>
             )}
 
-{/* 
-            {type === 'Spending Limit' && (
-              <>
-                <label htmlFor="limitAmount">Limit Amount</label>
-                <input
-                  type="number"
-                  id="limitAmount"
-                  value={limitAmount}
-                  onChange={(e) => setLimitAmount(e.target.value)}
-                  style={noSpinnerStyle}
-                  required
-                />
 
-                <label htmlFor="category">Category</label>
-                <select
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  required
-                >
-                  <option value="">Select Category</option>
-                  <option value="Food">Food</option>
-                  <option value="Entertainment">Entertainment</option>
-                  <option value="Entertainment">Shopping</option>
-                  <option value="Entertainment">Other</option>
-
-                </select>
-
-                <label htmlFor="interval">Target Interval</label>
-                <select
-                  id="interval"
-                  value={interval}
-                  onChange={(e) => setInterval(e.target.value)}
-                  required
-                >
-                  {/* <option value="Date">Date</option> */}
-                  {/* <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Annually">Annually</option>
-                </select>
-              // </>
-            )} */} 
             </>
           )}
           

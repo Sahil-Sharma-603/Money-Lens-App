@@ -555,10 +555,10 @@ router.patch('/:id/add-money', auth, async (req, res) => {
     }
 
     const goal = await Goal.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+      { _id: req.params._id, userId: req.user._id },
       { 
         $inc: { currentAmount: Number(amount) },
-        updatedAt: new Date()
+        //updatedAt: new Date()
       },
       { new: true }
     );
@@ -576,6 +576,11 @@ router.patch('/:id/add-money', auth, async (req, res) => {
       targetDate: goal.targetDate,
       category: goal.category,
       type: goal.type,
+      userId: goal.userId,
+      selectedAccount: goal.selectedAccount,
+      limitAmount: goal.limitAmount,
+      interval: goal.interval,
+      subGoals: goal.subGoals,
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt
     });

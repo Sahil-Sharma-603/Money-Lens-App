@@ -16,7 +16,7 @@ export default function AddMoneyForm({ goal, onClose, onSubmit }: AddMoneyFormPr
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (!isNaN(numAmount) && numAmount > 0) {
-      onSubmit(goal.id, numAmount);
+      onSubmit(goal._id, numAmount);
       onClose();
     }
   };

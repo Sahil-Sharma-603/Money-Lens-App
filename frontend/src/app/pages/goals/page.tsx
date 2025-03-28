@@ -78,7 +78,6 @@ fetchGoals();
       setIsLoading(true);
       setError(null);
       
-      console.log('Adding new goal, original form data:', formData);
       
       // Build the new goal object conditionally
       const newGoal = {
@@ -108,8 +107,7 @@ fetchGoals();
       };
 
       
-      
-      console.log('Formatted goal data to be sent:', newGoal);
+    
       
       const savedGoal = await apiRequest<Goal>('/goals', {
         method: 'POST',
@@ -117,7 +115,6 @@ fetchGoals();
         requireAuth: true
       });
       
-      console.log('Goal saved successfully:', savedGoal);
       
       // If needed, convert targetDate back to Date object
       if (savedGoal.targetDate) {
@@ -134,31 +131,7 @@ fetchGoals();
       setIsLoading(false);
     }
   };
-  
-  // // Add a subgoal
-  // const addSubGoal = async (goalId: string, subGoalData: any) => {
-  //   try {
-  //     setIsLoading(true);
-  //     setError(null);
-  
-  //     console.log("Adding sub-goal:", subGoalData);
-  
-  //     const updatedGoal = await apiRequest<Goal>(`/goals/${goalId}/subgoal`, {
-  //       method: "POST",
-  //       body: subGoalData,
-  //       requireAuth: true,
-  //     });
-  
-  //     setGoals(goals.map((goal) => (goal.id === goalId ? updatedGoal : goal)));
-  //     setError("Sub-goal added successfully!");
-  //   } catch (error) {
-  //     console.error("Error adding sub-goal:", error);
-  //     setError("Failed to add sub-goal. Please try again.");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-  
+
 
   // Delete a goal from MongoDB
   const deleteGoal = async (goalId: string) => {
@@ -186,6 +159,8 @@ fetchGoals();
     return nextMonthDate;  // Return a Date object directly
   };
 
+
+
   // Edit a goal in MongoDB
   const editGoal = async (updatedGoal: any) => {
     try {
@@ -195,10 +170,19 @@ fetchGoals();
       console.log('Updating goal with data:', updatedGoal);
       console.log('Editing goal:', editingGoal);
       
-      // Format the goal data for the API
+      // Ensure subGoals exist before mapping
+      const updatedSubGoals = updatedGoal.subGoals && updatedGoal.subGoals.length > 0
+      ? updatedGoal.subGoals.map((subGoal: any) => ({
+          name: subGoal.name,
+          goalAmount: Number(subGoal.amount),
+          currentAmount: Number(subGoal.currentAmount) || 0,
+        }))
+      : []; // ✅ Always send an empty array if there are no sub-goals
+
+
       const goalToUpdate = {
         id: editingGoal._id,
-        title: updatedGoal.title || editingGoal.name,
+        title: updatedGoal.title || editingGoal.title,
         description: updatedGoal.description || editingGoal.description,
         targetAmount: Number(updatedGoal.targetAmount) || editingGoal.targetAmount,
         currentAmount: Number(updatedGoal.currentAmount) || editingGoal.currentAmount,
@@ -207,17 +191,17 @@ fetchGoals();
           : new Date(getNextMonthDate()).toISOString() || editingGoal.targetDate.toISOString(),
         category: updatedGoal.category || editingGoal.category,
         type: updatedGoal.type || editingGoal?.type,
-        interval: updatedGoal.interval || editingGoal?.interval, 
-        subGoals: updatedGoal.subGoals.map((subGoal: any, index: number) => ({
+        interval: updatedGoal.interval || editingGoal?.interval,
+        subGoals: updatedGoal.subGoals.length > 0 ? updatedGoal.subGoals.map((subGoal: any, index: number) => ({
           name: subGoal.name || editingGoal?.subGoals[index]?.name,
           goalAmount: Number(subGoal.amount) || editingGoal?.subGoals[index]?.goalAmount,
           currentAmount: Number(subGoal.currentAmount) || editingGoal?.subGoals[index]?.currentAmount,
-          currentAmount: 0, 
-        })),
-        selectedAccount: updatedGoal.selectedAccount || editingGoal?.selectedAccount ||null,
-        limitAmount: updatedGoal.limitAmount || editingGoal.limitAmount|| 0,
+        })) : [],
+        selectedAccount: updatedGoal.selectedAccount || editingGoal?.selectedAccount || null,
+        limitAmount: updatedGoal.limitAmount || editingGoal.limitAmount || 0,
       };
-      
+    
+
       console.log('Formatted goal data for update:', goalToUpdate);
       console.log('Goal ID to update:', updatedGoal._id);
       console.log('Goal ID to update:', goalToUpdate.id);
@@ -231,6 +215,7 @@ fetchGoals();
       
       setGoals(goals.map(g => g.id === savedGoal.id ? savedGoal : g));
       fetchGoals();
+      
       console.log('Goal updated successfully:', savedGoal);
       setEditingGoal(null);
       setError('Goal updated successfully!');
@@ -248,6 +233,8 @@ fetchGoals();
       setIsLoading(true);
       setError(null);
 
+      console.log("add money to goal: ", goalId, amount);
+
       const updatedGoal = await apiRequest<Goal>(`/goals/${goalId}/add-money`, {
         method: 'PATCH',
         body: { amount },
@@ -256,7 +243,7 @@ fetchGoals();
 
       // Update the goals list with the new amount
       setGoals(goals.map(goal => 
-        goal.id === goalId 
+        goal._id === goalId 
           ? { ...goal, currentAmount: goal.currentAmount + amount }
           : goal
       ));
@@ -338,18 +325,16 @@ fetchGoals();
                   <p>Click "Add New Goal" to start tracking your financial targets!</p>
                 </div>
               ) : (
-                sortedGoals.map((goal) => {
-                  console.log("Goal ID:", goal._id); // Log to see the goal._id value
-                  return (
-                    <GoalCard 
-                      key={goal._id}  
-                      goal={goal} 
-                      onEdit={() => setEditingGoal(goal)} 
-                      onDelete={() => deleteGoal(goal._id)}
-                      onViewDetails={() => setSelectedGoal(goal)}
-                      onAddMoney={() => setAddingMoneyToGoal(goal)}
-                    />
-                  )})
+                sortedGoals.map((goal, index) => (
+                  <GoalCard 
+                    key={goal._id || `fallback-key-${index}`}  
+                    goal={goal} 
+                    onEdit={() => setEditingGoal(goal)} 
+                    onDelete={() => deleteGoal(goal._id)}
+                    onViewDetails={() => setSelectedGoal(goal)}
+                    onAddMoney={() => setAddingMoneyToGoal(goal)}
+                  />
+                ))
               )}
 
             </div>
