@@ -312,3 +312,14 @@
 .goalAmount input[type="number"] {
   -moz-appearance: textfield;
 }
+
+
+.limitAmount input[type="number"]::-webkit-outer-spin-button,
+.limitAmount input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.limitAmount input[type="number"] {
+  -moz-appearance: textfield;
+}

@@ -2,7 +2,9 @@
 const User = require('../models/User.model'); 
 const Transaction = require('../models/Transaction.model'); 
 const Account = require('../models/Account.model'); 
-const {Goal} = require('../models/Goal.model');
+
+const { Goal, SubGoal } = require('../models/Goal.model');
+
 
 
 async function getGoals(userId) {
@@ -18,16 +20,24 @@ async function getGoals(userId) {
         try {
             // In test environment, skip the timeout promise
             if (process.env.NODE_ENV === 'test') {
-                goals = await Goal.find({ userId });
+
+
+                console.log("Goal Model:", Goal);
+                console.log("Goal.find:", typeof Goal.find);
+                
+                
+                goals = await Goal.find({ userId }).populate('subGoals');
 
             } else {
                 // In non-test environments, use timeout to prevent hanging
+                console.log("Goal Model:", Goal);
+                    console.log("Goal.find:", typeof Goal.find);
                 goals = await Promise.race([
-                  
-                        Goal.find({ userId }),
-                        new Promise((_, reject) =>
-                          setTimeout(() => reject(new Error("Goal lookup timed out")), 3000)
-                        )
+                    
+                    Goal.find({ userId }).populate('subGoals'),  // Populate SubSavingGoal
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Goal lookup timed out")), 3000)
+                    )
 
                 ]);
             }
@@ -38,7 +48,12 @@ async function getGoals(userId) {
             }
 
             console.log("Goals found: ", goals);
-            return goals;
+
+
+            return {
+                goals, 
+
+            };
         } catch (err) {
             console.error("Error finding goals:", err);
             // goals = [];
@@ -63,6 +78,8 @@ async function getGoal(goalId){
         let goal; 
         // In test environment, skip the timeout promise
         if (process.env.NODE_ENV === 'test') {
+
+
             goal = await Goal.find({ Goal_id: goalId });
         } else {
             // In non-test environments, use timeout to prevent hanging
@@ -84,89 +101,112 @@ async function getGoal(goalId){
     }
 }
 
-// //getSavings(accountId, Goal.updatedAt)
-// async function getSavingsForGoals(accountId, fromDate){
-//     try {
-
-//         // Check if goalId is valid
-//         if (!accountId) {
-//             console.log("No accountId provided, returning empty object");
-//             return {}; 
-//         }
-
-//         // Convert fromDate to YYYY-MM-DD format
-//         const formattedDate = fromDate.toISOString().split('T')[0];
-
-//         // Fetch transactions with a timeout (except in test environment)
-//         let transactions;
-//         try {
-//             // In test environment, skip the timeout promise
-//             if (process.env.NODE_ENV === 'test') {
-//                 transactions = await Transaction.find({
-//                     account_id: accountId,
-//                     date: { $gt: formattedDate },
-//                 });
-//             } else {
-//                 transactions = await Promise.race([
-//                     Transaction.find({
-//                         account_id: accountId,
-//                         date: { $gt: formattedDate },
-//                     }),
-//                     new Promise((_, reject) =>
-//                         setTimeout(() => reject(new Error("Transaction lookup timed out")), 3000)
-//                     )
-//                 ]);
-//             }
-
-//             if (!transactions || !Array.isArray(transactions)) {
-//                 console.log("No transactions found or invalid transactions data");
-//                 transactions = [];
-//             }
-//         } catch (err) {
-//             console.error("Error finding transactions:", err);
-//             transactions = [];
-//         }
-//     } catch (err) {
-//         console.error("Error finding goals:", err);
-//         goal = {};
-//     }
-
-//     if (transactions.length == 0) {
-//         return 0; 
-//     }
-
-//     let newTransactions = transactions.filt
-
-
-// }; 
-
-async function getTotalSavingsForGoals(accountId, fromDate) {
+async function updateSavingGoals(goals) {
     try {
-        if (!accountId) {
-            console.log("No accountId provided, returning 0");
+        if (!goals || goals.length === 0) {
+            return;
+        }
+
+        // Get the saving goals
+        const savingsGoals = goals.filter(goal => goal.type === "Savings");
+
+        // Iterate over each savings goal and update it
+        for (const goal of savingsGoals) {
+            const totalSavings = await getTotalSavingsForGoal(goal);
+            await updateSubGoalAmount(totalSavings, goal);
+
+            // Optionally, update the `updatedAt` field of the goal
+            goal.updatedAt = new Date();
+            await goal.save();  // Assuming goal is a Mongoose model instance
+        }
+    } catch (error) {
+        console.error("Error updating saving goals:", error);
+    }
+}
+
+
+async function updateSubGoalAmount(totalSavingsForGoal, goal) {
+    try {
+        if (totalSavingsForGoal === 0 || !goal || !goal.subGoals || !goal.subGoals) {
+            return;
+        }
+
+        goal.subGoals = await Promise.all(
+            goal.subGoals.map(async (subGoal) => {
+                subGoal.currentAmount += totalSavingsForGoal * (subGoal.percent / 100);
+                await subGoal.save();
+                return subGoal;
+            })
+        );
+        
+
+        console.log("Updated Sub-Goals:", goal.subGoal);
+        return goal.subGoal; // Return updated sub-goals if needed
+    } catch (error) {
+        console.error("Error updating subgoal amount", error);
+    }
+}
+
+
+
+// async function getAccountsFromGoals(goal) {
+//     try {
+//         if (!goals || goals.length === 0) {
+//             return []; // Return an empty array if there are no goals
+//         }
+
+//         // Map each goal to its associated accountId(s)
+//         const goalAccounts = goals.map(goal => ({
+//             goalId: goal._id || goal.id, // Include the goal ID for reference
+//             accountIds: Array.isArray(goal.accountId) ? goal.accountId : [goal.accountId] // Ensure it's always an array
+//         }));
+
+//         return goalAccounts;
+//     } catch (error) {
+//         console.error("Error finding accounts associated with a goal:", error);
+//         return [];
+//     }
+// }
+
+
+async function getTotalSavingsForGoal(goal) {
+    try {
+        if (!goal || !goal.accountId || goal.accountId.length === 0) {
+            console.log("No accounts linked to the goal, returning 0");
             return 0;
         }
 
-        if (!(fromDate instanceof Date)) {
-            console.error("Invalid fromDate: Expected a Date object");
+        if (!(goal.updatedAt instanceof Date)) {
+            console.error("Invalid updatedAt date: Expected a Date object");
             return 0;
         }
 
-        // Convert fromDate to YYYY-MM-DD format
-        const formattedDate = fromDate.toISOString().split('T')[0];
+        // Convert updatedAt to YYYY-MM-DD format for comparison
+        const formattedDate = goal.updatedAt.toISOString().split('T')[0];
 
         let totalAmount = 0;
+
         try {
             if (process.env.NODE_ENV === 'test') {
                 const result = await Transaction.aggregate([
-                    { $match: { account_id: accountId, date: { $gt: formattedDate } } },
-                    { $group: { _id: null, total: { $sum: "$amount" } } }
+                    { 
+                        $match: { 
+                            account_id: { $in: goal.accountId },  // Match transactions from any linked account
+                            date: { $gt: formattedDate }  // Transactions after the goal was last updated
+                        }
+                    },
+                    { $group: { _id: null, total: { $sum: "$amount" } } } // Sum all matching transactions
                 ]);
                 totalAmount = result.length ? result[0].total : 0;
             } else {
                 const result = await Promise.race([
                     Transaction.aggregate([
-                        { $match: { account_id: accountId, date: { $gt: formattedDate } } },
+                        { 
+                            $match: { 
+                                account_id: { $in: goal.accountId }, 
+                                date: { $gt: formattedDate }
+                            } 
+                        },
                         { $group: { _id: null, total: { $sum: "$amount" } } }
                     ]),
                     new Promise((_, reject) =>
@@ -175,6 +215,8 @@ async function getTotalSavingsForGoals(accountId, fromDate) {
                 ]);
                 totalAmount = result.length ? result[0].total : 0;
             }
+
+            goal.currentAmount += totalAmount; 
         } catch (err) {
             console.error("Error finding transactions:", err);
         }
@@ -185,6 +227,7 @@ async function getTotalSavingsForGoals(accountId, fromDate) {
         return 0;
     }
 }
+
 
 async function getTotalSpendingForGoals(accountId, fromDate) {
     try {
@@ -293,4 +336,4 @@ async function addSubGoalToGoal(goalId, subgoalData) {
 
 
 
-module.exports = { getGoals, getGoal, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoals };
+module.exports = { getGoals, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoal };

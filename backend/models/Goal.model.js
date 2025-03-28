@@ -1,22 +1,30 @@
 
 const mongoose = require('mongoose');
 
+
 const subGoalSchema = new mongoose.Schema({
+  // goalId: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   required: true,
+  //   ref: 'Goal'
+  // },
   name: {
     type: String,
-    required: true,
+    required: true, 
+    default: "unnamed subgoal"
   },
-  amount: {
+  goalAmount: {
     type: Number,
     required: true,
     min: 0,
+    default: 0
   },
-  percentage: {
+  currentAmount: {
     type: Number,
-    required: true,
     min: 0,
-    max: 100,
-  }
+    default: 0
+  },
+
 }, { timestamps: true });
 
 const goalSchema = new mongoose.Schema({
@@ -50,11 +58,10 @@ const goalSchema = new mongoose.Schema({
   },
   targetDate: {
     type: Date,
-    required: function(){return this.type === 'Savings';},
-
+    required: function() { return this.type === 'Savings'; },
     validate: {
       validator: function(v) {
-        return v > new Date();
+        return v.getTime() > new Date().getTime(); // Ensure future date
       },
       message: 'Target date must be in the future'
     }
@@ -62,7 +69,7 @@ const goalSchema = new mongoose.Schema({
   category: {
     type: String,
     required: function() {
-      return this.type === 'Savings';
+      return this.type === 'Spending Limit';
     }
   },
   type: {
@@ -76,6 +83,7 @@ const goalSchema = new mongoose.Schema({
     ref: 'User'
   },
   accountId: [{
+
     type: mongoose.Schema.Types.ObjectId,
   }],
   // New fields to match GoalForm.tsx:
@@ -90,25 +98,31 @@ const goalSchema = new mongoose.Schema({
   interval: {
     type: String,
     enum: ['Date', 'Daily', 'Weekly', 'Monthly', 'Annually'],
-    default: 'Date'
+    default: 'Monthly'
   },
-  // Instead of savingSubGoals with a nested structure, use a flat array
   subGoals: [subGoalSchema],
+
   createdAt: {
     type: Date,
     default: Date.now
   },
   updatedAt: {
     type: Date
+
   }
+
+
+  
 });
 
 const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);
 
+
 //my version
-const SubSavingGoal = mongoose.models.SubSavingGoal || mongoose.model('SubSavingGoal', subGoalSchema);
-module.exports = {Goal, SubSavingGoal}; 
+const SubGoal = mongoose.models.SubSavingGoal || mongoose.model('SubGoal', subGoalSchema);
+module.exports = {Goal, SubGoal}; 
 
 //Sahil's version
 // module.exports = { Goal };
+
 

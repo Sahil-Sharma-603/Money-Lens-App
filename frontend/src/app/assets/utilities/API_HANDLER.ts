@@ -148,10 +148,10 @@ export type Goal = {
   targetDate: Date;
   category: string;
   type: 'Savings' | 'Spending Limit';
-  spendingPeriod?: 'Monthly' | 'Weekly' | 'Yearly';
+  interval?: 'Date' | 'Daily' |'Monthly' | 'Weekly' | 'Yearly';
   userId: string; 
-  accountId: string[]; 
-  savingSubGoals: SubGoals[]; 
+  selectedAccount: string[]; 
+  subGoals: SubGoals[]; 
 };
 
 // Top sources (for analysis)

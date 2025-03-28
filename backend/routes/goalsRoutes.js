@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const auth = require('../middleware/auth.middleware');
-const {Goal, SubSavingGoal }  = require('../models/Goal.model');
+const {Goal, SubGoal }  = require('../models/Goal.model');
 const { getGoals, getGoal, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoals } = require('../logic/goalsLogic')
 
 
@@ -124,6 +124,7 @@ router.post('/', auth, async (req, res) => {
       interval, 
       subGoals 
     } = req.body;
+
     
     // Basic validations...
     if (!title) {
@@ -136,33 +137,45 @@ router.post('/', auth, async (req, res) => {
     if (type === 'Savings' && !targetDate) {
       return res.status(400).json({ error: 'Target date is required' });
     }
-    if (type === 'Savings' && !category) {
-      return res.status(400).json({ error: 'Category is required for savings goals' });
+    if (type === 'Spending Limit' && !category) {
+      return res.status(400).json({ error: 'Category is required for spending goals' });
     }
     if (!req.user || !req.user._id) {
       return res.status(400).json({ error: 'User ID is missing from authentication' });
     }
     
+    const getNextMonthDate = () => {
+      const today = new Date();
+      const nextMonthDate = new Date(today.setMonth(today.getMonth() + 1));
+      return nextMonthDate;  // Return a Date object directly
+    };
+
     // Build the new goal data object conditionally
     const newGoalData = {
-      title,
+      title, 
       description: description || '',
       targetAmount: Number(targetAmount),
+      targetDate: new Date(getNextMonthDate()),
       currentAmount: currentAmount ? Number(currentAmount) : 0,
       type: type || 'Savings',
       selectedAccount: selectedAccount || undefined,
-      limitAmount: type === 'Spending Limit' ? Number(limitAmount) : 0,
-      interval: type === 'Spending Limit' ? (interval || 'Date') : 'Date',
-      subGoals: Array.isArray(subGoals) ? subGoals : [],
-      userId: req.user._id
+      userId: req.user._id,
+      ...(type === 'Spending Limit' && {
+        limitAmount,
+        category,
+        interval
+      }),
+      ...(type === 'Savings' && {
+        subGoals: Array.isArray(subGoals) ? subGoals.map(subGoal => ({
+          name: subGoal.name || '',
+          goalAmount: subGoal.goalAmount ? Number(subGoal.goalAmount) : 0,
+          currentAmount: 0
+
+        })) : []
+      })
     };
 
-    // Only include targetDate and category for Savings goals
-    if (type === 'Savings') {
-      newGoalData.targetDate = new Date(targetDate);
-      newGoalData.category = category;
-    }
-    
+
     const newGoal = new Goal(newGoalData);
     console.log('Goal to be saved:', {
       title: newGoal.title,
@@ -175,6 +188,7 @@ router.post('/', auth, async (req, res) => {
       subGoals: newGoal.subGoals,
       userId: newGoal.userId
     });
+
     
     const savedGoal = await newGoal.save();
     console.log('Goal saved successfully with ID:', savedGoal._id);
@@ -185,7 +199,7 @@ router.post('/', auth, async (req, res) => {
       description: savedGoal.description,
       targetAmount: savedGoal.targetAmount,
       currentAmount: savedGoal.currentAmount,
-      targetDate: savedGoal.targetDate, // Will only exist for Savings goals
+      targetDate: savedGoal.targetDate,
       category: savedGoal.category,
       type: savedGoal.type,
       selectedAccount: savedGoal.selectedAccount,
@@ -226,16 +240,16 @@ router.post('/', auth, async (req, res) => {
     }
     
     // Create the new sub goal
-    const newGoal = new SubSavingGoal({
+    const newGoal = new SubGoal({
       goalname: goalname ? String(goalname) : "",
       amount: currentAmount ? Number(currentAmount) : 0,
-      percent: percent ? Number(percent) : 0
+
     });
     
     console.log('sub Goal to be saved:', {
       goalname: newGoal.goalname,
       amount: newGoal.amount,
-      percent: newGoal.percent
+
     });
     
     // Save to database
@@ -311,23 +325,27 @@ router.put('/:id', auth, async (req, res) => {
       targetDate, 
       category, 
       type, 
-      accountIds, 
-      subgoals 
+      selectedAccount, 
+      limitAmount, 
+      interval, 
+      subGoals 
     } = req.body;
 
     // Build update object with only provided fields
-    const updateFields = {};
+    const updateFields = {
+      
+    };
 
     if (title) updateFields.title = title;
     if (description !== undefined) updateFields.description = description;
     if (targetDate) updateFields.targetDate = new Date(targetDate);
     if (type) {
       updateFields.type = type;
-      // Only update category if it's a savings goal
+      // Only update category if it's a spending goal
       if (type === 'Savings' && category) {
-        updateFields.category = category;
-      } else if (type === 'Spending Limit') {
         updateFields.category = undefined;
+      } else if (type === 'Spending Limit') {
+        updateFields.category = category;
       }
     }
     
@@ -340,8 +358,8 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     // Update accountIds if provided
-    if (accountIds && Array.isArray(accountIds)) {
-      updateFields.accountIds = accountIds; // assuming accountIds is an array of account ids
+    if (selectedAccount && Array.isArray(selectedAccount)) {
+      updateFields.selectedAccount = selectedAccount; // assuming accountIds is an array of account ids
     }
 
     // Handle subgoals (if provided)
@@ -358,7 +376,7 @@ router.put('/:id', auth, async (req, res) => {
       updateFields.subgoals = subgoals.map((subgoal) => ({
         name: subgoal.name,
         amount: Number(subgoal.amount),
-        percentage: subgoal.percentage
+
       }));
     }
 
@@ -388,7 +406,7 @@ router.put('/:id', auth, async (req, res) => {
       targetDate: goal.targetDate,
       category: goal.category,
       type: goal.type,
-      accountIds: goal.accountIds, // Add accountIds to the response
+      selectedAccount: goal.selectedAccount, // Add accountIds to the response
       subgoals: goal.subgoals,     // Add subgoals to the response
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt

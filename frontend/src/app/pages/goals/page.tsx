@@ -22,49 +22,24 @@ export default function GoalsPage() {
 
   useEffect(() => {
 
-
-//my version
-  //   const fetchGoals = async () => {
-  //     try {
-  //       setIsLoading(true);
-  //       setError(null);
-
-  //       console.log('Fetching goals from API...');
-  //       // const response = await apiRequest('/goals', { requireAuth: true });
-  //       const data = await apiRequest('/goals', { requireAuth: true });
-  //       console.log('Parsed JSON data:', data);
-
-  //       setGoals(data.map((goal) => ({
-  //         ...goal,
-  //         targetDate: new Date(goal.targetDate),
-  //       })));
-  //     } catch (error) {
-  //       console.error('Error fetching goals:', error);
-  //       setError('Failed to load your goals. Please try again later.');
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   fetchGoals();
-  // }, []);
-
-
-
-  
-//sahil's version
   const fetchGoals = async () => {
    try {
      setIsLoading(true);
      setError(null);
     const data = await apiRequest('/goals', { requireAuth: true });
-    // Map _id to id and convert targetDate to Date object
-    const mappedData = data.map(goal => ({
-       ...goal,
-       id: goal._id.toString(),
-       targetDate: new Date(goal.targetDate)
-    }));
-    setGoals(mappedData);
+    console.log("goal data: ", data); 
+
+    const goals = data.goals || []; 
+
+    // console.log("goals", goals); 
+    // // // Map _id to id and convert targetDate to Date object
+    // const mappedData = Array.isArray(data) ? data.map(goal => ({
+    //   ...goal,
+    //   id: goal._id.toString(),
+    //   targetDate: new Date(goal.targetDate)
+    // })) : []; // or handle the error case as needed
+    // console.log("mapped goals", mappedData); 
+    setGoals(goals);
   } catch (error) {
     console.error('Error fetching goals:', error);
     setError('Failed to load your goals. Please try again later.');
@@ -102,19 +77,31 @@ fetchGoals();
       // Build the new goal object conditionally
       const newGoal = {
         title: formData.title,
-        description: formData.description || "",
         targetAmount: Number(formData.targetAmount),
         currentAmount: Number(formData.currentAmount) || 0,
+        selectedAccount: formData.selectedAccount || null,
         type: formData.type || "Savings",
         ...(formData.type === 'Savings' ? { 
+              subGoals: formData.subGoals.map((subGoal: any) => ({
+                name: subGoal.name,
+                goalAmount: Number(subGoal.amount),
+                currentAmount: 0, 
+
+              })),
               targetDate: new Date(formData.targetDate),
-              category: formData.category 
         } : {
-              // For Spending Limit goals, do not include targetDate
               limitAmount: Number(formData.limitAmount),
-              interval: formData.interval
+              interval: formData.interval || "Monthly", 
+              ...(formData.interval === "Date" ? {
+                targetDate: new Date(formData.targetDate)
+              } : {
+                targetDate: new Date()
+              }),
+              category: formData.category || "",
         })
       };
+
+      
       
       console.log('Formatted goal data to be sent:', newGoal);
       
@@ -320,22 +307,23 @@ fetchGoals();
           ) : (
             <div className={styles.goalsGrid}>
               {sortedGoals.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <p>You don't have any financial goals yet.</p>
-                  <p>Click "Add New Goal" to start tracking your financial targets!</p>
-                </div>
-              ) : (
-                sortedGoals.map((goal) => (
-                  <GoalCard 
-                    key={goal.id} 
-                    goal={goal} 
-                    onEdit={() => setEditingGoal(goal)} 
-                    onDelete={() => deleteGoal(goal.id)}
-                    onViewDetails={() => setSelectedGoal(goal)}
-                    onAddMoney={() => setAddingMoneyToGoal(goal)}
-                  />
-                ))
-              )}
+  <div className={styles.emptyState}>
+    <p>You don't have any financial goals yet.</p>
+    <p>Click "Add New Goal" to start tracking your financial targets!</p>
+  </div>
+) : (
+  sortedGoals.map((goal) => (
+    <GoalCard 
+      key={goal.id || goal._id}  
+      goal={goal} 
+      onEdit={() => setEditingGoal(goal)} 
+      onDelete={() => deleteGoal(goal.id)}
+      onViewDetails={() => setSelectedGoal(goal)}
+      onAddMoney={() => setAddingMoneyToGoal(goal)}
+    />
+  ))
+)}
+
             </div>
           )}
         </div>
