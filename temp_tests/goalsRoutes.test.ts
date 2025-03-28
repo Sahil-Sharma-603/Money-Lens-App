@@ -12,7 +12,7 @@ app.use('/goals', goalsRoutes);
 // Mock auth middleware
 jest.mock('../../backend/middleware/auth.middleware', () => {
   return (req: any, res: any, next: any) => {
-    req.user = { 
+    req.user = {  
       _id: '65fc123456789abcdef12345',
       id: '65fc123456789abcdef12345'
     }; // Mock user ID
