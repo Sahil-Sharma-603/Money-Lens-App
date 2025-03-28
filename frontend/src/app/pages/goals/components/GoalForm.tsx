@@ -43,7 +43,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   const [isLoading, setIsLoading] = useState(false); // Loading state  const [isAddingGoal, setIsAddingGoal] = useState(false); 
   const [subGoalAmount, setSubGoalAmount] = useState(); 
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-
+  const [isMatchingTotals, setMatchingTotals] = useState(true); // State to track if sub-goal amounts match the total goal amount
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -100,6 +100,26 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     setSubGoals(subGoals.filter((_, i) => i !== index));
   };
 
+  const checkMatchingTotals = () => {
+    const totalSubGoalAmount = subGoals.reduce(
+      (sum, sg) => sum + (parseFloat(sg.amount) || 0), // Ensure proper handling of numbers
+      0
+    );
+    const totalGoalAmount = parseFloat(goalAmount) || 0; // Ensure goalAmount is a number
+    console.log('Total Sub-Goal Amount:', totalSubGoalAmount);
+    console.log('Total Goal Amount:', totalGoalAmount);
+    setMatchingTotals(totalSubGoalAmount === totalGoalAmount);
+    console.log('Matching Totals:', isMatchingTotals);
+    if(!isMatchingTotals){
+      setError('Sub-goal amounts must match the total goal amount.');
+    } else {
+      setError(null);
+    }
+  };
+  useEffect(() => {
+    checkMatchingTotals();
+  }, [goalAmount, subGoals]); // Check whenever goalAmount or subGoals change 
+
   // Update a sub-goal field.
   const handleSubGoalChange = (index, field, value) => {
     const newSubGoals = [...subGoals];
@@ -109,6 +129,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
       newSubGoals[index][field] = value;
     }
     setSubGoals(newSubGoals);
+    checkMatchingTotals(); // Check if totals match after updating
   };
 
   // Update goal type and reset related fields.
@@ -131,6 +152,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     }
   };
   
+
   
 
   const handleGoalTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -294,7 +316,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
                     placeholder="Amount"
                     value={subGoal.amount}  // Ensure we're using 'amount'
                     onChange={(e) => handleSubGoalChange(index, 'amount', e.target.value)}  // Correctly update 'amount'
-                    onBlur={handleSubGoalAmountChange}  // Optional: for validation
+                    // onBlur={handleSubGoalAmountChange}  // Optional: for validation
                   />
                 </div>
                 <button type="button" onClick={() => removeSubGoal(index)}>

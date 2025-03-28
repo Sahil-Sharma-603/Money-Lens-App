@@ -49,6 +49,8 @@ async function getGoals(userId) {
 
             console.log("Goals found: ", goals);
 
+            updateSavingGoals(goals);
+            updateSpendingGoals(goals);
 
             return {
                 goals, 
@@ -130,10 +132,11 @@ async function updateSubGoalAmount(totalSavingsForGoal, goal) {
         if (totalSavingsForGoal === 0 || !goal || !goal.subGoals || !goal.subGoals) {
             return;
         }
+        const goalPortion = totalSavingsForGoal/goal.subGoals.length;
 
         goal.subGoals = await Promise.all(
             goal.subGoals.map(async (subGoal) => {
-                subGoal.currentAmount += totalSavingsForGoal * (subGoal.percent / 100);
+                subGoal.currentAmount += goalPortion;
                 await subGoal.save();
                 return subGoal;
             })
@@ -147,26 +150,27 @@ async function updateSubGoalAmount(totalSavingsForGoal, goal) {
     }
 }
 
+async function updateSpendingGoals(goals) {
+    try {
+        if (!goals || goals.length === 0) {
+            return;
+        }
+        // Get the spending goals
+        const spendingGoals = goals.filter(goal => goal.type === "Spending Limit");
+        // Iterate over each spending goal and update it
+        for (const goal of spendingGoals) {
+            const totalSpending = await getTotalSpendingForGoals(goal.accountId, goal.updatedAt, goal.category);
+            goal.currentAmount += totalSpending;
+            // Optionally, update the `updatedAt` field of the goal
 
 
-// async function getAccountsFromGoals(goal) {
-//     try {
-//         if (!goals || goals.length === 0) {
-//             return []; // Return an empty array if there are no goals
-//         }
-
-//         // Map each goal to its associated accountId(s)
-//         const goalAccounts = goals.map(goal => ({
-//             goalId: goal._id || goal.id, // Include the goal ID for reference
-//             accountIds: Array.isArray(goal.accountId) ? goal.accountId : [goal.accountId] // Ensure it's always an array
-//         }));
-
-//         return goalAccounts;
-//     } catch (error) {
-//         console.error("Error finding accounts associated with a goal:", error);
-//         return [];
-//     }
-// }
+            goal.updatedAt = new Date();
+            await goal.save();  // Assuming goal is a Mongoose model instance
+        }
+    } catch (error) {
+        console.error("Error updating spending goals:", error);
+    }
+}
 
 
 async function getTotalSavingsForGoal(goal) {
@@ -229,111 +233,114 @@ async function getTotalSavingsForGoal(goal) {
 }
 
 
-async function getTotalSpendingForGoals(accountId, fromDate) {
-    try {
-        if (!accountId) {
-            console.log("No accountId provided, returning an empty object");
-            return {};
-        }
+// async function getTotalSpendingForGoals(accountId, fromDate, category) {
+//     try {
+//         if (!accountId) {
+//             console.log("No accountId provided, returning an empty object");
+//             return {};
+//         }
 
-        if (!(fromDate instanceof Date)) {
-            console.error("Invalid fromDate: Expected a Date object");
-            return {};
-        }
+//         if (!(fromDate instanceof Date)) {
+//             console.error("Invalid fromDate: Expected a Date object");
+//             return {};
+//         }
 
-        // Convert fromDate to YYYY-MM-DD format
-        const formattedDate = fromDate.toISOString().split('T')[0];
+//         // Convert fromDate to YYYY-MM-DD format
+//         const formattedDate = fromDate.toISOString().split('T')[0];
 
-        let totalByCategory = {};
-        try {
-            if (process.env.NODE_ENV === 'test') {
-                const result = await Transaction.aggregate([
-                    { $match: { account_id: accountId, date: { $gt: formattedDate } } },
-                    { $unwind: "$category" }, // Unwind the categories array
-                    { $group: { _id: "$category", total: { $sum: "$amount" } } },
-                ]);
-                result.forEach((categoryData) => {
-                    totalByCategory[categoryData._id] = categoryData.total;
-                });
-            } else {
-                const result = await Promise.race([
-                    Transaction.aggregate([
-                        { $match: { account_id: accountId, date: { $gt: formattedDate } } },
-                        { $unwind: "$category" }, // Unwind the categories array
-                        { $group: { _id: "$category", total: { $sum: "$amount" } } },
-                    ]),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Transaction lookup timed out")), 3000)
-                    )
-                ]);
+//         let totalByCategory = {};
+//         try {
+//             if (process.env.NODE_ENV === 'test') {
+//                 const result = await Transaction.aggregate([
+//                     { $match: { account_id: accountId, date: { $gt: formattedDate } } },
+//                     { $unwind: "$category" }, // Unwind the categories array
+//                     { $group: { _id: "$category", total: { $sum: "$amount" } } },
+//                 ]);
+//                 result.forEach((categoryData) => {
+//                     totalByCategory[categoryData._id] = categoryData.total;
+//                 });
+//             } else {
+//                 const result = await Promise.race([
+//                     Transaction.aggregate([
+//                         { $match: { account_id: accountId, date: { $gt: formattedDate } } },
+//                         { $unwind: "$category" }, // Unwind the categories array
+//                         { $group: { _id: "$category", total: { $sum: "$amount" } } },
+//                     ]),
+//                     new Promise((_, reject) =>
+//                         setTimeout(() => reject(new Error("Transaction lookup timed out")), 3000)
+//                     )
+//                 ]);
 
-                result.forEach((categoryData) => {
-                    totalByCategory[categoryData._id] = categoryData.total;
-                });
-            }
-        } catch (err) {
-            console.error("Error finding transactions:", err);
-        }
+//                 result.forEach((categoryData) => {
+//                     totalByCategory[categoryData._id] = categoryData.total;
+//                 });
+//             }
+//         } catch (err) {
+//             console.error("Error finding transactions:", err);
+//         }
 
-        return totalByCategory;
-    } catch (err) {
-        console.error("Error processing request:", err);
-        return {};
-    }
-}
+//         totalByCategory.filter(item => item.category === category);
+//         console.log("Total spending by goal category:", totalByCategory);
 
-
-
-//getSpending([account.id]], Goal.updatedAt)
-async function getSpendingForGoals(accountIds, fromDate) {
-    try {
-        let aggregatedSpending = {};
-
-        // Call getTotalSpendingForGoals for each accountId and aggregate the results by category
-        for (let accountId of accountIds) {
-            const totalByCategory = await getTotalSpendingForGoals(accountId, fromDate);
-
-            // Aggregate spending by category across all accounts
-            for (let category in totalByCategory) {
-                if (aggregatedSpending[category]) {
-                    aggregatedSpending[category] += totalByCategory[category];
-                } else {
-                    aggregatedSpending[category] = totalByCategory[category];
-                }
-            }
-        }
-
-        return aggregatedSpending;
-    } catch (err) {
-        console.error("Error processing spending for goals:", err);
-        return {};
-    }
-}
+//         return totalByCategory;
+//     } catch (err) {
+//         console.error("Error processing request:", err);
+//         return {};
+//     }
+// }
 
 
-async function addSubGoalToGoal(goalId, subgoalData) {
-    try {
-      const goal = await Goal.findById(goalId);
-      if (!goal) {
-        console.log("Goal not found");
-        return;
-      }
+
+// //getSpending([account.id]], Goal.updatedAt)
+// async function getSpendingForGoals(accountIds, fromDate) {
+//     try {
+//         let aggregatedSpending = {};
+
+//         // Call getTotalSpendingForGoals for each accountId and aggregate the results by category
+//         for (let accountId of accountIds) {
+//             const totalByCategory = await getTotalSpendingForGoals(accountId, fromDate);
+
+//             // Aggregate spending by category across all accounts
+//             for (let category in totalByCategory) {
+//                 if (aggregatedSpending[category]) {
+//                     aggregatedSpending[category] += totalByCategory[category];
+//                 } else {
+//                     aggregatedSpending[category] = totalByCategory[category];
+//                 }
+//             }
+//         }
+
+//         return aggregatedSpending;
+//     } catch (err) {
+//         console.error("Error processing spending for goals:", err);
+//         return {};
+//     }
+// }
+
+
+// async function addSubGoalToGoal(goalId, subgoalData) {
+//     try {
+//       const goal = await Goal.findById(goalId);
+//       if (!goal) {
+//         console.log("Goal not found");
+//         return;
+//       }
   
-      // Add new goal to the goals array
-      goal.subGoals.push(subgoalData);
+//       // Add new goal to the goals array
+//       goal.subGoals.push(subgoalData);
   
-      // Save the updated user document
-      await goal.save();
-      console.log("Subgoal added successfully:", subgoalData);
-      return goal;
+//       // Save the updated user document
+//       await goal.save();
+//       console.log("Subgoal added successfully:", subgoalData);
+//       return goal;
 
-    } catch (error) {
-      console.error("Error adding goal:", error);
-      throw error;
-    }
-  }
+//     } catch (error) {
+//       console.error("Error adding goal:", error);
+//       throw error;
+//     }
+//   }
   
 
 
 
-module.exports = { getGoals, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoal };
+module.exports = { getGoals, getGoal, updateSavingGoals, updateSpendingGoals, getTotalSavingsForGoal, updateSubGoalAmount };

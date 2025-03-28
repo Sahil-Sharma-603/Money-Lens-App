@@ -49,12 +49,12 @@ const goalSchema = new mongoose.Schema({
     required: true,
     default: 0,
     min: [0, 'Current amount cannot be negative'],
-    validate: {
-      validator: function(v) {
-        return v <= this.targetAmount;
-      },
-      message: 'Current amount cannot exceed target amount'
-    }
+    // validate: {
+    //   validator: function(v) {
+    //     return v <= this.targetAmount;
+    //   },
+    //   message: 'Current amount cannot exceed target amount'
+    // }
   },
   targetDate: {
     type: Date,

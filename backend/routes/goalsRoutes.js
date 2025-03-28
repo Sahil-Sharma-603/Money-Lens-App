@@ -314,6 +314,9 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
+
+
+
 // PUT update a goal
 router.put('/:id', auth, async (req, res) => {
   try {
@@ -325,16 +328,58 @@ router.put('/:id', auth, async (req, res) => {
       targetDate, 
       category, 
       type, 
+      interval, 
+      subGoals,
       selectedAccount, 
       limitAmount, 
-      interval, 
-      subGoals 
+      
+      
     } = req.body;
+
+
 
     // Build update object with only provided fields
     const updateFields = {
-      
+      // title, 
+      // description: description || '',
+      // targetAmount: Number(targetAmount),
+      // targetDate: new Date(getNextMonthDate()),
+      // currentAmount: currentAmount ? Number(currentAmount) : 0,
+      // type: type || 'Savings',
+      // selectedAccount: selectedAccount || undefined,
+      // userId: req.user._id,
+      // ...(type === 'Spending Limit' && {
+      //   limitAmount,
+      //   category,
+      //   interval
+      // }),
+      // ...(type === 'Savings' && {
+      //   subGoals: Array.isArray(subGoals) ? subGoals.map(subGoal => ({
+      //     name: subGoal.name || '',
+      //     goalAmount: subGoal.goalAmount ? Number(subGoal.goalAmount) : 0,
+      //     currentAmount: 0
+
+      //   })) : []
+      // })
     };
+
+    // const newGoal = new Goal(newGoalData);
+    // console.log('Goal to be saved:', {
+    //   title: newGoal.title,
+    //   targetAmount: newGoal.targetAmount,
+    //   type: newGoal.type,
+    //   category: newGoal.category,
+    //   selectedAccount: newGoal.selectedAccount,
+    //   limitAmount: newGoal.limitAmount,
+    //   interval: newGoal.interval,
+    //   subGoals: newGoal.subGoals,
+    //   userId: newGoal.userId
+    // });
+
+    
+    // const savedGoal = await newGoal.save();
+    // console.log('Goal saved successfully with ID:', savedGoal._id);
+
 
     if (title) updateFields.title = title;
     if (description !== undefined) updateFields.description = description;
@@ -362,10 +407,24 @@ router.put('/:id', auth, async (req, res) => {
       updateFields.selectedAccount = selectedAccount; // assuming accountIds is an array of account ids
     }
 
+    // Update interval if provided
+    if (interval !== undefined) {
+      updateFields.interval = interval;
+    }
+    // Update limitAmount if provided 
+    if (limitAmount !== undefined) {
+      updateFields.limitAmount = Number(limitAmount);
+    }
+
+    console.log('Target amount:', targetAmount);
+    console.log('subGoals:', subGoals);
+
     // Handle subgoals (if provided)
-    if (subgoals && Array.isArray(subgoals)) {
+    if (subGoals && Array.isArray(subGoals)) {
       // Validate subgoals before updating
-      const totalSubgoalAmount = subgoals.reduce((sum, subgoal) => sum + (subgoal.amount || 0), 0);
+      const totalSubgoalAmount = subGoals.reduce((sum, subGoal) => sum + (subGoal.goalAmount || 0), 0);
+      
+      console.log('Total subgoal amount:', totalSubgoalAmount);
       
       // Ensure the subgoal amounts sum up to the targetAmount
       if (totalSubgoalAmount !== targetAmount) {
@@ -373,14 +432,18 @@ router.put('/:id', auth, async (req, res) => {
       }
 
       // Add subgoals to the update object
-      updateFields.subgoals = subgoals.map((subgoal) => ({
-        name: subgoal.name,
-        amount: Number(subgoal.amount),
+      updateFields.subGoals = subGoals.map((subGoal) => ({
+        name: subGoal.name,
+        goalAmount: Number(subGoal.goalAmount),
 
       }));
     }
 
     updateFields.updatedAt = new Date();
+
+    console.log('Update fields:', updateFields);
+    console.log('User ID from token:', req.user._id);
+    console.log('Goal ID to update:', req.params.id);
     
     // Find and update the goal
     const goal = await Goal.findOneAndUpdate(
@@ -407,7 +470,7 @@ router.put('/:id', auth, async (req, res) => {
       category: goal.category,
       type: goal.type,
       selectedAccount: goal.selectedAccount, // Add accountIds to the response
-      subgoals: goal.subgoals,     // Add subgoals to the response
+      subGoals: goal.subGoals,     // Add subgoals to the response
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt
     });
@@ -463,6 +526,9 @@ router.post("/:goalId/subgoal", async (req, res) => {
 // DELETE a goal
 router.delete('/:id', auth, async (req, res) => {
   try {
+    console.log('DELETE request to remove goal received');
+    console.log('User object from auth:', req.user);
+    console.log('Goal ID to delete:', req.params.id);
     const goal = await Goal.findOneAndDelete({ 
       _id: req.params.id,
       userId: req.user._id

@@ -9,6 +9,7 @@ import { Goal, apiRequest } from '../../assets/utilities/API_HANDLER';
 import GoalDetails from './components/GoalDetails';
 import Card from '../../components/Card';
 import AddMoneyForm from './components/AddMoneyForm';
+import { ObjectId } from 'mongodb';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -20,33 +21,38 @@ export default function GoalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [addingMoneyToGoal, setAddingMoneyToGoal] = useState<Goal | null>(null);
 
-  useEffect(() => {
+
+
 
   const fetchGoals = async () => {
-   try {
-     setIsLoading(true);
-     setError(null);
-    const data = await apiRequest('/goals', { requireAuth: true });
-    console.log("goal data: ", data); 
+    try {
+      setIsLoading(true);
+      setError(null);
+     const data = await apiRequest('/goals', { requireAuth: true });
+     console.log("goal data: ", data); 
+ 
+     const goals = data.goals || []; 
+ 
+     // console.log("goals", goals); 
+     // // // Map _id to id and convert targetDate to Date object
+     // const mappedData = Array.isArray(data) ? data.map(goal => ({
+     //   ...goal,
+     //   id: goal._id.toString(),
+     //   targetDate: new Date(goal.targetDate)
+     // })) : []; // or handle the error case as needed
+     // console.log("mapped goals", mappedData); 
+     setGoals(goals);
+   } catch (error) {
+     console.error('Error fetching goals:', error);
+     setError('Failed to load your goals. Please try again later.');
+   } finally {
+     setIsLoading(false);
+   }
+ };
 
-    const goals = data.goals || []; 
+  useEffect(() => {
 
-    // console.log("goals", goals); 
-    // // // Map _id to id and convert targetDate to Date object
-    // const mappedData = Array.isArray(data) ? data.map(goal => ({
-    //   ...goal,
-    //   id: goal._id.toString(),
-    //   targetDate: new Date(goal.targetDate)
-    // })) : []; // or handle the error case as needed
-    // console.log("mapped goals", mappedData); 
-    setGoals(goals);
-  } catch (error) {
-    console.error('Error fetching goals:', error);
-    setError('Failed to load your goals. Please try again later.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  
 
 fetchGoals();
 }, []);
@@ -129,29 +135,29 @@ fetchGoals();
     }
   };
   
-  // Add a subgoal
-  const addSubGoal = async (goalId: string, subGoalData: any) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  // // Add a subgoal
+  // const addSubGoal = async (goalId: string, subGoalData: any) => {
+  //   try {
+  //     setIsLoading(true);
+  //     setError(null);
   
-      console.log("Adding sub-goal:", subGoalData);
+  //     console.log("Adding sub-goal:", subGoalData);
   
-      const updatedGoal = await apiRequest<Goal>(`/goals/${goalId}/subgoal`, {
-        method: "POST",
-        body: subGoalData,
-        requireAuth: true,
-      });
+  //     const updatedGoal = await apiRequest<Goal>(`/goals/${goalId}/subgoal`, {
+  //       method: "POST",
+  //       body: subGoalData,
+  //       requireAuth: true,
+  //     });
   
-      setGoals(goals.map((goal) => (goal.id === goalId ? updatedGoal : goal)));
-      setError("Sub-goal added successfully!");
-    } catch (error) {
-      console.error("Error adding sub-goal:", error);
-      setError("Failed to add sub-goal. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     setGoals(goals.map((goal) => (goal.id === goalId ? updatedGoal : goal)));
+  //     setError("Sub-goal added successfully!");
+  //   } catch (error) {
+  //     console.error("Error adding sub-goal:", error);
+  //     setError("Failed to add sub-goal. Please try again.");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   
 
   // Delete a goal from MongoDB
@@ -165,13 +171,19 @@ fetchGoals();
         requireAuth: true
       });
 
-      setGoals(goals.filter(g => g.id !== goalId));
+      setGoals(goals.filter(g => g._id !== goalId));
     } catch (error) {
       console.error('Error deleting goal:', error);
       setError('Failed to delete goal. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getNextMonthDate = () => {
+    const today = new Date();
+    const nextMonthDate = new Date(today.setMonth(today.getMonth() + 1));
+    return nextMonthDate;  // Return a Date object directly
   };
 
   // Edit a goal in MongoDB
@@ -181,23 +193,35 @@ fetchGoals();
       setError(null);
       
       console.log('Updating goal with data:', updatedGoal);
+      console.log('Editing goal:', editingGoal);
       
       // Format the goal data for the API
       const goalToUpdate = {
-        id: updatedGoal.id,
-        title: updatedGoal.title,
-        description: updatedGoal.description || "",
-        targetAmount: Number(updatedGoal.targetAmount),
-        currentAmount: Number(updatedGoal.currentAmount) || 0,
+        id: editingGoal._id,
+        title: updatedGoal.title || editingGoal.name,
+        description: updatedGoal.description || editingGoal.description,
+        targetAmount: Number(updatedGoal.targetAmount) || editingGoal.targetAmount,
+        currentAmount: Number(updatedGoal.currentAmount) || editingGoal.currentAmount,
         targetDate: updatedGoal.targetDate instanceof Date 
           ? updatedGoal.targetDate.toISOString() 
-          : new Date(updatedGoal.targetDate).toISOString(),
-        category: updatedGoal.category || "Savings",
-        type: updatedGoal.type || "Savings",
-        spendingPeriod: updatedGoal.spendingPeriod
+          : new Date(getNextMonthDate()).toISOString() || editingGoal.targetDate.toISOString(),
+        category: updatedGoal.category || editingGoal.category,
+        type: updatedGoal.type || editingGoal?.type,
+        interval: updatedGoal.interval || editingGoal?.interval, 
+        subGoals: updatedGoal.subGoals.map((subGoal: any, index: number) => ({
+          name: subGoal.name || editingGoal?.subGoals[index]?.name,
+          goalAmount: Number(subGoal.amount) || editingGoal?.subGoals[index]?.goalAmount,
+          currentAmount: Number(subGoal.currentAmount) || editingGoal?.subGoals[index]?.currentAmount,
+          currentAmount: 0, 
+        })),
+        selectedAccount: updatedGoal.selectedAccount || editingGoal?.selectedAccount ||null,
+        limitAmount: updatedGoal.limitAmount || editingGoal.limitAmount|| 0,
       };
       
-      const savedGoal = await apiRequest<Goal>(`/goals/${updatedGoal.id}`, {
+      console.log('Formatted goal data for update:', goalToUpdate);
+      console.log('Goal ID to update:', updatedGoal._id);
+      console.log('Goal ID to update:', goalToUpdate.id);
+      const savedGoal = await apiRequest<Goal>(`/goals/${goalToUpdate.id}`, {
         method: 'PUT',
         body: goalToUpdate,
         requireAuth: true
@@ -206,6 +230,8 @@ fetchGoals();
       savedGoal.targetDate = new Date(savedGoal.targetDate);
       
       setGoals(goals.map(g => g.id === savedGoal.id ? savedGoal : g));
+      fetchGoals();
+      console.log('Goal updated successfully:', savedGoal);
       setEditingGoal(null);
       setError('Goal updated successfully!');
     } catch (error) {
@@ -307,22 +333,24 @@ fetchGoals();
           ) : (
             <div className={styles.goalsGrid}>
               {sortedGoals.length === 0 ? (
-  <div className={styles.emptyState}>
-    <p>You don't have any financial goals yet.</p>
-    <p>Click "Add New Goal" to start tracking your financial targets!</p>
-  </div>
-) : (
-  sortedGoals.map((goal) => (
-    <GoalCard 
-      key={goal.id || goal._id}  
-      goal={goal} 
-      onEdit={() => setEditingGoal(goal)} 
-      onDelete={() => deleteGoal(goal.id)}
-      onViewDetails={() => setSelectedGoal(goal)}
-      onAddMoney={() => setAddingMoneyToGoal(goal)}
-    />
-  ))
-)}
+                <div className={styles.emptyState}>
+                  <p>You don't have any financial goals yet.</p>
+                  <p>Click "Add New Goal" to start tracking your financial targets!</p>
+                </div>
+              ) : (
+                sortedGoals.map((goal) => {
+                  console.log("Goal ID:", goal._id); // Log to see the goal._id value
+                  return (
+                    <GoalCard 
+                      key={goal._id}  
+                      goal={goal} 
+                      onEdit={() => setEditingGoal(goal)} 
+                      onDelete={() => deleteGoal(goal._id)}
+                      onViewDetails={() => setSelectedGoal(goal)}
+                      onAddMoney={() => setAddingMoneyToGoal(goal)}
+                    />
+                  )})
+              )}
 
             </div>
           )}
