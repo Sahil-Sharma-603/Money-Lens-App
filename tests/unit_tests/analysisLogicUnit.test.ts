@@ -1,3 +1,4 @@
+import { describe, test, expect } from '@jest/globals';
 import {getAnalysisData, getSpendingByCategory, getRecurringExpenses, getRecurringIncomeSources} from '../../backend/logic/analysisLogic';
 
 // Let's test the functions directly without relying on the database
