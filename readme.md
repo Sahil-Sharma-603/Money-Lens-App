@@ -107,23 +107,29 @@ The app includes Two-Factor Authentication using Google Authenticator. All neces
 
 ##### Running Tests
 
-See our ![test plan](/documentation/architecture/Money-Lens_Test-Plan.pdf) for more details. 
+See our ![test plan](/documentation/architecture/Money-Lens_Test-Plan.pdf) for more details.
 
-Unit and Integration: 
+Unit and Integration:
+
 - cd tests
 - `npm install --save-dev jest supertest @jest/globals`
 - `npx jest --coverage` to show coverage or `npx jest` for just test suite summary
+- npm test
 
+Run a specific test file
+
+- cd tests/integration_tests
+- npm test [filename]
 
 ### Test Account for Sign ins
 
-For the Money Lens app: 
+For the Money Lens app:
 
 user: ginelletemull@gmail.com
 
 password: test123
 
-For Plaid account connection: 
+For Plaid account connection:
 
 user: user_good
 
