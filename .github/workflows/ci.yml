@@ -8,10 +8,12 @@ on:
     branches:
       - develop
       - main
+      - SonarCloud_CI
   push:
     branches:
       - develop
       - main
+      - SonarCloud_CI
 
 jobs:
   build-and-test:
@@ -66,8 +68,7 @@ jobs:
             -Dsonar.organization=money-lens
             -Dsonar.projectKey=Money-Lens_Money-Lens-App
             -Dsonar.projectName=Money-Lens-App
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            -Dsonar.coverageReportPaths=tests/coverage/lcov-report/index-lcov-report.json  
 
   assign-reviewers:
     if: github.event_name == 'pull_request'
