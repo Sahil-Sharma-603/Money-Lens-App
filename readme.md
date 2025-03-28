@@ -121,6 +121,10 @@ Run a specific test file
 - cd tests/integration_tests
 - npm test [filename]
 
+Run test coverage
+
+- npm run test:coverage
+
 ### Test Account for Sign ins
 
 For the Money Lens app:
