@@ -59,6 +59,15 @@ jobs:
           cd frontend
           npm run build
 
+      - name: Run SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          organization: "money-lens"
+          projectKey: "Money-Lens_Money-Lens-App"
+          projectName: "Money-Lens-App"
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   assign-reviewers:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
