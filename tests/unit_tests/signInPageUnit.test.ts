@@ -1,3 +1,5 @@
+// Import Jest types
+import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 import { apiRequest, LoginResponse, SignupResponse } from '../../frontend/src/app/assets/utilities/API_HANDLER';
 import app from '../../backend/server'; // Adjust the path to your Express app
 import User from '../../backend/models/User.model';

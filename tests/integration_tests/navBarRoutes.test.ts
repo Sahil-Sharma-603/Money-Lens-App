@@ -1,3 +1,5 @@
+// Import Jest types
+import { describe, it, expect } from '@jest/globals';
 const request1 = require("supertest");
 const express1 = require("express");
 const navBarRoutes = require('../../backend/routes/navBarRoutes');
