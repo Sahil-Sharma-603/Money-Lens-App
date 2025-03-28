@@ -7,11 +7,9 @@ on:
   pull_request:
     branches:
       - develop
-      - main
   push:
     branches:
       - develop
-      - main
 
 jobs:
   build-and-test:
@@ -38,6 +36,8 @@ jobs:
       - name: Install Test Dependencies
         run: |
           cd tests
+          npm install
+          cd integration_tests
           npm install
 
       - name: Run Tests
