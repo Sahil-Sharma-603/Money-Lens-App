@@ -2,7 +2,7 @@ import { jest, describe, test, expect, beforeAll, afterAll, afterEach } from '@j
 const request = require('supertest');
 const express = require('express');
 const db = require('./testdb');
-const Goal = require('../../backend/models/Goal');
+import { Goal } from '../../backend/models/Goal.model';
 const goalsRoutes = require('../../backend/routes/goalsRoutes');
 
 const app = express();
