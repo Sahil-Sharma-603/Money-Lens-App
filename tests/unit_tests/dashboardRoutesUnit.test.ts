@@ -1,20 +1,22 @@
-import { describe } from 'node:test';
+// Import Jest types
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
-const { getDashboardData } = require("../../backend/logic/dashboardLogic.js"); // Adjust path if needed
+// Import required modules
+const { getDashboardData } = require("../../backend/logic/dashboardLogic.js");
 const User = require("../../backend/models/User.model.js");
-const { Transaction } = require("../../backend/models/transaction.model.js");
-
+const { Transaction } = require("../../backend/models/Transaction.model.js");
 const request = require("supertest");
 const express = require("express");
 const dashboardRouter = require("../../backend/routes/dashboardRoutes.js");
 
-
 // Mock dependencies
-jest.mock("../../backend/middleware/auth.middleware", () => (req, res, next) => {
+jest.mock("../../backend/middleware/auth.middleware", () => {
+  return (req: any, res: any, next: any) => {
     req.user = { _id: "user123" }; // Mock authenticated user
     next();
-  });
-  jest.mock("../../backend/logic/dashboardLogic");
+  };
+});
+jest.mock("../../backend/logic/dashboardLogic.js");
   
   const app = express();
   app.use(express.json());
