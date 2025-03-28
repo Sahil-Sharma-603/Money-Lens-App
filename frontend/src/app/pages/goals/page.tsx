@@ -10,6 +10,7 @@ import GoalDetails from './components/GoalDetails';
 import Card from '../../components/Card';
 import AddMoneyForm from './components/AddMoneyForm';
 import { ObjectId } from 'mongodb';
+import { TextField, Button, Select, MenuItem, FormControl, InputLabel, Checkbox, FormControlLabel } from '@mui/material';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -33,15 +34,11 @@ export default function GoalsPage() {
  
      const goals = data.goals || []; 
  
-     // console.log("goals", goals); 
-     // // // Map _id to id and convert targetDate to Date object
-     // const mappedData = Array.isArray(data) ? data.map(goal => ({
-     //   ...goal,
-     //   id: goal._id.toString(),
-     //   targetDate: new Date(goal.targetDate)
-     // })) : []; // or handle the error case as needed
-     // console.log("mapped goals", mappedData); 
-     setGoals(goals);
+     const normalizedGoals = goals.map(g => ({
+      ...g,
+      _id: g._id || g.id,
+    }));
+    setGoals(normalizedGoals);
    } catch (error) {
      console.error('Error fetching goals:', error);
      setError('Failed to load your goals. Please try again later.');
@@ -187,51 +184,28 @@ fetchGoals();
   };
 
   // Edit a goal in MongoDB
-  const editGoal = async (updatedGoal: any) => {
+  const editGoal = async (updatedGoal: any, goalId: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      console.log('Updating goal with data:', updatedGoal);
-      console.log('Editing goal:', editingGoal);
-      
-      // Format the goal data for the API
+  
       const goalToUpdate = {
-        id: editingGoal._id,
-        title: updatedGoal.title || editingGoal.name,
-        description: updatedGoal.description || editingGoal.description,
-        targetAmount: Number(updatedGoal.targetAmount) || editingGoal.targetAmount,
-        currentAmount: Number(updatedGoal.currentAmount) || editingGoal.currentAmount,
-        targetDate: updatedGoal.targetDate instanceof Date 
-          ? updatedGoal.targetDate.toISOString() 
-          : new Date(getNextMonthDate()).toISOString() || editingGoal.targetDate.toISOString(),
-        category: updatedGoal.category || editingGoal.category,
-        type: updatedGoal.type || editingGoal?.type,
-        interval: updatedGoal.interval || editingGoal?.interval, 
-        subGoals: updatedGoal.subGoals.map((subGoal: any, index: number) => ({
-          name: subGoal.name || editingGoal?.subGoals[index]?.name,
-          goalAmount: Number(subGoal.amount) || editingGoal?.subGoals[index]?.goalAmount,
-          currentAmount: Number(subGoal.currentAmount) || editingGoal?.subGoals[index]?.currentAmount,
-          currentAmount: 0, 
-        })),
-        selectedAccount: updatedGoal.selectedAccount || editingGoal?.selectedAccount ||null,
-        limitAmount: updatedGoal.limitAmount || editingGoal.limitAmount|| 0,
+        ...updatedGoal,
+        targetDate: updatedGoal.targetDate instanceof Date
+          ? updatedGoal.targetDate.toISOString()
+          : new Date(getNextMonthDate()).toISOString()
       };
-      
-      console.log('Formatted goal data for update:', goalToUpdate);
-      console.log('Goal ID to update:', updatedGoal._id);
-      console.log('Goal ID to update:', goalToUpdate.id);
-      const savedGoal = await apiRequest<Goal>(`/goals/${goalToUpdate.id}`, {
+  
+      const savedGoal = await apiRequest<Goal>(`/goals/${goalId}`, {
         method: 'PUT',
         body: goalToUpdate,
         requireAuth: true
       });
-      
+  
       savedGoal.targetDate = new Date(savedGoal.targetDate);
-      
-      setGoals(goals.map(g => g.id === savedGoal.id ? savedGoal : g));
+  
+      setGoals(goals.map(g => g._id === savedGoal._id ? savedGoal : g));
       fetchGoals();
-      console.log('Goal updated successfully:', savedGoal);
       setEditingGoal(null);
       setError('Goal updated successfully!');
     } catch (error) {
@@ -241,6 +215,7 @@ fetchGoals();
       setIsLoading(false);
     }
   };
+  
 
   // Add new function to handle money addition
   const addMoneyToGoal = async (goalId: string, amount: number) => {
@@ -255,9 +230,9 @@ fetchGoals();
       });
 
       // Update the goals list with the new amount
-      setGoals(goals.map(goal => 
-        goal.id === goalId 
-          ? { ...goal, currentAmount: goal.currentAmount + amount }
+      setGoals(goals.map(goal =>
+        (goal._id || goal.id) === goalId
+          ? { ...goal, ...updatedGoal }
           : goal
       ));
 
@@ -297,34 +272,43 @@ fetchGoals();
       <Card className={pageStyles.fullPageCard}>
         <div className={styles.container}>
           <div className={styles.header}>
-            <h1>Financial Goals</h1>
+            <h2>Financial Goals</h2>
             <div>
-              <button 
-                className={styles.addButton}
+              <Button 
+                variant="contained"
+                color="primary"
                 onClick={() => {
-                  if (!isLoading) { 
+                  if (!isLoading) {
                     setIsAddingGoal(true);
                   }
                 }}
                 disabled={isLoading}
               >
                 Add New Goal
-              </button>
+              </Button>
             </div>
           </div>
 
+          {goals.length > 0 && (
           <div className={styles.controls}>
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className={styles.sortSelect}
-              disabled={isLoading || goals.length === 0}
-            >
-              <option value="date">Sort by Date</option>
-              <option value="progress">Sort by Progress</option>
-              <option value="amount">Sort by Amount</option>
-            </select>
+            <FormControl sx={{ minWidth: 180, paddingBottom: 2 }}>
+              <InputLabel id="sort-by-label">Sort By</InputLabel>
+              <Select
+                labelId="sort-by-label"
+                id="sort-by"
+                size='small'
+                value={sortBy}
+                label="Sort By"
+                onChange={(e) => setSortBy(e.target.value as any)}
+                disabled={isLoading}
+              >
+                <MenuItem value="date">Sort by Date</MenuItem>
+                <MenuItem value="progress">Sort by Progress</MenuItem>
+                <MenuItem value="amount">Sort by Amount</MenuItem>
+              </Select>
+            </FormControl>
           </div>
+        )}
 
           {error && <div className={styles.errorMessage}>{error}</div>}
           
@@ -342,10 +326,10 @@ fetchGoals();
                   console.log("Goal ID:", goal._id); // Log to see the goal._id value
                   return (
                     <GoalCard 
-                      key={goal._id}  
+                      key={goal._id?.toString() || goal.id?.toString()}
                       goal={goal} 
-                      onEdit={() => setEditingGoal(goal)} 
-                      onDelete={() => deleteGoal(goal._id)}
+                      onEdit={(goal) => setEditingGoal(goal)}
+                      onDelete={() => deleteGoal(goal._id || goal.id)}
                       onViewDetails={() => setSelectedGoal(goal)}
                       onAddMoney={() => setAddingMoneyToGoal(goal)}
                     />
@@ -371,13 +355,12 @@ fetchGoals();
         />
       )}
 
-      {editingGoal && (
+      {editingGoal && editingGoal._id && (
         <GoalForm 
           initialGoal={editingGoal}
           onClose={() => setEditingGoal(null)}
           onSubmit={(updatedGoal) => {
-            // Include the ID from the editing goal
-            editGoal({...updatedGoal, id: editingGoal.id});
+            editGoal(updatedGoal, editingGoal._id || editingGoal.id);
           }}
         />
       )}

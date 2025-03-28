@@ -421,21 +421,18 @@ router.put('/:id', auth, async (req, res) => {
 
     // Handle subgoals (if provided)
     if (subGoals && Array.isArray(subGoals)) {
-      // Validate subgoals before updating
-      const totalSubgoalAmount = subGoals.reduce((sum, subGoal) => sum + (subGoal.goalAmount || 0), 0);
-      
-      console.log('Total subgoal amount:', totalSubgoalAmount);
-      
-      // Ensure the subgoal amounts sum up to the targetAmount
-      if (totalSubgoalAmount !== targetAmount) {
-        return res.status(400).json({ error: 'Subgoal amounts do not sum up to the target amount' });
+      if (subGoals.length > 0) {
+        const totalSubgoalAmount = subGoals.reduce((sum, subGoal) => sum + (subGoal.goalAmount || 0), 0);
+    
+        if (totalSubgoalAmount !== targetAmount) {
+          return res.status(400).json({ error: 'Subgoal amounts do not sum up to the target amount' });
+        }
       }
-
-      // Add subgoals to the update object
+    
       updateFields.subGoals = subGoals.map((subGoal) => ({
         name: subGoal.name,
         goalAmount: Number(subGoal.goalAmount),
-
+        currentAmount: subGoal.currentAmount || 0
       }));
     }
 

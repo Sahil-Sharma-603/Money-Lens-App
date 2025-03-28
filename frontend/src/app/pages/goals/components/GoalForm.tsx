@@ -2,6 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../../../assets/utilities/API_HANDLER';
 import styles from '../goals.module.css';
+import {
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  FormHelperText,
+  Typography,
+  Box,
+} from '@mui/material';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+
 
 export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalProp }) {
   
@@ -16,28 +31,36 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   const defaultInitialGoal = {
     type: 'Savings',
     title: '',
-    targetAmount: "0",
+    targetAmount: '',
     selectedAccount: '',
     targetDate: getNextMonthDate(),
-    limitAmount: "0",
+    limitAmount: '0',
     category: '',
     interval: 'Daily',
-    subGoals: [{ id: Date.now(), name: '', amount: "0"}],
+    subGoals: [], 
   };
   const initialGoal = initialGoalProp || defaultInitialGoal;
 
   
   // Use strings for numeric fields so they can be cleared.
-  const [type, setType] = useState(initialGoal.type || 'Savings');
+  const [type, setType] = useState(initialGoal?.type || 'Savings');
   const [accounts, setAccounts] = useState([]);
 
   const [selectedAccount, setSelectedAccount] = useState(null);
-  const [subGoals, setSubGoals] = useState([{ name: '', amount: 0 }]);
-  const [goalName, setGoalName] = useState(initialGoal?.goalName || "");
-  const [goalAmount, setGoalAmount] = useState(initialGoal?.goalAmount || 0);
+  const [subGoals, setSubGoals] = useState(
+    initialGoal?.subGoals?.map((sg) => ({
+      name: sg.name || '',
+      amount: sg.goalAmount ?? 0,
+      currentAmount: sg.currentAmount ?? 0,
+    })) || []
+  );  
+  const [goalName, setGoalName] = useState(initialGoal?.title || "");
+  const [goalAmount, setGoalAmount] = useState(initialGoal?.targetAmount ?? '');
   const [limitAmount, setLimitAmount] = useState(0);
   const [category, setCategory] = useState('');
-  const [targetDate, setTargetDate]= useState(getNextMonthDate()); 
+  const [targetDate, setTargetDate] = useState(
+    initialGoal?.targetDate ? new Date(initialGoal.targetDate) : getNextMonthDate()
+  );  
   const [interval, setInterval] = useState('Daily');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false); // Loading state  const [isAddingGoal, setIsAddingGoal] = useState(false); 
@@ -57,7 +80,17 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
           setAccounts(data.accounts);
           // Set default selected account if necessary, e.g., first account:
           if (data.accounts.length > 0) {
-            setSelectedAccount(data.accounts[0]); // Set the first account as the default
+            setAccounts(data.accounts);
+          
+            // If editing, match account by ID
+            if (initialGoalProp?.selectedAccount) {
+              const match = data.accounts.find(
+                (acc) => acc._id === initialGoalProp.selectedAccount
+              );
+              setSelectedAccount(match || data.accounts[0]); // fallback to first if not found
+            } else {
+              setSelectedAccount(data.accounts[0]); // default if adding
+            }
           }
         } else {
           console.error('Unexpected response format:', data);
@@ -110,7 +143,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     console.log('Total Goal Amount:', totalGoalAmount);
     setMatchingTotals(totalSubGoalAmount === totalGoalAmount);
     console.log('Matching Totals:', isMatchingTotals);
-    if(!isMatchingTotals){
+    if (subGoals.length > 0 && totalSubGoalAmount !== totalGoalAmount) {
       setError('Sub-goal amounts must match the total goal amount.');
     } else {
       setError(null);
@@ -225,244 +258,180 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
-        <h2>{initialGoal ? 'Edit Goal' : 'Add New Goal'}</h2>
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <h1>Add New Goal</h1>
-          <div className={`${styles.savingsGoal} ${styles.formGroup}`}>
-            <label htmlFor="goalType">Goal Type</label>
-            <select id="goalType" value={type} onChange={handleGoalTypeChange}>
-              <option value="Savings">Savings</option>
-              <option value="Spending Limit">Spending Limit</option>
-            </select>
+        <Typography variant="h5" gutterBottom>
+          {initialGoalProp ? 'Edit Goal' : 'Add New Goal'}
+        </Typography>
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <FormControl fullWidth sx={{ mb: 2 }} size="small">
+            <InputLabel id="goal-type-label">Goal Type</InputLabel>
+            <Select
+              labelId="goal-type-label"
+              id="goalType"
+              value={type}
+              label="Goal Type"
+              onChange={handleTypeChange}
+            >
+              <MenuItem value="Savings">Savings</MenuItem>
+            </Select>
+          </FormControl>
+  
+          <TextField
+            fullWidth
+            id="goalName"
+            label="Goal Name"
+            value={goalName}
+            onChange={(e) => setGoalName(e.target.value)}
+            required
+            sx={{ mb: 2 }}
+            size="small"
+          />
+  
+          <TextField
+            fullWidth
+            id="goalAmount"
+            label="Goal Amount"
+            type="number"
+            value={goalAmount}
+            onChange={(e) => {
+              const value = e.target.value;
+              setGoalAmount(value === '' ? '' : Number(value));
+            }}
+            required
+            sx={{ mb: 2 }}
+            size="small"
+          />
 
-
-            <label htmlFor="goalName">Goal Name</label>
-            <input
-              type="text"
-              id="goalName"
-              value={goalName}
-              onChange={(e) => setGoalName(e.target.value)}
-              required
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Target Date"
+              value={targetDate ? dayjs(targetDate) : null}
+              onChange={(newValue) => {
+                setTargetDate(newValue ? newValue.toDate() : null);
+              }}
+              minDate={dayjs()}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  required: true,
+                  size: 'small',
+                  sx: { mb: 2 },
+                },
+              }}
             />
+          </LocalizationProvider>
 
-            {type === 'Savings' && (
-              <>
-                <div className={styles.goalAmount}>
-                  <label htmlFor="goalAmount">Goal Amount</label>
-                  <input
-                    type="number"
-                    id="goalAmount"
-                    value={goalAmount}
-                    onChange={(e) => setGoalAmount(Number(e.target.value))}
-                    required
-                  />
-                </div>
-
-              <div className={styles.formGroup}>
-                <label>Target Date</label>
-                <input
-                    type="date"
-                    value={
-                      targetDate
-                        ? targetDate.toISOString().split('T')[0]
-                        : ''
-                    }
-                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
-                    onChange={(e) => {
-                      const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
-                      setTargetDate(selectedDate);
-                    }}
-                    required
-                  />
-              </div>
-
-              <label htmlFor="selectedAccount">Account</label>
-              <select
-                id="selectedAccount"
-                value={selectedAccount ? selectedAccount._id : ''} // Use the _id of the selected account
-                onChange={(e) => {
-                  const selected = accounts.find(account => account._id === e.target.value); // Find the full object
-                  setSelectedAccount(selected); // Set the entire object as the selected account
-                }}
-                required
-              >
-                {accounts.map((account) => (
-                  <option key={account._id} value={account._id}> {/* Use account._id as the value */}
-                    {account.name} {/* Display the account name */}
-                  </option>
-                ))}
-              </select>
-
-
-            {/* Subgoals */}
-            <h3 style={{ paddingTop: '20px' }}>Sub-Goals</h3>
-            {subGoals.map((subGoal, index) => (
-              <div key={index} className={styles.subGoals}>
-                <div className={styles.subGoalsInput}>
-                  <label htmlFor="sub-goal-name">Sub-Goal Name</label>
-                  <input
-                    id="sub-goal-name"
-                    type="text"
-                    placeholder="Name"
-                    value={subGoal.name}
-                    onChange={(e) => handleSubGoalChange(index, 'name', e.target.value)}
-                  />
-                </div>
-                <div className={styles.subGoalsInput}>
-                  <label htmlFor="sub-goal-amount">Amount</label>
-                  <input
-                    id="sub-goal-amount"
-                    type="number"
-                    placeholder="Amount"
-                    value={subGoal.amount}  // Ensure we're using 'amount'
-                    onChange={(e) => handleSubGoalChange(index, 'amount', e.target.value)}  // Correctly update 'amount'
-                    // onBlur={handleSubGoalAmountChange}  // Optional: for validation
-                  />
-                </div>
-                <button type="button" onClick={() => removeSubGoal(index)}>
-                  Remove Sub-Goal
-                </button>
-              </div>
-            ))}
-
-          
-          <button type="button" onClick={addSubGoal}>
-            Add Sub-Goal
-          </button>
-          </>
-        )}
-
-        {type === 'Spending Limit' && (
-          <>
-          <div className={styles.limitAmount}>
-            <label htmlFor="limit">Limit Amount</label>
-
-            <input
-              type='number'
-              id="limit"
-              value={limitAmount}
-              onChange={(e) => setLimitAmount(parseFloat(e.target.value))}
-              required
-            />
-            </div>
-
-            <label htmlFor="category">Category</label>
-            {/* <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+  
+          <FormControl fullWidth sx={{ mb: 2 }} size="small">
+            <InputLabel id="account-label">Account</InputLabel>
+            <Select
+              labelId="account-label"
+              id="selectedAccount"
+              value={selectedAccount ? selectedAccount._id : ''}
+              label="Account"
+              onChange={(e) => {
+                const selected = accounts.find(
+                  (acc) => acc._id === e.target.value
+                );
+                setSelectedAccount(selected);
+              }}
               required
             >
-              <option value="">Select Category</option>
-              <option value="Food">Food</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Entertainment">Shopping</option>
-              <option value="Entertainment">Other</option>
-            </select> */}
+              {accounts.map((account) => (
+                <MenuItem key={account._id} value={account._id}>
+                  {account.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+  
+          <Typography variant="h6" sx={{ mt: 3 }}>
+            Sub-Goals
+          </Typography>
+  
+          {subGoals.map((subGoal, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: 'flex',
+                gap: 2,
+                alignItems: 'center',
+                mt: 1,
+                mb: 1,
+              }}
+            >
+              <TextField
+                label="Sub-Goal Name"
+                value={subGoal.name}
+                onChange={(e) =>
+                  handleSubGoalChange(index, 'name', e.target.value)
+                }
+                fullWidth
+                size="small"
+              />
+              <TextField
+                label="Amount"
+                type="number"
+                value={subGoal.amount ?? ''}
+                onChange={(e) =>
+                  handleSubGoalChange(index, 'amount', e.target.value)
+                }
+                sx={{ width: 120 }}
+                size="small"
+              />
 
-            <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                  >
-                    <option value="">Select Category</option>
-                    {availableCategories.map((category, index) => (
-                      <option key={index} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-
-            <label htmlFor="interval">Target Interval</label>
-            <select id="interval" value={interval} onChange={(e) => setInterval(e.target.value)} required>
-              <option value="Date">Date</option>
-              <option value="Daily">Daily</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Monthly">Monthly</option>
-              <option value="Annually">Annually</option>
-            </select>
-
-            {interval === "Date" && (
-              <>
-                <div className={styles.formGroup}>
-                <label>Target Date</label>
-                <input
-                  type="date"
-                  value={targetDate ? targetDate.toISOString().split('T')[0] : ''}
-                  min={new Date().toISOString().split('T')[0]} // Prevent past dates
-                  onChange={(e) => {
-                    const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
-                    setTargetDate(selectedDate);
-                  }}
-                  required
-                />
-                </div>
-              </>
-            )}
-
-{/* 
-            {type === 'Spending Limit' && (
-              <>
-                <label htmlFor="limitAmount">Limit Amount</label>
-                <input
-                  type="number"
-                  id="limitAmount"
-                  value={limitAmount}
-                  onChange={(e) => setLimitAmount(e.target.value)}
-                  style={noSpinnerStyle}
-                  required
-                />
-
-                <label htmlFor="category">Category</label>
-                <select
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  required
-                >
-                  <option value="">Select Category</option>
-                  <option value="Food">Food</option>
-                  <option value="Entertainment">Entertainment</option>
-                  <option value="Entertainment">Shopping</option>
-                  <option value="Entertainment">Other</option>
-
-                </select>
-
-                <label htmlFor="interval">Target Interval</label>
-                <select
-                  id="interval"
-                  value={interval}
-                  onChange={(e) => setInterval(e.target.value)}
-                  required
-                >
-                  {/* <option value="Date">Date</option> */}
-                  {/* <option value="Daily">Daily</option>
-                  <option value="Weekly">Weekly</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Annually">Annually</option>
-                </select>
-              // </>
-            )} */} 
-            </>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => removeSubGoal(index)}
+                size="small"
+              >
+                Remove
+              </Button>
+            </Box>
+          ))}
+  
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={addSubGoal}
+            sx={{ mt: 1, mb: 3 }}
+            size="small"
+          >
+            Add Sub-Goal
+          </Button>
+  
+          {error && (
+            <FormHelperText error sx={{ mb: 2 }}>
+              {error}
+            </FormHelperText>
           )}
-          
-
-          <button type="submit" disabled={isLoading} onClick={(handleSubmit)}>
-            Finish
-          </button>
-          <button type="button" className={styles.cancelButton} onClick={onClose}>
-            Cancel
-          </button>
-          {error && <div className={styles.error}>{error}</div>}
-        </div>
+  
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={onClose}
+              size="small"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={
+                isLoading ||
+                !goalName ||
+                !goalAmount ||
+                (subGoals.length > 0 && !isMatchingTotals)
+              }
+              size="small"
+            >
+              Save
+            </Button>
+          </Box>
         </form>
-
-
-
       </div>
-
-         </div>
-        );
-     
-
+    </div>
+  );  
 }
 

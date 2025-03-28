@@ -1,7 +1,14 @@
+'use client';
 import React, { useState } from 'react';
-import styles from '../goals.module.css';
-import Card from '../../../components/Card';
 import { Goal } from '../../../assets/utilities/API_HANDLER';
+import {
+  Box,
+  Button,
+  Dialog,
+  TextField,
+  Typography,
+  FormHelperText,
+} from '@mui/material';
 
 interface AddMoneyFormProps {
   goal: Goal;
@@ -11,44 +18,64 @@ interface AddMoneyFormProps {
 
 export default function AddMoneyForm({ goal, onClose, onSubmit }: AddMoneyFormProps) {
   const [amount, setAmount] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (!isNaN(numAmount) && numAmount > 0) {
-      onSubmit(goal.id, numAmount);
+      onSubmit(goal._id || goal.id, numAmount);
       onClose();
+    } else {
+      setError('Please enter a valid amount greater than 0.');
     }
   };
 
+  const isValidAmount = () => {
+    const num = parseFloat(amount);
+    return !isNaN(num) && num > 0;
+  };
+
   return (
-    <div className={styles.modalOverlay}>
-      <Card className={styles.formCard}>
-        <div className={styles.formHeader}>
-          <h2>Add Money to {goal.name}</h2>
-          <button onClick={onClose} className={styles.closeButton}>&times;</button>
-        </div>
-        <form onSubmit={handleSubmit} className={styles.addMoneyForm}>
-          <div className={styles.formGroup}>
-            <input
-              type="text"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
-              required
-              pattern="[0-9]*\.?[0-9]*"
-            />
-          </div>
-          <div className={styles.formActions}>
-            <button type="button" onClick={onClose} className={styles.cancelButton}>
-              Cancel
-            </button>
-            <button type="submit" className={styles.saveButton}>
-              Add Money
-            </button>
-          </div>
-        </form>
-      </Card>
-    </div>
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <Box component="form" onSubmit={handleSubmit} p={3}>
+        <Typography variant="h6" mb={2}>
+          Add Money to {goal.title}
+        </Typography>
+
+        <TextField
+          fullWidth
+          label="Amount"
+          type="number"
+          inputProps={{ min: 0, step: 0.01 }}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+          size="small"
+          error={!!error}
+          sx={{ mb: 2 }}
+        />
+
+        {error && (
+          <FormHelperText error sx={{ mb: 2 }}>
+            {error}
+          </FormHelperText>
+        )}
+
+        <Box display="flex" justifyContent="flex-end" gap={2}>
+          <Button onClick={onClose} variant="outlined" size="small">
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            size="small"
+            disabled={!isValidAmount()}
+          >
+            Add Money
+          </Button>
+        </Box>
+      </Box>
+    </Dialog>
   );
-} 
+}
