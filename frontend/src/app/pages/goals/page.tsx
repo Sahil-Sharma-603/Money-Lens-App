@@ -85,11 +85,10 @@ fetchGoals();
         selectedAccount: formData.selectedAccount || null,
         type: formData.type || "Savings",
         ...(formData.type === 'Savings' ? { 
-              subGoals: formData.subGoals.map((subGoal: any) => ({
-                name: subGoal.name,
-                goalAmount: Number(subGoal.amount),
-                currentAmount: 0, 
-
+              subGoals: formData.subGoals.map((subGoal: any, index: number) => ({
+                name: subGoal.name || editingGoal?.subGoals[index]?.name,
+                goalAmount: Number(subGoal.amount ?? subGoal.goalAmount ?? 0),
+                currentAmount: Number(subGoal.currentAmount ?? 0),
               })),
               targetDate: new Date(formData.targetDate),
         } : {
@@ -119,6 +118,10 @@ fetchGoals();
       // If needed, convert targetDate back to Date object
       if (savedGoal.targetDate) {
         savedGoal.targetDate = new Date(savedGoal.targetDate);
+      }
+
+      if (savedGoal.id) {
+        savedGoal._id = savedGoal.id;
       }
       
       setGoals([...goals, savedGoal]);
@@ -193,8 +196,16 @@ fetchGoals();
         ...updatedGoal,
         targetDate: updatedGoal.targetDate instanceof Date
           ? updatedGoal.targetDate.toISOString()
-          : new Date(getNextMonthDate()).toISOString()
+          : new Date(getNextMonthDate()).toISOString(),
+        ...(updatedGoal.subGoals && {
+          subGoals: updatedGoal.subGoals.map((subGoal: any) => ({
+            name: subGoal.name,
+            goalAmount: Number(subGoal.amount ?? subGoal.goalAmount ?? 0),
+            currentAmount: Number(subGoal.currentAmount ?? 0),
+          }))
+        })
       };
+      
   
       const savedGoal = await apiRequest<Goal>(`/goals/${goalId}`, {
         method: 'PUT',
@@ -326,7 +337,7 @@ fetchGoals();
                   console.log("Goal ID:", goal._id); // Log to see the goal._id value
                   return (
                     <GoalCard 
-                      key={goal._id?.toString() || goal.id?.toString()}
+                    key={goal.id || goal._id}
                       goal={goal} 
                       onEdit={(goal) => setEditingGoal(goal)}
                       onDelete={() => deleteGoal(goal._id || goal.id)}
