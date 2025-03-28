@@ -1,15 +1,11 @@
 
-const request = require('supertest');
-const express = require('express');
-const User = require('../../backend/models/User.model');
-const userRoutes = require('../../backend/routes/userRoutes');
-
 import request from 'supertest';
 import express from 'express';
 import * as db from './testdb';
 import userRoutes from '../../backend/routes/userRoutes';
 import jwt from 'jsonwebtoken';
 import User from '../../backend/models/User.model';
+import { describe, beforeAll, afterEach, afterAll, test, expect } from '@jest/globals';
 process.env.JWT_SECRET = 'test_jwt_secret';
 
 
