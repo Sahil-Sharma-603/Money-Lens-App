@@ -58,6 +58,19 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.goalCardSubGoals {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.goalCardSubGoals .subGoal {
+  flex: 1;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
 .progressBar {
   width: 100%;
   height: 8px;
