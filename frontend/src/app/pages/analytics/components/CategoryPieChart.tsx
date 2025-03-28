@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Card from "../../../components/Card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { ClipLoader } from "react-spinners";
+import styles from '../Analysis.module.css';
 
 const COLORS = ["#0707E2", "#E80770", "#00A6A6", "#FF5400", "#8A84E2", "#337357", "#6A0572", "#FF8C42", "#7F4A88", "#CB48B7"];
 
@@ -42,7 +43,7 @@ const CategoryPieChart: React.FC<CatPieProps> = ({ spendingByCategory }) => {
     }, [spendingByCategory]);
 
     return (
-        <Card className="pieChart" style={{ minWidth: "250px", flex: 1, display: "flex", flexDirection: "column"}}>
+        <Card className={styles.pieChart} style={{flex: 1, display: "flex", flexDirection: "column"}}>
             <h4 style={{ fontWeight: "600", fontSize: "0.9rem" }}>This Month's Spending by Category</h4>
 
             {loading ? (
@@ -68,7 +69,7 @@ const CategoryPieChart: React.FC<CatPieProps> = ({ spendingByCategory }) => {
                             ))}
                         </Pie>
                         <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-                        <Legend verticalAlign="bottom" align="center" height={36} formatter={(value) => <span style={{ fontSize: '0.8rem' }}>{value}</span>} />
+                        <Legend verticalAlign="bottom" align="center" formatter={(value) => <span style={{ fontSize: '0.8rem' }}>{value}</span>} />
                     </PieChart>
                 </ResponsiveContainer>
             )}

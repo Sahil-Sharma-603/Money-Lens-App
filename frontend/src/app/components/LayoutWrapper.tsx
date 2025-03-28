@@ -2,7 +2,9 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import NavBar from './NavBar';
+import theme from '../assets/theme';
 
 // List of routes that should display the navigation bar (authenticated routes)
 const AUTHENTICATED_ROUTES = [
@@ -38,9 +40,13 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   }, [pathname]);
 
   return (
-    <div className="layout">
-      {showNavBar && <NavBar />}
-      <main className={showNavBar ? "noNav" : "content"}>{children}</main>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <div className="layout">
+        {showNavBar && <NavBar />}
+        <main className={showNavBar ? "noNav" : "content"}>{children}</main>
+      </div>
+    </ThemeProvider>
   );
+  
 }
