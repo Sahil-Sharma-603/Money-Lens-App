@@ -156,9 +156,9 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
             {isExpanded && (
               <div className={styles.goalCardSubGoals}>
                 {goal.subGoals.map((subGoal) => (
-                  <div key={subGoal._id} className={styles.subGoalItem}>
-                    <p>Sub-goal: {subGoal.name}</p>
-                    <p>${subGoal.currentAmount.toLocaleString()} / ${subGoal.goalAmount.toLocaleString()}</p>
+                  <div key={subGoal._id} className={styles.goalCardSubGoals}>
+                    <div className={styles.subGoalItem}><p >Sub-goal: {subGoal.name}</p></div>
+                    <div className={styles.subGoalItem}><p >${subGoal.currentAmount.toLocaleString()} / ${subGoal.goalAmount.toLocaleString()}</p></div>
                   </div>
                 ))}
               </div>

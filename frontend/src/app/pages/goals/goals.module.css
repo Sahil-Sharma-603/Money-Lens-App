@@ -60,10 +60,23 @@
 
 .goalCardSubGoals {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: space-between; /* Items on far left & far right */
+  align-items: center; /* Align items vertically */
+  width: 100%; /* Ensure full width */
 }
+
+.subGoalItem {
+  flex: 1; /* Allow items to take space */
+}
+
+.subGoalItem:first-child {
+  text-align: left; /* Align left */
+}
+
+.subGoalItem:last-child {
+  text-align: right; /* Align right */
+}
+
 .goalCardSubGoals .subGoal {
   flex: 1;
   background: #f8f9fa;
