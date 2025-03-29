@@ -52,7 +52,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   const [subGoals, setSubGoals] = useState(Array.isArray(initialGoal.subGoals) ? initialGoal.subGoals : []);
   const [goalName, setGoalName] = useState(initialGoal?.goalName || "");
   // const [goalAmount, setGoalAmount] = useState(Number(initialGoal?.goalAmount) || 0);
-  const [limitAmount, setLimitAmount] = useState(Number(initialGoal?.limitAmount) || 0);
+  const [limitAmount, setLimitAmount] = useState(initialGoal?.limitAmount ?? '');
 
   const [goalAmount, setGoalAmount] = useState(initialGoal?.targetAmount ?? '');
 
@@ -65,7 +65,6 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   const [interval, setInterval] = useState('Daily');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false); // Loading state  const [isAddingGoal, setIsAddingGoal] = useState(false); 
-  const [subGoalAmount, setSubGoalAmount] = useState(); 
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [isMatchingTotals, setMatchingTotals] = useState(true); // State to track if sub-goal amounts match the total goal amount
   const [newSubGoal, setNewSubGoal] = useState({
@@ -113,20 +112,25 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     };
 
 
-    // Fetch unique categories for the filter dropdown
-    const fetchAvailableCategories = async () => {
-      try {
-        const response = await apiRequest('/transactions/categories');
-        setAvailableCategories(response.categories || []);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-
+    
     fetchAccounts();
-    fetchAvailableCategories(); 
-  }, []);  // Runs once when the component mounts
+    
+  }, [accounts]);  // Runs once when the component mounts
 
+
+  useEffect(() => {
+  // Fetch unique categories for the filter dropdown
+  const fetchAvailableCategories = async () => {
+    try {
+      const response = await apiRequest('/transactions/categories');
+      setAvailableCategories(response.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  fetchAvailableCategories(); 
+  }), [availableCategories]; 
   
 
 
@@ -140,27 +144,9 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   
 
   const removeSubGoal = (index) => {
-    console.log("Removing sub-goal at index:", index);
     const updated = subGoals.filter((_, i) => i !== index);
-    console.log("Updated sub-goals after removal:", updated);
     setSubGoals(updated);
-     // Update the state with the new sub-goals
-    // console.log("Updated sub-goals after removal:", updatedSubGoals);
-    // const updatedGoal = { ...initialGoal, subGoals: updated };
-  // console.log("UpdatedGoal initialGoal: ", updatedGoal);
-
-    console.log("Updated initialgoal: ", initialGoal);
-
-
-    // //update other subGoals current amount 
-    // if(updated.subGoals && updated.subGoals.length > 0){
-    //   const newSubGoalAmount = updated.targetAmount/updated.subGoals.length;
-    //   console.log("New sub-goal amount: ", newSubGoalAmount);
-    //   updated.subGoals.forEach((subGoal) => {
-    //     subGoal.currentAmount = newSubGoalAmount;
-    //   });
-    // }
-
+    
     let updatedSubGoals = updated.map(subGoal => ({
       ...subGoal, 
       currentAmount: updated.length > 0 ? initialGoal.currentAmount / updated.length : 0,
@@ -169,30 +155,16 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
 
     setUpdatedSubGoals(updatedSubGoals);
   
-    // ✅ Create the updated goal object
     const updatedGoal = { 
       ...initialGoal, 
       subGoals: updatedSubGoals 
     };
 
-    console.log("UpdatedGoal initialGoal: ", updatedGoal);
-    console.log("initialGoal: ", initialGoal);
-
     editGoal(updatedGoal, initialGoal._id); // Call editGoal with the updated sub-goals
   
     if(updatedSubGoals.length === 0){
-      // setSubGoals([{ name: '', amount: 0 }]); // Reinitialize with a default sub-goal
       setMatchingTotals(true); 
     }
-    // Delay the total check until the state update is reflected
-    // setTimeout(() => {
-    //   checkMatchingTotals();
-    // }, 1);
-
-    console.log("isLoading: ", isLoading);
-    console.log("isMatchingTotals: ", isMatchingTotals);
-    console.log("goalAmount: ", goalAmount);
-    console.log("goal name: ", goalName);
    
   };
 
@@ -200,10 +172,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
       try {
         // setIsLoading(true);
         setError(null);
-        
-        console.log('Updating goal with data:', updatedGoal);
-        console.log('Editing goal:', initialGoal);
-        
+            
         // Ensure subGoals exist before mapping
         const updatedSubGoals = updatedGoal.subGoals && updatedGoal.subGoals.length > 0
         ? updatedGoal.subGoals.map((subGoal: any) => ({
@@ -235,10 +204,7 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
           limitAmount: updatedGoal.limitAmount || initialGoal.limitAmount || 0,
         };
       
-  
-        console.log('Formatted goal data for update:', goalToUpdate);
-        console.log('Goal ID to update:', updatedGoal._id);
-        console.log('Goal ID to update:', goalToUpdate.id);
+
         const savedGoal = await apiRequest<Goal>(`/goals/${goalToUpdate.id}`, {
           method: 'PUT',
           body: goalToUpdate,
@@ -246,22 +212,20 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
         });
     
         savedGoal.targetDate = new Date(savedGoal.targetDate);
-    
-        // initialGoal = goals.map(g => g._id === savedGoal._id ? savedGoal : g));
-        // fetchGoals();
+
         setEditingGoal(null);
-        // setError('Goal updated successfully!');
+
       } catch (error) {
         console.error('Error updating goal:', error);
         setError('Failed to update your goal. Please try again.');
       } finally {
-        // setIsLoading(false);
+
       }
     };
   
 
   const checkMatchingTotals = () => {
-    console.log("subgoals", subGoals);
+
     if(subGoals.length === 0){
 
       setMatchingTotals(true); // No sub-goals, so they match by default
@@ -272,8 +236,6 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
       0
     );
     const totalGoalAmount = parseFloat(goalAmount) || 0; // Ensure goalAmount is a number
-    console.log('Total Sub-Goal Amount:', totalSubGoalAmount);
-    console.log('Total Goal Amount:', totalGoalAmount);
     setMatchingTotals(totalSubGoalAmount === totalGoalAmount);
    
     // console.log('Matching Totals:', isMatchingTotals);
@@ -288,7 +250,6 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   
   useEffect(() => {
     checkMatchingTotals();
-    console.log("Checking matching totals in useEffect", isMatchingTotals);
   }, [goalAmount, subGoals]); // Check whenever goalAmount or subGoals change 
 
 
@@ -307,28 +268,8 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
       newSubGoals[index][field] = value;
     }
     setSubGoals(newSubGoals);
-    checkMatchingTotals(); // Check if totals match after updating
+    // checkMatchingTotals(); // Check if totals match after updating
   };
-
-  // // Update goal type and reset related fields.
-  // const handleTypeChange = (e) => {
-  //   setType(e.target.value);
-  //   setSubGoals([{ name: '', amount: 0 }]);  // Use number instead of string
-  //   setTargetAmount(0);
-  //   setLimitAmount(0);
-  // };
-
-  // const handleSubGoalAmountChange = () => {
-  //   const totalSubGoalAmount = subGoals.reduce(
-  //     (sum, sg) => sum + (parseFloat(sg.amount) || 0), // Ensure proper handling of numbers
-  //     0
-  //   );
-  //   if (totalSubGoalAmount > parseFloat(goalAmount)) {
-  //     setError('Sub-goal amounts cannot exceed total goal amount.');
-  //   } else {
-  //     setError(null);
-  //   }
-  // };
   
 
   
@@ -337,10 +278,6 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
     setType(e.target.value);
   };
   
-
-  // const validateSubGoals = () => {
-  //   return subGoals.every((subGoal) => subGoal.name && subGoal.goalAmount >= 0 && subGoal.currentAmount >= 0);
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -391,69 +328,6 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   };
   
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setIsLoading(true);
-  //   setError(null);
-  
-  //   try {
-  //     // Build the goal data object conditionally
-
-  // //     if (!validateSubGoals()) {
-  // //   setError("All sub-goals must have a name, goal amount, and current amount.");
-  // //   return;
-  // // }
-
-  //     console.log("trying to submit form"); 
-  //     const goalData = {
-  //       title: goalName || "",
-  //       targetAmount: parseFloat(goalAmount) || 0,
-  //       currentAmount: 0,
-  //       selectedAccount: selectedAccount || null,
-  //       type: type || "Savings", 
-
-  //       // Only include targetDate and category for Savings goals
-  //       ...(type === 'Savings' ? { 
-  //           targetDate: targetDate || getNextMonthDate(),  // targetDate is already in YYYY-MM-DD format
-  //           subGoals: subGoals.map((sg) => ({
-  //             ...sg,
-  //             name: sg.name,
-  //             amount: sg.amount,
-  //             currentAmount: 0
-              
-  //           })),
-  //       } : {
-  //         category: category || "", 
-  //         limitAmount: limitAmount || 0,
-  //         interval: interval || "Monthly",
-  //         ...(interval === "Date" ? {
-  //           targetDate: targetDate || getNextMonthDate(), 
-  //         } : {
-  //           targetDate: getNextMonthDate(),
-  //         })
-  //       })
-  //     };
-
-  //     console.log("trying to submit form", goalData);
-  
-  //     try {
-  //       console.log("Submitting goal data:", goalData);
-  //       await onSubmit(goalData);
-  //       onClose();
-  //     } catch (error) {
-  //       console.error("Submission error:", error);
-  //       setError('Failed to create goal.');
-  //     }
-  //   } catch (error) {
-  //     setError('Failed to create goal.');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-
-
-
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
@@ -486,266 +360,235 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
             size="small"
           />
   
-          <TextField
-            fullWidth
-            className={styles.goalAmount}
-            id="goalAmount"
-            label="Goal Amount"
-            type="number"
-            value={goalAmount}
-            onChange={(e) => {
-              const value = e.target.value;
-              setGoalAmount(value === '' ? '' : Number(value));
-            }}
-            required
-            sx={{ mb: 2 }}
-            size="small"
-          />
-
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Target Date"
-              value={targetDate ? dayjs(targetDate) : null}
-              onChange={(newValue) => {
-                setTargetDate(newValue ? newValue.toDate() : null);
-              }}
-              minDate={dayjs()}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  required: true,
-                  size: 'small',
-                  sx: { mb: 2 },
-                },
-              }}
-            />
-          </LocalizationProvider>
+          
 
 {/* ginelle's version */}
-            {/* {type === 'Savings' && (
+            {type === 'Savings' && (
               <>
-                <div className={styles.goalAmount}>
-                  <label htmlFor="goalAmount">Goal Amount</label>
-                  <input
-                    type="number"
-                    id="goalAmount"
-                    value={goalAmount === 0 ? '' : goalAmount}
-                    onChange={(e) => setGoalAmount(Number(e.target.value))}
-                    required
-                  />
-                </div>
 
-              <div className={styles.formGroup}>
-                <label>Target Date</label>
-                <input
-                    type="date"
-                    value={
-                      targetDate
-                        ? targetDate.toISOString().split('T')[0]
-                        : ''
-                    }
-                    min={new Date().toISOString().split('T')[0]} // Prevent past dates
-                    onChange={(e) => {
-                      const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
-                      setTargetDate(selectedDate);
-                    }}
-                    required
-                  />
-              </div>
-
-              <label htmlFor="selectedAccount">Account</label>
-              <select
-                id="selectedAccount"
-                value={selectedAccount ? selectedAccount._id : ''} // Use the _id of the selected account
+              <TextField
+                fullWidth
+                className={styles.goalAmount}
+                id="goalAmount"
+                label="Goal Amount"
+                type="number"
+                value={goalAmount}
                 onChange={(e) => {
-                  const selected = accounts.find(account => account._id === e.target.value); // Find the full object
-                  setSelectedAccount(selected); // Set the entire object as the selected account
+                  const value = e.target.value;
+                  setGoalAmount(value === '' ? '' : Number(value));
+                }}
+                required
+                sx={{ mb: 2 }}
+                size="small"
+              />
+
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Target Date"
+                  value={targetDate ? dayjs(targetDate) : null}
+                  onChange={(newValue) => {
+                    setTargetDate(newValue ? newValue.toDate() : null);
+                  }}
+                  minDate={dayjs()}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      size: 'small',
+                      sx: { mb: 2 },
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+
+              <FormControl fullWidth sx={{ mb: 2 }} size="small">
+                <InputLabel id="account-label">Account</InputLabel>
+                <Select
+                  labelId="account-label"
+                  id="selectedAccount"
+                  value={selectedAccount ? selectedAccount._id : ''}
+                  label="Account"
+                  onChange={(e) => {
+                    const selected = accounts.find(
+                      (acc) => acc._id === e.target.value
+                    );
+                    setSelectedAccount(selected);
+                  }}
+                  required
+                >
+                  {accounts.map((account) => (
+                    <MenuItem key={account._id} value={account._id}>
+                      {account.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+      
+              <Typography variant="h6" sx={{ mt: 3 }}>
+                Sub-Goals
+              </Typography>
+      
+              {subGoals.map((subGoal, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: 'flex',
+                    gap: 2,
+                    alignItems: 'center',
+                    mt: 1,
+                    mb: 1,
+                  }}
+                >
+                  <TextField
+                    label="Sub-Goal Name"
+                    value={subGoal.name}
+                    onChange={(e) =>
+                      handleSubGoalChange(index, 'name', e.target.value)
+                    }
+                    fullWidth
+                    size="small"
+                  />
+                  <TextField
+                    className={styles.goalAmount}
+                    label="Amount"
+                    type="number"
+                    value={subGoal.amount ?? ''}
+                    onChange={(e) =>
+                      handleSubGoalChange(index, 'amount', e.target.value)
+                    }
+                    sx={{ width: 200 }}
+                    size="small"
+                  />
+
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => removeSubGoal(index)} disabled= {false}
+                    size="small"
+                  >
+                    Remove
+                  </Button>
+                </Box>
+              ))}
+      
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={addSubGoal}
+                sx={{ mt: 1, mb: 3 }}
+                size="small"
+              >
+                Add Sub-Goal
+              </Button>
+
+          </> 
+        )}
+
+        {type === 'Spending Limit' && (
+          <>
+            <TextField
+              fullWidth
+              className={styles.goalAmount}
+              id="limitAmount"
+              label="Limit Amount"
+              type="number"
+              value={limitAmount}
+              onChange={(e) => {
+                const value = e.target.value;
+                setLimitAmount(value === '' ? '' : Number(value));
+              }}
+              required
+              sx={{ mb: 2 }}
+              size="small"
+            />
+
+            <FormControl fullWidth sx={{ mb: 2 }} size="small">
+              <InputLabel id="account-label">Account</InputLabel>
+              <Select
+                labelId="account-label"
+                id="selectedAccount"
+                value={selectedAccount ? selectedAccount._id : ''}
+                label="Account"
+                onChange={(e) => {
+                  const selected = accounts.find(
+                    (acc) => acc._id === e.target.value
+                  );
+                  setSelectedAccount(selected);
                 }}
                 required
               >
                 {accounts.map((account) => (
-                  <option key={account._id} value={account._id}> {/* Use account._id as the value */}
-                    {/* {account.name} {/* Display the account name */}
-                  {/* </option>
+                  <MenuItem key={account._id} value={account._id}>
+                    {account.name}
+                  </MenuItem>
                 ))}
-              </select>
-
-
-            {/* Subgoals */}
-            {/* <h3 style={{ paddingTop: '20px' }}>Sub-Goals</h3>
-            {subGoals.map((subGoal, index) => (
-              <div key={index} className={styles.subGoals}>
-                <div className={styles.subGoalsInput}>
-                  <label htmlFor="sub-goal-name">Sub-Goal Name</label>
-                  <input
-                    id="sub-goal-name"
-                    type="text"
-                    placeholder="Name"
-                    value={subGoal.name}
-                    onChange={(e) => handleSubGoalChange(index, 'name', e.target.value)} */}
-                  {/* /> */}
-                {/* </div>
-                <div className={styles.subGoalsInput}>
-                  <label htmlFor="sub-goal-amount">Amount</label>
-                  <input
-                    id="sub-goal-amount"
-                    type="number"
-                    placeholder="Amount"
-                    value={subGoal.amount === 0 ? '' : subGoal.amount}  // Ensure we're using 'amount'
-                    onChange={(e) => handleSubGoalChange(index, 'amount', e.target.value)}  // Correctly update 'amount'
-                    // onBlur={handleSubGoalAmountChange}  // Optional: for validation
-                  />
-                </div>
-                <button type="button" onClick={() => removeSubGoal(index)}>
-                  Remove Sub-Goal
-                </button>
-              </div> */}
-            {/* ))} */}
-
-          
-          {/* <button type="button" onClick={addSubGoal}>
-            Add Sub-Goal
-          </button>
-          </> */} 
-        {/* )}
-
-        {type === 'Spending Limit' && (
-          <>
-          <div className={styles.limitAmount}>
-            <label htmlFor="limit">Limit Amount</label>
-
-            <input
-              type='number'
-              id="limit"
-              value={limitAmount === 0 ? '' : limitAmount}
-              onChange={(e) => setLimitAmount(parseFloat(e.target.value))}
-              required
-            />
-            </div> */}
-
-            {/* <label htmlFor="category">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">Select Category</option>
-              {availableCategories.map((category, index) => (
-                <option key={index} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-
-            <label htmlFor="interval">Target Interval</label>
-            <select id="interval" value={interval} onChange={(e) => setInterval(e.target.value)} required>
-              <option value="Date">Date</option>
-              <option value="Daily">Daily</option>
-              <option value="Weekly">Weekly</option>
-              <option value="Monthly">Monthly</option>
-              <option value="Annually">Annually</option>
-            </select>
-
-            {interval === "Date" && (
-              <>
-                <div className={styles.formGroup}>
-                <label>Target Date</label>
-                <input
-                  type="date"
-                  value={targetDate ? targetDate.toISOString().split('T')[0] : ''}
-                  min={new Date().toISOString().split('T')[0]} // Prevent past dates
-                  onChange={(e) => {
-                    const selectedDate = new Date(e.target.value + 'T00:00:00'); // Ensure local time
-                    setTargetDate(selectedDate);
-                  }}
+              </Select>
+            </FormControl>
+            
+            <FormControl fullWidth sx={{ mb: 2 }} size="small">
+                <InputLabel id="account-label">Category</InputLabel>
+                <Select
+                  labelId="category-label"
+                  id="category"
+                  value={category ? category : ''}
+                  label="Category"
+                  onChange={(e) => setCategory(e.target.value)}
                   required
-                />
-                </div>
-              </> */}
-            {/* )} */}
+                >
+                  {availableCategories.map((category, index) => (
+                    <MenuItem key={index} value={category}>
+                      {category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth sx={{ mb: 2 }} size="small">
+                <InputLabel id="account-label">Interval</InputLabel>
+                <Select
+                  labelId="interval-label"
+                  id="interval"
+                  value={interval ? interval : 'Monthly'}
+                  label="Interval"
+                  onChange={(e) => setInterval(e.target.value)}
+                  required
+                >
+                  <MenuItem value="Date">Date</MenuItem>
+                  <MenuItem value="Daily">Daily</MenuItem>
+                  <MenuItem value="Weekly">Weekly</MenuItem>
+                  <MenuItem value="Monthly">Monthly</MenuItem>
+                  <MenuItem value="Annually">Annually</MenuItem>
+                </Select>
+              </FormControl>
+
+              {interval === "Date" && (
+              <>
+
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Target Date"
+                    value={targetDate ? dayjs(targetDate) : null}
+                    onChange={(newValue) => {
+                      setTargetDate(newValue ? newValue.toDate() : null);
+                    }}
+                    minDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        required: true,
+                        size: 'small',
+                        sx: { mb: 2 },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+           
+              </>
+            )}
+            </>
+            )}
+
  
-
-            {/* </>  */}
-  
-          <FormControl fullWidth sx={{ mb: 2 }} size="small">
-            <InputLabel id="account-label">Account</InputLabel>
-            <Select
-              labelId="account-label"
-              id="selectedAccount"
-              value={selectedAccount ? selectedAccount._id : ''}
-              label="Account"
-              onChange={(e) => {
-                const selected = accounts.find(
-                  (acc) => acc._id === e.target.value
-                );
-                setSelectedAccount(selected);
-              }}
-              required
-            >
-              {accounts.map((account) => (
-                <MenuItem key={account._id} value={account._id}>
-                  {account.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-  
-          <Typography variant="h6" sx={{ mt: 3 }}>
-            Sub-Goals
-          </Typography>
-  
-          {subGoals.map((subGoal, index) => (
-            <Box
-              key={index}
-              sx={{
-                display: 'flex',
-                gap: 2,
-                alignItems: 'center',
-                mt: 1,
-                mb: 1,
-              }}
-            >
-              <TextField
-                label="Sub-Goal Name"
-                value={subGoal.name}
-                onChange={(e) =>
-                  handleSubGoalChange(index, 'name', e.target.value)
-                }
-                fullWidth
-                size="small"
-              />
-              <TextField
-                className={styles.goalAmount}
-                label="Amount"
-                type="number"
-                value={subGoal.amount ?? ''}
-                onChange={(e) =>
-                  handleSubGoalChange(index, 'amount', e.target.value)
-                }
-                sx={{ width: 200 }}
-                size="small"
-              />
-
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => removeSubGoal(index)} disabled= {false}
-                size="small"
-              >
-                Remove
-              </Button>
-            </Box>
-          ))}
-  
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={addSubGoal}
-            sx={{ mt: 1, mb: 3 }}
-            size="small"
-          >
-            Add Sub-Goal
-          </Button>
-  
           {error && (
             <FormHelperText error sx={{ mb: 2 }}>
               {error}
@@ -767,132 +610,17 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
               disabled={
                 isLoading ||
                 !goalName ||
-                !goalAmount ||
-                (!isMatchingTotals)
+                (type === "Savings" && !goalAmount && !targetDate && !selectedAccount) ||
+                (type === "Spending Limit" && !limitAmount && !category && !interval)
               }
               size="small"
             >
               Save
             </Button>
           </Box>
+
         </form>
       </div>
     </div>
   );  
-
-// return (
-//   <div>
-//     <Typography variant="h5" gutterBottom>
-//       {type === 'Savings' ? 'Add Savings Goal' : 'Add Spending Limit'}
-//     </Typography>
-//     <form onSubmit={handleSubmit}>
-//       <FormControl fullWidth sx={{ mb: 2 }} size="small">
-//         <InputLabel>Goal Type</InputLabel>
-//         <Select value={type} onChange={(e) => setType(e.target.value)}>
-//           <MenuItem value="Savings">Savings</MenuItem>
-//           <MenuItem value="Spending Limit">Spending Limit</MenuItem>
-//         </Select>
-//       </FormControl>
-
-//       <TextField
-//         fullWidth
-//         label="Goal Name"
-//         value={goalName}
-//         onChange={(e) => setGoalName(e.target.value)}
-//         required
-//         sx={{ mb: 2 }}
-//         size="small"
-//       />
-
-//       {type === 'Savings' && (
-//         <>
-//           <TextField
-//             fullWidth
-//             label="Goal Amount"
-//             type="number"
-//             value={goalAmount}
-//             onChange={(e) => setGoalAmount(e.target.value)}
-//             required
-//             sx={{ mb: 2 }}
-//             size="small"
-//           />
-//           <LocalizationProvider dateAdapter={AdapterDayjs}>
-//             <DatePicker
-//               label="Target Date"
-//               value={targetDate ? dayjs(targetDate) : null}
-//               onChange={(newValue) => setTargetDate(newValue?.toDate() || null)}
-//               minDate={dayjs()}
-//               slotProps={{ textField: { fullWidth: true, required: true, size: 'small', sx: { mb: 2 } } }}
-//             />
-//           </LocalizationProvider>
-//           <Typography variant="h6">Sub-Goals</Typography>
-//           {subGoals.map((subGoal, index) => (
-//             <Box key={index} sx={{ display: 'flex', gap: 2, mt: 1, mb: 1 }}>
-//               <TextField
-//                 label="Sub-Goal Name"
-//                 value={subGoal.name}
-//                 onChange={(e) => handleSubGoalChange(index, 'name', e.target.value)}
-//                 fullWidth
-//                 size="small"
-//               />
-//               <TextField
-//                 label="Amount"
-//                 type="number"
-//                 value={subGoal.amount}
-//                 onChange={(e) => handleSubGoalChange(index, 'amount', e.target.value)}
-//                 size="small"
-//               />
-//               <Button variant="outlined" color="error" onClick={() => removeSubGoal(index)} size="small">
-//                 Remove
-//               </Button>
-//             </Box>
-//           ))}
-//           <Button variant="outlined" onClick={addSubGoal} size="small">Add Sub-Goal</Button>
-//         </>
-//       )}
-
-//       {type === 'Spending Limit' && (
-//         <>
-//           <TextField
-//             fullWidth
-//             label="Limit Amount"
-//             type="number"
-//             value={limitAmount}
-//             onChange={(e) => setLimitAmount(e.target.value)}
-//             required
-//             sx={{ mb: 2 }}
-//             size="small"
-//           />
-//           <FormControl fullWidth sx={{ mb: 2 }} size="small">
-//             <InputLabel>Category</InputLabel>
-//             <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-//               <MenuItem value="">Select Category</MenuItem>
-//               {categories.map((cat, index) => (
-//                 <MenuItem key={index} value={cat}>{cat}</MenuItem>
-//               ))}
-//             </Select>
-//           </FormControl>
-//           <FormControl fullWidth sx={{ mb: 2 }} size="small">
-//             <InputLabel>Interval</InputLabel>
-//             <Select value={interval} onChange={(e) => setInterval(e.target.value)}>
-//               <MenuItem value="Date">Date</MenuItem>
-//               <MenuItem value="Daily">Daily</MenuItem>
-//               <MenuItem value="Weekly">Weekly</MenuItem>
-//               <MenuItem value="Monthly">Monthly</MenuItem>
-//             </Select>
-//           </FormControl>
-//           {interval === 'Date' && (
-//             <LocalizationProvider dateAdapter={AdapterDayjs}>
-//               <DatePicker label="Target Date" value={targetDate ? dayjs(targetDate) : null} onChange={(newValue) => setTargetDate(newValue?.toDate() || null)} minDate={dayjs()} />
-//             </LocalizationProvider>
-//           )}
-//         </>
-//       )}
-
-//       <Button type="submit" variant="contained" disabled={isLoading || !goalName} size="small">Save</Button>
-//     </form>
-//   </div>
-// );
-
 }
-
