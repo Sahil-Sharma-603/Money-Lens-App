@@ -11,8 +11,6 @@ const auth = async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      console.log("Decoded Token:", decoded);  // Debugging
-
       if (!decoded || !decoded.userId) {
         return res.status(401).json({ error: 'Invalid token payload' });
       }

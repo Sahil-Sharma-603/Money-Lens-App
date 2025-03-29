@@ -3,7 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const auth = require('../middleware/auth.middleware');
 const {Goal, SubGoal }  = require('../models/Goal.model');
-const { getGoals, getGoal, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoals } = require('../logic/goalsLogic')
+const { getGoals, updateSubGoalAmount, getGoal, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoals } = require('../logic/goalsLogic')
 
 
 // Test endpoint - no auth required
@@ -555,7 +555,7 @@ router.patch('/:id/add-money', auth, async (req, res) => {
       { _id: req.params.id, userId: req.user._id },
       { 
         $inc: { currentAmount: Number(amount) },
-        updatedAt: new Date()
+        //updatedAt: new Date()
       },
       { new: true }
     );
@@ -563,6 +563,14 @@ router.patch('/:id/add-money', auth, async (req, res) => {
     if (!goal) {
       return res.status(404).json({ error: 'Goal not found or you do not have permission' });
     }
+
+    if(goal.subGoals.length > 0) {
+      const addedToSubGoal = await updateSubGoalAmount(amount, goal);
+
+      if (!addedToSubGoal) {
+        return res.status(404).json({ error: 'Sub-goal not found or you do not have permission' });
+      }
+  }
     
     res.json({
       id: goal._id.toString(),
@@ -571,8 +579,13 @@ router.patch('/:id/add-money', auth, async (req, res) => {
       targetAmount: goal.targetAmount,
       currentAmount: goal.currentAmount,
       targetDate: goal.targetDate,
-      category: goal.category,
+      category: goal.category ?? null,   // Avoid undefined values
       type: goal.type,
+      userId: goal.userId ?? null,
+      selectedAccount: goal.selectedAccount ?? null,
+      limitAmount: goal.limitAmount ?? null,
+      interval: goal.interval ?? null,
+      subGoals: goal.subGoals ?? [],
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt
     });

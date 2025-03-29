@@ -39,7 +39,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
     setAlertMessage(message);
     setAlertType(type);
   };
- 
+
 
   // Transaction fields
   const requiredFields = ['date', 'name', 'category'];
@@ -49,6 +49,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
 
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -270,7 +271,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   }, []);
 
   return (
-  
+
     <div style={styles.container}>
        {alertMessage && (
         <AlertBanner
@@ -548,8 +549,6 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
 };
 
 const styles = {
-
-
   container: {
     backgroundColor: 'white',
     padding: '20px',

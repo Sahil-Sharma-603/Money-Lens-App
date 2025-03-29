@@ -10,12 +10,10 @@ const subGoalSchema = new mongoose.Schema({
   // },
   name: {
     type: String,
-    required: true, 
     default: "unnamed subgoal"
   },
   goalAmount: {
     type: Number,
-    required: true,
     min: 0,
     default: 0
   },

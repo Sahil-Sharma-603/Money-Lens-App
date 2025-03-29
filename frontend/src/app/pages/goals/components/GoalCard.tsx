@@ -1,7 +1,8 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React,{ useEffect, useState} from 'react';
 import { Goal } from '../../../types/goals';
 import { apiRequest } from '../../../assets/utilities/API_HANDLER';
+import styles from '../goals.module.css';
 import {
   Card,
   CardContent,
@@ -22,6 +23,7 @@ interface GoalCardProps {
   onAddMoney: (goal: Goal) => void;
 }
 
+// A helper that returns time remaining if a valid targetDate exists.
 const calculateTimeRemaining = (targetDate?: Date) => {
   if (!targetDate) return { days: 0, isPastDue: false };
   const now = new Date();
@@ -33,35 +35,87 @@ const calculateTimeRemaining = (targetDate?: Date) => {
 export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddMoney }: GoalCardProps) {
   const isSpendingLimit = goal.type === 'Spending Limit';
   const isSavings = goal.type === 'Savings';
-  const [progress, setProgress] = useState(0);
   const [accounts, setAccounts] = useState([]);
   const [expanded, setExpanded] = useState(false);
+  const [goalState, setGoalState] = useState({
+    progress: 0,
+    progressText: '',
+    timeRemainingText: ''
+  });
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
+
+  const toggleExpand = (goalId: string) => {
+    setExpandedGoalId((prev) => (prev === goalId ? null : goalId));
+  };
+
+  const isExpanded = expandedGoalId === goal._id;
 
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
         const data = await apiRequest('/accounts', { requireAuth: true });
-        setAccounts(Array.isArray(data.accounts) ? data.accounts : []);
+        if (Array.isArray(data.accounts)) {
+          setAccounts(data.accounts);
+        } else {
+          console.error('Unexpected response format:', data);
+          setAccounts([]);
+        }
       } catch (error) {
         console.error('Error fetching accounts:', error);
+        setAccounts([]);
       }
     };
+
     fetchAccounts();
   }, []);
 
-  useEffect(() => {
+  const calculateProgress = (current: number, target: number) => {
+    if (target === 0) return 0;
+    return Math.min((current / target) * 100, 100);
+  };
+
+  const fillGoalCard = (goal: Goal) => {
+    let progress = 0;
+    let progressText = '';
+    let timeRemainingText = '';
+
     if (isSpendingLimit) {
-      setProgress(Math.min((goal.currentAmount / goal.limitAmount) * 100, 100));
-    } else {
-      setProgress(Math.min((goal.currentAmount / goal.targetAmount) * 100, 100));
+      progress = calculateProgress(goal.currentAmount, goal.limitAmount);
+      progressText = `Spent: $${goal.currentAmount.toLocaleString()} / $${goal.limitAmount.toLocaleString()}`;
+      if (goal.interval === 'Date') {
+        const { days, isPastDue } = calculateTimeRemaining(new Date(goal.targetDate));
+        timeRemainingText = isPastDue ? `${Math.abs(days)} days overdue` : `${days} days remaining`;
+      } else {
+        timeRemainingText = "N/A"; // No targetDate for Spending Limit goals
+      }
+    } else if (isSavings) {
+      progress = calculateProgress(goal.currentAmount, goal.targetAmount);
+      progressText = `Progress: $${goal.currentAmount.toLocaleString()} / $${goal.targetAmount.toLocaleString()}`;
+      if (goal.targetDate) {
+        const { days, isPastDue } = calculateTimeRemaining(new Date(goal.targetDate));
+        timeRemainingText = isPastDue ? `${Math.abs(days)} days overdue` : `${days} days remaining`;
+      } else {
+        timeRemainingText = "N/A";
+      }
     }
+
+    setGoalState(prevState => {
+      if (prevState.progress !== progress || prevState.progressText !== progressText || prevState.timeRemainingText !== timeRemainingText) {
+        return {
+          progress,
+          progressText,
+          timeRemainingText
+        };
+      }
+      return prevState;
+    });
+  };
+
+  useEffect(() => {
+    fillGoalCard(goal);
   }, [goal]);
 
   const account = accounts.find(acc => acc._id === goal.selectedAccount) || { name: 'N/A' };
-  const { days, isPastDue } = calculateTimeRemaining(new Date(goal.targetDate));
-  const timeRemainingText = isPastDue
-    ? `${Math.abs(days)} days overdue`
-    : `${days} days remaining`;
 
   return (
     <Card variant="outlined" sx={{ p: 2, borderRadius: 2, boxShadow: 2 }}>
@@ -77,15 +131,15 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
           }
         </Typography>
 
-        <LinearProgress 
-          variant="determinate" 
-          value={progress} 
+        <LinearProgress
+          variant="determinate"
+          value={goalState.progress}
           sx={{ mt: 1, mb: 2, height: 8, borderRadius: 5 }}
         />
 
         <Typography variant="body2">Account: {account.name}</Typography>
         {isSpendingLimit && <Typography variant="body2">Category: {goal.category}</Typography>}
-        <Typography variant="body2">{timeRemainingText}</Typography>
+        <Typography variant="body2">{goalState.timeRemainingText}</Typography>
 
         {isSavings && goal.subGoals?.length > 0 && (
           <>

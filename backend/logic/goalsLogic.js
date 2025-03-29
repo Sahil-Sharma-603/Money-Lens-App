@@ -129,22 +129,35 @@ async function updateSavingGoals(goals) {
 
 async function updateSubGoalAmount(totalSavingsForGoal, goal) {
     try {
-        if (totalSavingsForGoal === 0 || !goal || !goal.subGoals || !goal.subGoals) {
+        console.log("Total Savings for to update subgoals:", totalSavingsForGoal);
+        console.log("Goal:", goal);
+        if (totalSavingsForGoal === 0 || !goal || !goal.subGoals || goal.subGoals.length === 0) {
             return;
         }
         const goalPortion = totalSavingsForGoal/goal.subGoals.length;
 
-        goal.subGoals = await Promise.all(
-            goal.subGoals.map(async (subGoal) => {
+        let validSubGoals = goal.subGoals.filter(subGoal => subGoal !== null);
+        console.log("Valid Subgoals:", validSubGoals);
+
+        console.log("Goal Portion:", goalPortion);
+        validSubGoals = await Promise.all(
+            validSubGoals.map(async (subGoal) => {
+                if (subGoal && subGoal.currentAmount === undefined) {
+                    subGoal.currentAmount = 0;
+                }
                 subGoal.currentAmount += goalPortion;
-                await subGoal.save();
-                return subGoal;
+                console.log("Subgoal current amount:", subGoal.currentAmount);
+                
+                // await subGoal.save(); // Ensure each subGoal is saved
+                
+                return subGoal; // RETURN the updated subGoal
             })
         );
-        
 
-        console.log("Updated Sub-Goals:", goal.subGoal);
-        return goal.subGoal; // Return updated sub-goals if needed
+        console.log("Updated Sub-Goals:", validSubGoals);
+        await goal.save(); 
+        console.log("Updated goal", goal);
+        return goal.subGoals; // Return updated sub-goals if needed
     } catch (error) {
         console.error("Error updating subgoal amount", error);
     }
