@@ -1,4 +1,6 @@
 
+// Import Jest types
+import { describe, test, expect, beforeAll, afterEach, afterAll } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';

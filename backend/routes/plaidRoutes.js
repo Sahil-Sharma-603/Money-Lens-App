@@ -104,11 +104,17 @@ router.post('/set_access_token', auth, async (req, res) => {
         });
 
         if (!existingAccount) {
+          // Create a new account with initial_balance and balance_date
+          // Note: We don't use Plaid's reported balance anymore
+          // The frontend will prompt the user to provide the initial balance
           const newAccount = new Account({
             user_id: req.user._id,
             name: plaidAccount.name,
             type: 'plaid',
-            balance: plaidAccount.balances.current || 0,
+            // We set the balance to 0 initially - the user will update it
+            balance: 0,
+            initial_balance: 0,
+            balance_date: Date.now(),
             currency: plaidAccount.balances.iso_currency_code || 'USD',
             institution: req.body.institution || '',
             plaid_account_id: plaidAccount.account_id,
@@ -120,7 +126,8 @@ router.post('/set_access_token', auth, async (req, res) => {
           await newAccount.save();
           createdAccounts.push(newAccount);
         } else {
-          existingAccount.balance = plaidAccount.balances.current || 0;
+          // For existing accounts, we don't update the balance
+          // We just update the connection status
           existingAccount.updated_at = Date.now();
           await existingAccount.save();
           createdAccounts.push(existingAccount);

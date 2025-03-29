@@ -3,7 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const auth = require('../middleware/auth.middleware');
 const {Goal, SubGoal }  = require('../models/Goal.model');
-const { getGoals, getGoal, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoals } = require('../logic/goalsLogic')
+const { getGoals, updateSubGoalAmount, getGoal, getTotalSpendingForGoals, getSpendingForGoals, addSubGoalToGoal, getTotalSavingsForGoals } = require('../logic/goalsLogic')
 
 
 // Test endpoint - no auth required
@@ -421,21 +421,18 @@ router.put('/:id', auth, async (req, res) => {
 
     // Handle subgoals (if provided)
     if (subGoals && Array.isArray(subGoals)) {
-      // Validate subgoals before updating
-      const totalSubgoalAmount = subGoals.reduce((sum, subGoal) => sum + (subGoal.goalAmount || 0), 0);
-      
-      console.log('Total subgoal amount:', totalSubgoalAmount);
-      
-      // Ensure the subgoal amounts sum up to the targetAmount
-      if (totalSubgoalAmount !== targetAmount) {
-        return res.status(400).json({ error: 'Subgoal amounts do not sum up to the target amount' });
+      if (subGoals.length > 0) {
+        const totalSubgoalAmount = subGoals.reduce((sum, subGoal) => sum + (subGoal.goalAmount || 0), 0);
+    
+        if (totalSubgoalAmount !== targetAmount) {
+          return res.status(400).json({ error: 'Subgoal amounts do not sum up to the target amount' });
+        }
       }
-
-      // Add subgoals to the update object
+    
       updateFields.subGoals = subGoals.map((subGoal) => ({
         name: subGoal.name,
         goalAmount: Number(subGoal.goalAmount),
-
+        currentAmount: subGoal.currentAmount || 0
       }));
     }
 
@@ -555,7 +552,7 @@ router.patch('/:id/add-money', auth, async (req, res) => {
     }
 
     const goal = await Goal.findOneAndUpdate(
-      { _id: req.params._id, userId: req.user._id },
+      { _id: req.params.id, userId: req.user._id },
       { 
         $inc: { currentAmount: Number(amount) },
         //updatedAt: new Date()
@@ -566,6 +563,14 @@ router.patch('/:id/add-money', auth, async (req, res) => {
     if (!goal) {
       return res.status(404).json({ error: 'Goal not found or you do not have permission' });
     }
+
+    if(goal.subGoals.length > 0) {
+      const addedToSubGoal = await updateSubGoalAmount(amount, goal);
+
+      if (!addedToSubGoal) {
+        return res.status(404).json({ error: 'Sub-goal not found or you do not have permission' });
+      }
+  }
     
     res.json({
       id: goal._id.toString(),
@@ -574,13 +579,13 @@ router.patch('/:id/add-money', auth, async (req, res) => {
       targetAmount: goal.targetAmount,
       currentAmount: goal.currentAmount,
       targetDate: goal.targetDate,
-      category: goal.category,
+      category: goal.category ?? null,   // Avoid undefined values
       type: goal.type,
-      userId: goal.userId,
-      selectedAccount: goal.selectedAccount,
-      limitAmount: goal.limitAmount,
-      interval: goal.interval,
-      subGoals: goal.subGoals,
+      userId: goal.userId ?? null,
+      selectedAccount: goal.selectedAccount ?? null,
+      limitAmount: goal.limitAmount ?? null,
+      interval: goal.interval ?? null,
+      subGoals: goal.subGoals ?? [],
       createdAt: goal.createdAt,
       updatedAt: goal.updatedAt
     });

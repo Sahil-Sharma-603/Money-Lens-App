@@ -51,6 +51,8 @@ export type Account = {
   name: string;
   type: string;
   balance: number;
+  initial_balance?: number;
+  balance_date?: Date | string;
   currency: string;
   institution: string;
   is_active: boolean;

@@ -1,24 +1,43 @@
-import { apiRequest, LoginResponse, SignupResponse } from '../../frontend/src/app/assets/utilities/API_HANDLER';
-import app from '../../backend/server'; // Adjust the path to your Express app
-import User from '../../backend/models/User.model';
-const BASE_URL = 'http://localhost:5001/api';
+import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
+// Define types
+interface LoginResponse {
+  token: string;
+  user: {
+    _id: string;
+    email: string;
+    name: string;
+    lastName: string;
+  };
+}
+
+interface SignupResponse {
+  message: string;
+  user: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+// Mock modules
 jest.mock('../../frontend/src/app/assets/utilities/API_HANDLER', () => ({
-  ...jest.requireActual('../../frontend/src/app/assets/utilities/API_HANDLER'),
-  apiRequest: jest.fn(),
+  apiRequest: jest.fn()
 }));
 
-jest.mock('../../backend/models/User.model');
+jest.mock('../../backend/models/User.model', () => ({}));
 
-
-
-
+// Import the mocked function
+import { apiRequest } from '../../frontend/src/app/assets/utilities/API_HANDLER';
 
 describe('apiRequest', () => {
-  const mockApiRequest = apiRequest as jest.Mock;
+  // Cast the mock to the correct type
+  const mockApiRequest = apiRequest as jest.MockedFunction<typeof apiRequest>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
     // Mock localStorage
     global.localStorage = {
       getItem: jest.fn(),
@@ -26,7 +45,7 @@ describe('apiRequest', () => {
       removeItem: jest.fn(),
       clear: jest.fn(),
       length: 0,
-      key: jest.fn(),
+      key: jest.fn(() => null)
     } as unknown as Storage;
   });
 
@@ -41,9 +60,9 @@ describe('apiRequest', () => {
       },
     };
 
-    mockApiRequest.mockResolvedValue(mockResponse);
+    mockApiRequest.mockResolvedValueOnce(mockResponse);
 
-    const result = await apiRequest<LoginResponse>('/users/login', {
+    const result = await apiRequest('/users/login', {
       method: 'POST',
       body: {
         email: 'test@example.com',
@@ -65,10 +84,10 @@ describe('apiRequest', () => {
 
   test('sign-in fails with invalid credentials', async () => {
     const mockError = new Error('Invalid credentials');
-    mockApiRequest.mockRejectedValue(mockError);
+    mockApiRequest.mockRejectedValueOnce(mockError);
 
     await expect(
-      apiRequest<LoginResponse>('/users/login', {
+      apiRequest('/users/login', {
         method: 'POST',
         body: {
           email: 'test@example.com',
@@ -81,10 +100,10 @@ describe('apiRequest', () => {
 
   test('sign-in with empty email fails', async () => {
     const mockError = new Error('Email is required');
-    mockApiRequest.mockRejectedValue(mockError);
+    mockApiRequest.mockRejectedValueOnce(mockError);
 
     await expect(
-      apiRequest<LoginResponse>('/users/login', {
+      apiRequest('/users/login', {
         method: 'POST',
         body: {
           email: '',
@@ -97,10 +116,10 @@ describe('apiRequest', () => {
 
   test('sign-in with incorrect credentials does not set token in localStorage', async () => {
     const mockError = new Error('Invalid credentials');
-    mockApiRequest.mockRejectedValue(mockError);
+    mockApiRequest.mockRejectedValueOnce(mockError);
 
     await expect(
-      apiRequest<LoginResponse>('/users/login', {
+      apiRequest('/users/login', {
         method: 'POST',
         body: {
           email: 'test@example.com',
@@ -115,10 +134,10 @@ describe('apiRequest', () => {
 
   test('account creation with invalid email format fails', async () => {
     const mockError = new Error('Invalid email format');
-    mockApiRequest.mockRejectedValue(mockError);
+    mockApiRequest.mockRejectedValueOnce(mockError);
 
     await expect(
-      apiRequest<SignupResponse>('/users/signup', {
+      apiRequest('/users/signup', {
         method: 'POST',
         body: {
           firstName: 'Test',
@@ -133,10 +152,10 @@ describe('apiRequest', () => {
 
   test('sign-up with missing password fails', async () => {
     const mockError = new Error('Password is required');
-    mockApiRequest.mockRejectedValue(mockError);
+    mockApiRequest.mockRejectedValueOnce(mockError);
 
     await expect(
-      apiRequest<SignupResponse>('/users/signup', {
+      apiRequest('/users/signup', {
         method: 'POST',
         body: {
           firstName: 'Test',
@@ -151,10 +170,10 @@ describe('apiRequest', () => {
 
   test('sign-in with missing password fails', async () => {
     const mockError = new Error('Password is required');
-    mockApiRequest.mockRejectedValue(mockError);
+    mockApiRequest.mockRejectedValueOnce(mockError);
 
     await expect(
-      apiRequest<LoginResponse>('/users/login', {
+      apiRequest('/users/login', {
         method: 'POST',
         body: {
           email: 'test@example.com',
@@ -167,10 +186,10 @@ describe('apiRequest', () => {
 
   test('sign-in with unverified email fails', async () => {
     const mockError = new Error('Email is not verified');
-    mockApiRequest.mockRejectedValue(mockError);
+    mockApiRequest.mockRejectedValueOnce(mockError);
 
     await expect(
-      apiRequest<LoginResponse>('/users/login', {
+      apiRequest('/users/login', {
         method: 'POST',
         body: {
           email: 'unverified@example.com',
@@ -180,6 +199,7 @@ describe('apiRequest', () => {
       })
     ).rejects.toThrow('Email is not verified');
   });
+
   test('sign-up with valid data returns user data', async () => {
     const mockResponse: SignupResponse = {
       message: 'User created successfully',
@@ -191,9 +211,9 @@ describe('apiRequest', () => {
       },
     };
 
-    mockApiRequest.mockResolvedValue(mockResponse);
+    mockApiRequest.mockResolvedValueOnce(mockResponse);
 
-    const result = await apiRequest<SignupResponse>('/users/signup', {
+    const result = await apiRequest('/users/signup', {
       method: 'POST',
       body: {
         firstName: 'Test',
@@ -226,6 +246,6 @@ describe('apiRequest', () => {
 
     await signOut();
 
-    expect(localStorage.getItem('token'));
+    expect(localStorage.removeItem).toHaveBeenCalledWith('token');
   });
 });

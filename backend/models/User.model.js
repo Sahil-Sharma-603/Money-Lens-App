@@ -8,6 +8,9 @@ const userSchema = new mongoose.Schema({
   age: { type: Number, required: false },
   firebaseUid: { type: String, required: true, unique: true },
   createdAt: { type: Date, default: Date.now },
+  // Add these new fields for 2FA
+  twoFactorSecret: { type: String, default: null },
+  twoFactorEnabled: { type: Boolean, default: false },
   // Plaid-related fields
   plaidAccessToken: { type: String },
   plaidItemId: { type: String },

@@ -16,6 +16,18 @@ import {
   ChevronRight,
   ChevronsRight,
 } from 'lucide-react';
+import {
+  TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Box,
+  Button,
+} from '@mui/material';
+import dayjs from 'dayjs';
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 export default function Transaction() {
   const [fromDate, setFromDate] = useState<string>('');
@@ -38,10 +50,12 @@ export default function Transaction() {
   const [minAmount, setMinAmount] = useState<string>('');
   const [maxAmount, setMaxAmount] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [accountFilter, setAccountFilter] = useState<string>('');
   const [transactionType, setTransactionType] = useState<string>('all'); // 'all', 'credit', 'debit'
   const [sortOrder, setSortOrder] = useState<string>('newest'); // 'newest', 'oldest', 'largest', 'smallest'
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,6 +78,7 @@ export default function Transaction() {
   useEffect(() => {
     fetchStoredTransactions();
     fetchAvailableCategories();
+    fetchAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -74,6 +89,17 @@ export default function Transaction() {
       setAvailableCategories(response.categories || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  // Fetch accounts for the filter dropdown
+  const fetchAccounts = async () => {
+    try {
+      const response = await apiRequest<AccountsResponse>('/accounts');
+      // Only show active accounts
+      setAccounts(response.accounts.filter(account => account.is_active));
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
     }
   };
 
@@ -100,6 +126,7 @@ export default function Transaction() {
       if (minAmount) params.minAmount = minAmount;
       if (maxAmount) params.maxAmount = maxAmount;
       if (categoryFilter) params.category = categoryFilter;
+      if (accountFilter) params.accountId = accountFilter;
       if (transactionType !== 'all') params.type = transactionType;
 
       // Sorting
@@ -349,9 +376,20 @@ export default function Transaction() {
     }
   };
 
+  const calculateSelectedSum = () => {
+    let sum = 0;
+    transactions.forEach((transaction) => {
+      if (selectedTransactions.has(transaction._id)) {
+        sum += transaction.amount;
+      }
+    });
+    return sum;
+  };
+
   return (
     <div className={styles.dashboard}>
       <Card className={styles.fullPageCard}>
+      <div style={{ flex: '1', display: 'flex', flexDirection: 'column'}}>
         <h2>Transactions</h2>
 
         {/* Floating Bulk Actions */}
@@ -359,6 +397,16 @@ export default function Transaction() {
           <div style={style.floatingBulkActions}>
             <div style={style.selectedCount}>
               {selectedTransactions.size} transaction(s) selected
+            </div>
+            <div style={style.selectionTotal}>
+              Total:{' '}
+              <span
+                style={
+                  calculateSelectedSum() >= 0 ? style.positive : style.negative
+                }
+              >
+                ${Math.abs(calculateSelectedSum()).toFixed(2)}
+              </span>
             </div>
             <div style={style.bulkButtons}>
               <button
@@ -380,138 +428,175 @@ export default function Transaction() {
         )}
 
         {/* Search input */}
-        <div style={style.container}>
-          <div style={style.searchContainer}>
-            <label style={style.label}>Search Transactions:</label>
-            <input
-              type="text"
+        <Card>
+        <Box sx={style.container}>
+          <Box sx={style.searchContainer}>
+            <TextField
+              label="Search Transactions:"
+              size="small"
+              variant="outlined"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name or merchant"
-              style={style.searchInput}
+              fullWidth
             />
-          </div>
-
-          <div style={style.datePickerContainer}>
-            <div style={style.datePickerGroup}>
-              <label style={style.label}>From Date:</label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                style={style.input}
-              />
-            </div>
-            <div style={style.datePickerGroup}>
-              <label style={style.label}>To Date:</label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                style={style.input}
-              />
-            </div>
-          </div>
-
+          </Box>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Box sx={style.datePickerContainer}>
+              <Box sx={style.datePickerGroup}>
+                <DatePicker
+                  label="From Date"
+                  value={fromDate ? dayjs(fromDate) : null}
+                  onChange={(newValue) => setFromDate(newValue ? newValue.toISOString().slice(0, 10) : '')}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: 'small',
+                    },
+                  }}
+                />
+              </Box>
+              <Box sx={style.datePickerGroup}>
+                <DatePicker
+                  label="To Date"
+                  value={toDate ? dayjs(toDate) : null}
+                  onChange={(newValue) => setToDate(newValue ? newValue.toISOString().slice(0, 10) : '')}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      size: 'small',
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+          </LocalizationProvider>
           {/* Advanced Filters Toggle */}
-          <button
+          <Button
+            variant="outlined"
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            style={style.advancedFiltersToggle}
+            // sx={style.advancedFiltersToggle}
           >
-            {showAdvancedFilters
-              ? 'Hide Advanced Filters'
-              : 'Show Advanced Filters'}
-          </button>
-
-          {/* Advanced Filters Section */}
-          {showAdvancedFilters && (
-            <div style={style.advancedFiltersContainer}>
-              <div style={style.filterRow}>
-                <div style={style.filterGroup}>
-                  <label style={style.label}>Min Amount:</label>
-                  <input
-                    type="number"
-                    value={minAmount}
-                    onChange={(e) => setMinAmount(e.target.value)}
-                    placeholder="Min amount"
-                    style={style.input}
-                  />
-                </div>
-                <div style={style.filterGroup}>
-                  <label style={style.label}>Max Amount:</label>
-                  <input
-                    type="number"
-                    value={maxAmount}
-                    onChange={(e) => setMaxAmount(e.target.value)}
-                    placeholder="Max amount"
-                    style={style.input}
-                  />
-                </div>
-              </div>
-
-              <div style={style.filterRow}>
-                <div style={style.filterGroup}>
-                  <label style={style.label}>Category:</label>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    style={style.select}
-                  >
-                    <option value="">All Categories</option>
-                    {availableCategories.map((category, index) => (
-                      <option key={index} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div style={style.filterGroup}>
-                  <label style={style.label}>Transaction Type:</label>
-                  <select
-                    value={transactionType}
-                    onChange={(e) => setTransactionType(e.target.value)}
-                    style={style.select}
-                  >
-                    <option value="all">All Types</option>
-                    {/* I know it looks stupid, but this is easier. */}
-                    <option value="credit">Debit (Expense)</option>
-                    <option value="debit">Credit (Income)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={style.filterRow}>
-                <div style={style.filterGroup}>
-                  <label style={style.label}>Sort By:</label>
-                  <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value)}
-                    style={style.select}
-                  >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="largest">Largest Amount First</option>
-                    <option value="smallest">Smallest Amount First</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <button
+            {showAdvancedFilters ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
             onClick={() => {
               setCurrentPage(1); // Reset to page 1 when applying new filters
               fetchStoredTransactions();
             }}
             disabled={isLoading}
-            style={style.fetchButton}
           >
             {isLoading ? 'Loading...' : 'Get Transactions'}
-          </button>
-        </div>
+          </Button>
+        </Box>
+
+        {/* Advanced Filters Section */}
+        {showAdvancedFilters && (
+          <Box sx={style.advancedFiltersContainer}>
+            {/* Row 1: Min & Max Amount */}
+            <Box sx={style.filterRow}>
+              <FormControl sx={style.filterGroup} fullWidth size="small">
+                <TextField
+                  label="Min Amount"
+                  type="number"
+                  size="small"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                  placeholder="Min amount"
+                />
+              </FormControl>
+
+              <FormControl sx={style.filterGroup} fullWidth size="small">
+                <TextField
+                  label="Max Amount"
+                  type="number"
+                  size="small"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                  placeholder="Max amount"
+                />
+              </FormControl>
+            </Box>
+
+            {/* Row 2: Category & Transaction Type */}
+            <Box sx={style.filterRow}>
+              <FormControl sx={style.filterGroup} fullWidth size="small">
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  label="Category"
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Categories</MenuItem>
+                  {availableCategories.map((category, index) => (
+                    <MenuItem key={index} value={category}>
+                      {category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl sx={style.filterGroup} fullWidth size="small">
+                <InputLabel>Transaction Type</InputLabel>
+                <Select
+                  value={transactionType}
+                  label="Transaction Type"
+                  onChange={(e) => setTransactionType(e.target.value)}
+                >
+                  <MenuItem value="all">All Types</MenuItem>
+                  <MenuItem value="credit">Debit (Expense)</MenuItem>
+                  <MenuItem value="debit">Credit (Income)</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Row 3: Account & Sort By */}
+            <Box sx={style.filterRow}>
+              <FormControl sx={style.filterGroup} fullWidth size="small">
+                <InputLabel>Account</InputLabel>
+                <Select
+                  value={accountFilter}
+                  label="Account"
+                  onChange={(e) => setAccountFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Accounts</MenuItem>
+                  {accounts.map((account) => (
+                    <MenuItem key={account._id} value={account._id}>
+                      {account.name} ({account.type})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl sx={style.filterGroup} fullWidth size="small">
+                <InputLabel>Sort By</InputLabel>
+                <Select
+                  value={sortOrder}
+                  label="Sort By"
+                  onChange={(e) => setSortOrder(e.target.value)}
+                >
+                  <MenuItem value="newest">Newest First</MenuItem>
+                  <MenuItem value="oldest">Oldest First</MenuItem>
+                  <MenuItem value="largest">Largest Amount First</MenuItem>
+                  <MenuItem value="smallest">Smallest Amount First</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          </Box>
+        )}
+        </Card>
+
+
+
+
+
+
+        
 
         {transactions.length > 0 && (
-          <div style={style.tableContainer}>
+          <Card style={{marginTop: 20}}>
             <table style={style.table}>
               <thead>
                 <tr>
@@ -670,44 +755,63 @@ export default function Transaction() {
                 </button>
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
-        {/* Edit Transaction Modal */}
+        {/* Edit transaction modal */}
         {editingTransaction && (
           <div style={style.modalOverlay}>
             <div style={style.modalContent}>
-              <h3>Edit Transaction</h3>
+              <h3 style={{ marginBottom: 10 }}>Edit Transaction</h3>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>Date:</label>
-                <input
-                  type="date"
-                  value={editValues.date}
-                  onChange={(e) =>
-                    setEditValues({ ...editValues, date: e.target.value })
-                  }
-                  style={style.input}
-                />
-              </div>
+              <form
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px',
+                }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveEdit();
+                }}
+              >
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Date"
+                    value={editValues.date ? dayjs(editValues.date) : null}
+                    onChange={(newDate) =>
+                      setEditValues({
+                        ...editValues,
+                        date: newDate ? newDate.format('YYYY-MM-DD') : '',
+                      })
+                    }
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        fullWidth: true,
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>Name:</label>
-                <input
-                  type="text"
+                <TextField
+                  label="Name"
+                  variant="outlined"
+                  size="small"
                   value={editValues.name}
                   onChange={(e) =>
                     setEditValues({ ...editValues, name: e.target.value })
                   }
-                  style={style.input}
+                  fullWidth
+                  required
                 />
-              </div>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>Amount:</label>
-                <input
+                <TextField
+                  label="Amount"
                   type="number"
-                  step="0.01"
+                  inputProps={{ step: '0.01' }}
+                  variant="outlined"
+                  size="small"
                   value={editValues.amount}
                   onChange={(e) =>
                     setEditValues({
@@ -715,43 +819,44 @@ export default function Transaction() {
                       amount: parseFloat(e.target.value),
                     })
                   }
-                  style={style.input}
+                  fullWidth
+                  required
                 />
-              </div>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>Category (comma-separated):</label>
-                <input
-                  type="text"
+                <TextField
+                  label="Category (comma-separated)"
+                  variant="outlined"
+                  size="small"
                   value={editValues.category}
                   onChange={(e) =>
                     setEditValues({ ...editValues, category: e.target.value })
                   }
-                  style={style.input}
+                  fullWidth
                 />
-              </div>
 
-              <div style={style.modalButtonGroup}>
-                <button
-                  onClick={() => setEditingTransaction(null)}
-                  style={style.cancelButton}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveEdit}
-                  style={style.saveButton}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
+                {/* Save / Cancel Buttons */}
+                <Box display="flex" justifyContent="flex-end" gap={2} marginTop="20px">
+                  <Button
+                    variant="outlined"
+                    onClick={() => setEditingTransaction(null)}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="submit"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </Box>
+              </form>
             </div>
           </div>
         )}
 
-        {/* Bulk Edit Modal */}
         {bulkEditMode && (
           <div style={style.modalOverlay}>
             <div style={style.modalContent}>
@@ -761,101 +866,112 @@ export default function Transaction() {
                 updated.
               </p>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>Date (optional):</label>
-                <input
-                  type="date"
-                  value={bulkEditValues.date}
-                  onChange={(e) =>
-                    setBulkEditValues({
-                      ...bulkEditValues,
-                      date: e.target.value,
-                    })
-                  }
-                  style={style.input}
-                />
-              </div>
+              <form
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px',
+                }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleBulkEditSave();
+                }}
+              >
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Date (optional)"
+                    value={bulkEditValues.date ? dayjs(bulkEditValues.date) : null}
+                    onChange={(newValue) =>
+                      setBulkEditValues({
+                        ...bulkEditValues,
+                        date: newValue ? newValue.format('YYYY-MM-DD') : '',
+                      })
+                    }
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        fullWidth: true,
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>Name (optional):</label>
-                <input
-                  type="text"
+                <TextField
+                  label="Name (optional)"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
                   value={bulkEditValues.name}
                   onChange={(e) =>
-                    setBulkEditValues({
-                      ...bulkEditValues,
-                      name: e.target.value,
-                    })
+                    setBulkEditValues({ ...bulkEditValues, name: e.target.value })
                   }
-                  style={style.input}
                   placeholder="Leave empty to keep current names"
                 />
-              </div>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>Amount (optional):</label>
-                <input
+                <TextField
+                  label="Amount (optional)"
+                  variant="outlined"
+                  size="small"
                   type="number"
-                  step="0.01"
+                  inputProps={{ step: '0.01' }}
+                  fullWidth
                   value={bulkEditValues.amount}
                   onChange={(e) =>
-                    setBulkEditValues({
-                      ...bulkEditValues,
-                      amount: e.target.value,
-                    })
+                    setBulkEditValues({ ...bulkEditValues, amount: e.target.value })
                   }
-                  style={style.input}
                   placeholder="Leave empty to keep current amounts"
                 />
-              </div>
 
-              <div style={style.formGroup}>
-                <label style={style.label}>
-                  Category (optional, comma-separated):
-                </label>
-                <input
-                  type="text"
+                <TextField
+                  label="Category (optional, comma-separated)"
+                  variant="outlined"
+                  size="small"
+                  fullWidth
                   value={bulkEditValues.category}
                   onChange={(e) =>
-                    setBulkEditValues({
-                      ...bulkEditValues,
-                      category: e.target.value,
-                    })
+                    setBulkEditValues({ ...bulkEditValues, category: e.target.value })
                   }
-                  style={style.input}
                   placeholder="Leave empty to keep current categories"
                 />
-              </div>
 
-              <div style={style.modalButtonGroup}>
-                <button
-                  onClick={() => setBulkEditMode(false)}
-                  style={style.cancelButton}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleBulkEditSave}
-                  style={style.saveButton}
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Updating...' : 'Update All Selected'}
-                </button>
-              </div>
+                {/* Buttons */}
+                <Box display="flex" justifyContent="flex-end" gap={2} marginTop="20px">
+                  <Button
+                    variant="outlined"
+                    onClick={() => setBulkEditMode(false)}
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    type="submit"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Updating...' : 'Update All Selected'}
+                  </Button>
+                </Box>
+              </form>
             </div>
           </div>
         )}
+        </div>
       </Card>
     </div>
   );
 }
 
 const style = {
+  selectionTotal: {
+    fontWeight: 'bold',
+    marginBottom: '8px',
+    fontSize: '15px',
+  },
   container: {
-    padding: '40px',
-    maxWidth: '800px',
-    margin: '0 auto',
+    display: 'flex',
+    alignItems: 'left',
+    gap: '20px',
   },
   actionButtonsContainer: {
     display: 'flex',
@@ -1023,23 +1139,29 @@ const style = {
     fontSize: '14px',
   },
   advancedFiltersToggle: {
-    backgroundColor: '#f8f9fa',
+    // backgroundColor: '#f8f9fa',
     border: '1px solid #dee2e6',
     borderRadius: '4px',
-    padding: '8px 16px',
-    marginBottom: '15px',
+    // padding: '8px 16px',
+    // marginBottom: '15px',
     cursor: 'pointer',
     color: '#495057',
     fontSize: '14px',
-    width: '100%',
+    // width: '200px',
+    // width: '100%',
+    backgroundColor: 'white',
+    width: 'auto',
+    height: '40px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    marginTop: '10px',
     textAlign: 'center' as const,
   },
   advancedFiltersContainer: {
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #dee2e6',
+    paddingTop: '10px',
+    alignItems: 'left',
+    gap: '20px',
     borderRadius: '4px',
-    padding: '15px',
-    marginBottom: '15px',
   },
   filterRow: {
     display: 'flex',
@@ -1075,7 +1197,8 @@ const style = {
     borderRadius: '8px',
   },
   searchContainer: {
-    marginBottom: '20px',
+    minWidth: '250px',
+    // marginBottom: '20px',
   },
   searchInput: {
     padding: '8px',
@@ -1088,7 +1211,7 @@ const style = {
   datePickerContainer: {
     display: 'flex',
     gap: '20px',
-    marginBottom: '20px',
+    // marginBottom: '20px',
   },
   datePickerGroup: {
     display: 'flex',
@@ -1116,14 +1239,19 @@ const style = {
     opacity: 1,
   },
   fetchButton: {
-    backgroundColor: '#0066cc',
+    backgroundColor: '#0707e2',
     color: 'white',
-    padding: '12px 24px',
+    // padding: '12px 24px',
     border: 'none',
     borderRadius: '5px',
     cursor: 'pointer',
     fontSize: '16px',
-    width: '100%',
+    width: 'auto',
+    height: '40px',
+    paddingLeft: '20px',
+    paddingRight: '20px',
+    marginTop: '27px',
+    // width: '100%',
   },
   dashboardButton: {
     backgroundColor: '#666',
@@ -1141,15 +1269,11 @@ const style = {
   table: {
     width: '100%',
     borderCollapse: 'collapse' as const,
-    backgroundColor: 'white',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
   },
   th: {
-    backgroundColor: '#f8f9fa',
     padding: '12px',
     textAlign: 'left' as const,
     borderBottom: '2px solid #dee2e6',
-    color: '#495057',
   },
   td: {
     padding: '12px',
@@ -1167,7 +1291,6 @@ const style = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
   },
   reconnectButton: {
     backgroundColor: '#4CAF50',

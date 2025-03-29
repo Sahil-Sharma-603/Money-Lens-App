@@ -10,6 +10,7 @@ import GoalDetails from './components/GoalDetails';
 import Card from '../../components/Card';
 import AddMoneyForm from './components/AddMoneyForm';
 import { ObjectId } from 'mongodb';
+import { TextField, Button, Select, MenuItem, FormControl, InputLabel, Checkbox, FormControlLabel } from '@mui/material';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -33,15 +34,11 @@ export default function GoalsPage() {
  
      const goals = data.goals || []; 
  
-     // console.log("goals", goals); 
-     // // // Map _id to id and convert targetDate to Date object
-     // const mappedData = Array.isArray(data) ? data.map(goal => ({
-     //   ...goal,
-     //   id: goal._id.toString(),
-     //   targetDate: new Date(goal.targetDate)
-     // })) : []; // or handle the error case as needed
-     // console.log("mapped goals", mappedData); 
-     setGoals(goals);
+     const normalizedGoals = goals.map(g => ({
+      ...g,
+      _id: g._id || g.id,
+    }));
+    setGoals(normalizedGoals);
    } catch (error) {
      console.error('Error fetching goals:', error);
      setError('Failed to load your goals. Please try again later.');
@@ -162,7 +159,7 @@ fetchGoals();
 
 
   // Edit a goal in MongoDB
-  const editGoal = async (updatedGoal: any) => {
+  const editGoal = async (updatedGoal: any, goalId: string) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -210,13 +207,11 @@ fetchGoals();
         body: goalToUpdate,
         requireAuth: true
       });
-      
+  
       savedGoal.targetDate = new Date(savedGoal.targetDate);
-      
-      setGoals(goals.map(g => g.id === savedGoal.id ? savedGoal : g));
+  
+      setGoals(goals.map(g => g._id === savedGoal._id ? savedGoal : g));
       fetchGoals();
-      
-      console.log('Goal updated successfully:', savedGoal);
       setEditingGoal(null);
       setError('Goal updated successfully!');
     } catch (error) {
@@ -226,6 +221,7 @@ fetchGoals();
       setIsLoading(false);
     }
   };
+  
 
   // Add new function to handle money addition
   const addMoneyToGoal = async (goalId: string, amount: number) => {
@@ -245,8 +241,13 @@ fetchGoals();
       setGoals(goals.map(goal => 
         goal._id === goalId 
           ? { ...goal, currentAmount: goal.currentAmount + amount }
+      // setGoals(goals.map(goal =>
+      //   (goal._id || goal.id) === goalId
+      //     ? { ...goal, ...updatedGoal }
           : goal
       ));
+
+      
 
       setError('Money added successfully!');
     } catch (error) {
@@ -284,34 +285,43 @@ fetchGoals();
       <Card className={pageStyles.fullPageCard}>
         <div className={styles.container}>
           <div className={styles.header}>
-            <h1>Financial Goals</h1>
+            <h2>Financial Goals</h2>
             <div>
-              <button 
-                className={styles.addButton}
+              <Button 
+                variant="contained"
+                color="primary"
                 onClick={() => {
-                  if (!isLoading) { 
+                  if (!isLoading) {
                     setIsAddingGoal(true);
                   }
                 }}
                 disabled={isLoading}
               >
                 Add New Goal
-              </button>
+              </Button>
             </div>
           </div>
 
+          {goals.length > 0 && (
           <div className={styles.controls}>
-            <select 
-              value={sortBy} 
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className={styles.sortSelect}
-              disabled={isLoading || goals.length === 0}
-            >
-              <option value="date">Sort by Date</option>
-              <option value="progress">Sort by Progress</option>
-              <option value="amount">Sort by Amount</option>
-            </select>
+            <FormControl sx={{ minWidth: 180, paddingBottom: 2 }}>
+              <InputLabel id="sort-by-label">Sort By</InputLabel>
+              <Select
+                labelId="sort-by-label"
+                id="sort-by"
+                size='small'
+                value={sortBy}
+                label="Sort By"
+                onChange={(e) => setSortBy(e.target.value as any)}
+                disabled={isLoading}
+              >
+                <MenuItem value="date">Sort by Date</MenuItem>
+                <MenuItem value="progress">Sort by Progress</MenuItem>
+                <MenuItem value="amount">Sort by Amount</MenuItem>
+              </Select>
+            </FormControl>
           </div>
+        )}
 
           {error && <div className={styles.errorMessage}>{error}</div>}
           
@@ -356,13 +366,12 @@ fetchGoals();
         />
       )}
 
-      {editingGoal && (
+      {editingGoal && editingGoal._id && (
         <GoalForm 
           initialGoal={editingGoal}
           onClose={() => setEditingGoal(null)}
           onSubmit={(updatedGoal) => {
-            // Include the ID from the editing goal
-            editGoal({...updatedGoal, id: editingGoal.id});
+            editGoal(updatedGoal, editingGoal._id || editingGoal.id);
           }}
         />
       )}

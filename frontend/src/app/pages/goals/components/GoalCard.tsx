@@ -1,43 +1,47 @@
 'use client';
-import React,{ useEffect, useState} from 'react';
-import styles from '../goals.module.css';
+import React, { useEffect, useState } from 'react';
 import { Goal } from '../../../types/goals';
 import { apiRequest } from '../../../assets/utilities/API_HANDLER';
+import {
+  Card,
+  CardContent,
+  CardActions,
+  Typography,
+  LinearProgress,
+  Button,
+  Collapse,
+  Box,
+  Divider
+} from '@mui/material';
+import styles from '../goals.module.css';
 
 interface GoalCardProps {
   goal: Goal;
-  onEdit: () => void;
+  onEdit: (goal: Goal) => void;
   onDelete: () => void;
   onViewDetails: () => void;
   onAddMoney: (goal: Goal) => void;
 }
 
-// A helper that returns time remaining if a valid targetDate exists.
 const calculateTimeRemaining = (targetDate?: Date) => {
-  if (!targetDate) {
-    return { days: 0, isPastDue: false };
-  }
+  if (!targetDate) return { days: 0, isPastDue: false };
   const now = new Date();
   const diffTime = new Date(targetDate).getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return { 
-    days: diffDays,
-    isPastDue: diffDays <= 0
-  };
+  return { days: diffDays, isPastDue: diffDays <= 0 };
 };
-
-
-
 
 export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddMoney }: GoalCardProps) {
   const isSpendingLimit = goal.type === 'Spending Limit';
   const isSavings = goal.type === 'Savings';
-  const isCompleted = goal.currentAmount >= goal.targetAmount;
-  const [progress, setProgress] = React.useState(0);
+  const [progress, setProgress] = useState(0);
+  const [accounts, setAccounts] = useState([]);
+  const [expanded, setExpanded] = useState(false);
   const [progressText, setProgressText] = React.useState("");
   const [additionalInfo, setAdditionalInfo] = React.useState<React.ReactNode>(null);
   const [timeRemainingText, setTimeRemainingText] = React.useState('');
-  const [accounts, setAccounts] = React.useState([]);
+  const isCompleted = goal.currentAmount >= goal.targetAmount;
+  // const [accounts, setAccounts] = React.useState([]);
 
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
   const [forceRender, setForceRender] = useState(false);
@@ -45,17 +49,10 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
   const toggleExpand = (goalId: string) => {
     setExpandedGoalId((prev) => (prev === goalId ? null : goalId));
     setForceRender((prev) => !prev); // Forces a re-render
+    setExpanded(!expanded); 
   };
 
-  // const toggleExpand = (goalId: string) => {
-  //   console.log("Current Expanded Goal ID:", expandedGoalId); // Check previous state
-  //   setExpandedGoalId((prev) => {
-  //     const newState = prev === goalId ? null : goalId;
-  //     console.log("New Expanded Goal ID:", newState); // Check new state
-  //     return newState;
-  //   });
-  // };
-  
+
 
   useEffect(() => {
       const fetchAccounts = async () => {
@@ -120,6 +117,11 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
                   { _id: goal.selectedAccount, name: goal.selectedAccount || "N/A" };
   
     const isExpanded = expandedGoalId === goal._id;
+
+    const updatedSubGoals = goal.subGoals?.map((subGoal) => ({
+      ...subGoal,
+      currentAmount: goal.currentAmount * (subGoal.goalAmount / goal.targetAmount),
+    }));
   
     return (
       <div>
@@ -137,7 +139,7 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
   
             {isExpanded && (
               <div className={styles.goalCardSubGoals}>
-                {goal.subGoals.map((subGoal) => (
+                {updatedSubGoals.map((subGoal) => (
                   <div key={subGoal._id} className={styles.goalCardSubGoals}>
                     <div className={styles.subGoalItem}><p >Sub-goal: {subGoal.name}</p></div>
                     <div className={styles.subGoalItem}><p >${subGoal.currentAmount.toLocaleString()} / ${subGoal.goalAmount.toLocaleString()}</p></div>
@@ -151,7 +153,21 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
     );
   };
   
-  
+  const getAccount = (goal: Goal) => {
+    let account = accounts.find((account) => account._id === goal.selectedAccount);
+    return account; 
+  };
+
+  // const fillGoalCard = (goal: Goal) => {
+  //   if (isSpendingLimit) {
+  //     setProgress(Math.min((goal.currentAmount / goal.limitAmount) * 100, 100));
+  //   } else {
+  //     setProgress(Math.min((goal.currentAmount / goal.targetAmount) * 100, 100));
+  //   }
+  // }; //, [goal];
+
+  //   const isCompleted = progress >= 100;
+  // // }
 
   const fillGoalCard = (goal: Goal) => {
     if (isSpendingLimit) {
@@ -185,8 +201,26 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
   }
 
   useEffect(() => {
+    // Refill the goal card when the main goal or its sub-goals change
     fillGoalCard(goal);
-  }, [accounts]); // This will run whenever `goal` changes
+  }, [goal, goal.currentAmount, goal.subGoals]);
+
+  useEffect(() => {
+    fillGoalCard(goal);
+  }, [expanded]); 
+
+  // Set timeRemainingText
+  useEffect(() => {
+    let timeRemainingText; 
+    if(goal.interval === 'Date') {
+      const { days, isPastDue } =  calculateTimeRemaining(new Date(goal.targetDate));
+      timeRemainingText = isPastDue ? `${Math.abs(days)} days overdue` : `${days} days remaining`;
+    } 
+    else {
+      timeRemainingText = `Interval: ${goal.interval}`;
+    }
+  }, [goal.targetDate]);
+
 
   // Calculate progress based on type:
   const calculateProgress = (current: number, target: number) => {
@@ -195,7 +229,139 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
   };
 
 
+
+
     
+  // const account = accounts.find(acc => acc._id === goal.selectedAccount) || { name: 'N/A' };
+  // const { days, isPastDue } = calculateTimeRemaining(new Date(goal.targetDate));
+  // const timeRemainingText = isPastDue
+  //   ? `${Math.abs(days)} days overdue`
+  //   : `${days} days remaining`;
+
+  // return (
+  //   <Card variant="outlined" sx={{ p: 2, borderRadius: 2, boxShadow: 2 }}>
+  //     <CardContent onBlur= {}>
+  //       <Typography variant="h6" gutterBottom>
+  //         {isSpendingLimit ? 'Spending Limit' : 'Savings Goal'}: {goal.title}
+  //       </Typography>
+
+  //       <Typography variant="body2" color="text.secondary">
+  //         {isSpendingLimit
+  //           ? `Spent: $${goal.currentAmount.toLocaleString()} / $${goal.limitAmount.toLocaleString()}`
+  //           : `Progress: $${goal.currentAmount.toLocaleString()} / $${goal.targetAmount.toLocaleString()}`
+  //         }
+  //       </Typography>
+
+  //       <LinearProgress 
+  //         variant="determinate" 
+  //         value={progress} 
+  //         sx={{ mt: 1, mb: 2, height: 8, borderRadius: 5 }}
+  //       />
+
+  //       <Typography variant="body2">Account: {getAccount(goal).name}</Typography>
+  //       {isSpendingLimit && <Typography variant="body2">Category: {goal.category}</Typography>}
+  //       <Typography variant="body2">{timeRemainingText}</Typography>
+
+  //       {isSavings && goal.subGoals?.length > 0 && (
+  //         <>
+  //           <Button size="small" onClick={() => setExpanded(prev => !prev)}>
+  //             {expanded ? 'Hide Sub-goals ▲' : 'Show Sub-goals ▼'}
+  //           </Button>
+  //           <Collapse in={expanded}>
+  //             <Box sx={{ mt: 1 }}>
+  //               {goal.subGoals.map(subGoal => (
+  //                 <Box key={subGoal._id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+  //                   <Typography variant="body2">{subGoal.name}</Typography>
+  //                   <Typography variant="body2">
+  //                     ${subGoal.currentAmount.toLocaleString()} / ${subGoal.goalAmount.toLocaleString()}
+  //                   </Typography>
+  //                 </Box>
+  //               ))}
+  //             </Box>
+  //           </Collapse>
+  //         </>
+  //       )}
+  //     </CardContent>
+
+  //     <Divider />
+
+  //     <CardActions sx={{ display: 'flex', justifyContent: 'space-between', px: 2 }}>
+  //       <Box>
+  //         <Button onClick={onViewDetails} size="small">Details</Button>
+  //         <Button onClick={() => onEdit(goal)} size="small">Edit</Button>
+  //         <Button onClick={onDelete} size="small" color="error">Delete</Button>
+  //       </Box>
+  //       <Button
+  //         variant="contained"
+  //         size="small"
+  //         onClick={() => onAddMoney(goal)}
+  //       >
+  //         {isSpendingLimit ? 'Add Spending' : 'Add Money'}
+  //       </Button>
+  //     </CardActions>
+  //   </Card>
+  // );
+
+  // return (
+  //   <Card variant="outlined" sx={{ p: 2, borderRadius: 2, boxShadow: 2 }}>
+  //     <CardContent>
+  //       <Typography variant="h6" gutterBottom>
+  //         {isSpendingLimit ? 'Spending Limit' : 'Savings Goal'}: {goal.title}
+  //       </Typography>
+
+  //       <Typography variant="body2" color="text.secondary">
+  //         {isSpendingLimit
+  //           ? `Spent: $${goal.currentAmount.toLocaleString()} / $${goal.limitAmount.toLocaleString()}`
+  //           : `Progress: $${goal.currentAmount.toLocaleString()} / $${goal.targetAmount.toLocaleString()}`}
+  //       </Typography>
+
+  //       <LinearProgress
+  //         variant="determinate"
+  //         value={progress}
+  //         sx={{ mt: 1, mb: 2, height: 8, borderRadius: 5 }}
+  //       />
+
+  //       <Typography variant="body2">Account: {getAccount(goal)?.name || 'N/A'}</Typography>
+  //       {isSpendingLimit && <Typography variant="body2">Category: {goal.category}</Typography>}
+  //       <Typography variant="body2">
+  //         {goal.interval === 'Date' ? timeRemainingText : `Interval: ${goal.interval}`}
+  //       </Typography>
+
+  //       {isSavings && goal.subGoals?.length > 0 && (
+  //         <>
+  //           <Button size="small" onClick={() => setExpanded((prev) => !prev)}>
+  //             {expanded ? 'Hide Sub-goals ▲' : 'Show Sub-goals ▼'}
+  //           </Button>
+  //           <Collapse in={expanded}>
+  //             <Box sx={{ mt: 1 }}>
+  //               {goal.subGoals.map((subGoal) => (
+  //                 <Box key={subGoal._id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+  //                   <Typography variant="body2">{subGoal.name}</Typography>
+  //                   <Typography variant="body2">
+  //                     ${subGoal.currentAmount.toLocaleString()} / ${subGoal.goalAmount.toLocaleString()}
+  //                   </Typography>
+  //                 </Box>
+  //               ))}
+  //             </Box>
+  //           </Collapse>
+  //         </>
+  //       )}
+  //     </CardContent>
+
+  //     <Divider />
+
+  //     <CardActions sx={{ display: 'flex', justifyContent: 'space-between', px: 2 }}>
+  //       <Box>
+  //         <Button onClick={onViewDetails} size="small">Details</Button>
+  //         <Button onClick={() => onEdit(goal)} size="small">Edit</Button>
+  //         <Button onClick={onDelete} size="small" color="error">Delete</Button>
+  //       </Box>
+  //       <Button variant="contained" size="small" onClick={() => onAddMoney(goal)}>
+  //         {isSpendingLimit ? 'Add Spending' : 'Add Money'}
+  //       </Button>
+  //     </CardActions>
+  //   </Card>
+  // );
 
   return (
     <div className={`${styles.goalCard} ${isCompleted ? styles.completed : ''}`}>
@@ -203,12 +369,12 @@ export default function GoalCard({ goal, onEdit, onDelete, onViewDetails, onAddM
         <h2>{isSpendingLimit ? 'Spending Limit' : 'Savings Goal'}</h2>
         <h3>{goal.title}</h3>
         <div className={styles.actions}>
-          <button onClick={onViewDetails}>Details</button>
-          <button onClick={onEdit}>Edit</button>
-          <button onClick={onDelete}>Delete</button>
+          <button onClick={onViewDetails} disabled={false}>Details</button>
+          <button onClick={onEdit} disabled={false}>Edit</button>
+          <button onClick={onDelete} disabled={false}>Delete</button>
         </div>
         <button 
-          onClick={() => onAddMoney(goal)}
+          onClick={() => onAddMoney(goal)} disabled={false}
           className={styles.addMoneyButton}
         >
           {isSpendingLimit ? 'Add Spending' : 'Add Money'}
