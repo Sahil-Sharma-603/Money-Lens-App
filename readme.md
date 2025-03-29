@@ -17,9 +17,9 @@ Money Lens is a web application designed to simplify the process of managing per
 
 ### Commit log description message:
 
-"Feature##-UserStory##-SubTask## description of task"
-eg. "01-09-39 implemented login form fields and buttons for UI"
-for feature #01 (Authentication System), user story #09 (Login), subtask #39 (Login UI)
+"Feature-UserStory and description of task"
+eg. "implemented login form fields and buttons for UI"
+for feature (Authentication System), user story (Login), subtask (Login UI)
 
 ### Branches:
 
