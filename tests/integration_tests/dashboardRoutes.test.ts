@@ -28,15 +28,15 @@ describe('Dashboard Integration Test', () => {
 
   beforeAll(async () => {
     await db.connect();
-  });
+  },10000);
 
   afterEach(async () => {
     await db.clearDatabase();
-  });
+  },10000);
 
   afterAll(async () => {
     await db.closeDatabase();
-  });
+  },10000);
 
   test('should return dashboard data for valid user and token', async () => {
     // Create a user
