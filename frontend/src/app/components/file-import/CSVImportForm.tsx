@@ -10,6 +10,8 @@ import {
 import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from '@mui/material';
 
+import AlertBanner from '@/app/components/AlertBanner';
+
 interface CSVImportFormProps {
   onClose: () => void;
   onSuccess: () => void;
@@ -30,6 +32,15 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   // Track total data rows in file
   const [totalRows, setTotalRows] = useState<number>(0);
 
+
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning'>('success');
+  const showAlert = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+    setAlertMessage(message);
+    setAlertType(type);
+  };
+
+
   // Transaction fields
   const requiredFields = ['date', 'name', 'category'];
   const [hasSeparateAmountColumns, setHasSeparateAmountColumns] =
@@ -38,6 +49,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>('');
 
+  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -176,7 +188,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
 
       if (result.success) {
         if (result.errors > 0 || result.skipped > 0) {
-          alert(
+          showAlert(
             `Imported ${result.count} transactions.\n` +
               `${
                 result.skipped > 0
@@ -190,7 +202,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
               }`
           );
         } else {
-          alert(`Successfully imported ${result.count} transactions`);
+          showAlert(`Successfully imported ${result.count} transactions`,'success');
         }
         onSuccess();
       } else {
@@ -259,7 +271,15 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   }, []);
 
   return (
+
     <div style={styles.container}>
+       {alertMessage && (
+        <AlertBanner
+          message={alertMessage}
+          type={alertType}
+          onClose={() => setAlertMessage(null)}
+        />
+      )}
       <h3>Import Transactions from CSV</h3>
 
       {!file ? (
@@ -376,9 +396,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         // You could open a modal here to create a new account
-                        alert(
+                        showAlert(
                           'Click on "Close Import" button, then click on "Create Account" button on this page '
-                        );
+                        ,'warning');
                       }}
                     >
                       Create a new account

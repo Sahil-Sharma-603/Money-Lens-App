@@ -1,3 +1,4 @@
+
 name: Continuous Integration
 
 permissions:
@@ -58,6 +59,16 @@ jobs:
         run: |
           cd frontend
           npm run build
+
+      - name: Run SonarCloud Scan
+        uses: sonarsource/sonarqube-scan-action@v5.0.0
+        with:
+          args: >
+            -Dsonar.organization=money-lens
+            -Dsonar.projectKey=Money-Lens_Money-Lens-App
+            -Dsonar.projectName=Money-Lens-App
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   assign-reviewers:
     if: github.event_name == 'pull_request'

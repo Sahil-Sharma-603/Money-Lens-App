@@ -75,7 +75,6 @@ fetchGoals();
       setIsLoading(true);
       setError(null);
       
-      
       // Build the new goal object conditionally
       const newGoal = {
         title: formData.title,
@@ -104,20 +103,24 @@ fetchGoals();
       };
 
       
-    
+
       
       const savedGoal = await apiRequest<Goal>('/goals', {
         method: 'POST',
         body: newGoal,
         requireAuth: true
       });
-      
+
       
       // If needed, convert targetDate back to Date object
       if (savedGoal.targetDate) {
         savedGoal.targetDate = new Date(savedGoal.targetDate);
       }
-      
+
+      if (savedGoal.id) {
+        savedGoal._id = savedGoal.id;
+      }
+
       setGoals([...goals, savedGoal]);
       setIsAddingGoal(false);
       setError('Goal created successfully!');
@@ -183,8 +186,8 @@ fetchGoals();
         description: updatedGoal.description || editingGoal.description,
         targetAmount: Number(updatedGoal.targetAmount) || editingGoal.targetAmount,
         currentAmount: Number(updatedGoal.currentAmount) || editingGoal.currentAmount,
-        targetDate: updatedGoal.targetDate instanceof Date 
-          ? updatedGoal.targetDate.toISOString() 
+        targetDate: updatedGoal.targetDate instanceof Date
+          ? updatedGoal.targetDate.toISOString()
           : new Date(getNextMonthDate()).toISOString() || editingGoal.targetDate.toISOString(),
         category: updatedGoal.category || editingGoal.category,
         type: updatedGoal.type || editingGoal?.type,
@@ -197,7 +200,7 @@ fetchGoals();
         selectedAccount: updatedGoal.selectedAccount || editingGoal?.selectedAccount || null,
         limitAmount: updatedGoal.limitAmount || editingGoal.limitAmount || 0,
       };
-    
+
 
       console.log('Formatted goal data for update:', goalToUpdate);
       console.log('Goal ID to update:', updatedGoal._id);
@@ -207,9 +210,9 @@ fetchGoals();
         body: goalToUpdate,
         requireAuth: true
       });
-  
+
       savedGoal.targetDate = new Date(savedGoal.targetDate);
-  
+
       setGoals(goals.map(g => g._id === savedGoal._id ? savedGoal : g));
       fetchGoals();
       setEditingGoal(null);
@@ -221,7 +224,7 @@ fetchGoals();
       setIsLoading(false);
     }
   };
-  
+
 
   // Add new function to handle money addition
   const addMoneyToGoal = async (goalId: string, amount: number) => {
@@ -239,15 +242,12 @@ fetchGoals();
 
       // Update the goals list with the new amount
       setGoals(goals.map(goal => 
-        goal._id === goalId 
+        goal._id === goalId
           ? { ...goal, currentAmount: goal.currentAmount + amount }
-      // setGoals(goals.map(goal =>
-      //   (goal._id || goal.id) === goalId
-      //     ? { ...goal, ...updatedGoal }
           : goal
       ));
 
-      
+
 
       setError('Money added successfully!');
     } catch (error) {
@@ -287,7 +287,7 @@ fetchGoals();
           <div className={styles.header}>
             <h2>Financial Goals</h2>
             <div>
-              <Button 
+              <Button
                 variant="contained"
                 color="primary"
                 onClick={() => {
@@ -336,10 +336,10 @@ fetchGoals();
                 </div>
               ) : (
                 sortedGoals.map((goal, index) => (
-                  <GoalCard 
-                    key={goal._id || `fallback-key-${index}`}  
-                    goal={goal} 
-                    onEdit={() => setEditingGoal(goal)} 
+                  <GoalCard
+                    key={goal._id || `fallback-key-${index}`}
+                    goal={goal}
+                    onEdit={() => setEditingGoal(goal)}
                     onDelete={() => deleteGoal(goal._id)}
                     onViewDetails={() => setSelectedGoal(goal)}
                     onAddMoney={() => setAddingMoneyToGoal(goal)}
