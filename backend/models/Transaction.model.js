@@ -174,7 +174,11 @@ const saveTransaction = async (transactionData, userId, accountId = null) => {
     const accountPromise = Account.findById(account_id)
       .then(account => {
         if (account) {
-          return account.updateBalance(transactionData.amount);
+          // Only update balance if transaction date is after balance_date
+          const transactionDate = new Date(transactionData.date);
+          if (transactionDate >= account.balance_date) {
+            return account.updateBalance(transactionData.amount);
+          }
         }
         return null;
       })
@@ -300,21 +304,48 @@ const saveTransactionsBatch = async (transactionsArray, userId, accountIdMap = n
     
     // Step 5: Update account balances in parallel
     const Account = require('./Account.model');
-    const accountUpdatePromises = Object.entries(account_updates).map(([accountId, totalAmount]) => {
-      return Account.findById(accountId)
-        .then(account => {
-          if (account) {
-            account.balance += totalAmount;
-            account.updated_at = Date.now();
-            return account.save();
-          }
-          return null;
-        })
-        .catch(err => {
-          console.error(`Error updating account ${accountId} balance:`, err);
-          return null;
-        });
+    
+    // First, get all accounts that we need to update
+    const accountIds = Object.keys(account_updates);
+    const accounts = await Account.find({ _id: { $in: accountIds } });
+    
+    // Create a map for easy lookup
+    const accountMap = {};
+    accounts.forEach(account => {
+      accountMap[account._id.toString()] = account;
     });
+    
+    // Filter the transactions by date for each account before updating balance
+    const accountUpdatesByDate = {};
+    
+    // Process each transaction to check if it should update the balance
+    for (const txn of uniqueTransactions) {
+      const accountId = txn.account_id.toString();
+      const account = accountMap[accountId];
+      
+      if (account) {
+        const txnDate = new Date(txn.date);
+        
+        // Only include transactions after the balance_date for balance updates
+        if (txnDate >= account.balance_date) {
+          if (!accountUpdatesByDate[accountId]) {
+            accountUpdatesByDate[accountId] = 0;
+          }
+          accountUpdatesByDate[accountId] += Number(txn.amount);
+        }
+      }
+    }
+    
+    // Now update the accounts with the filtered amounts
+    const accountUpdatePromises = Object.entries(accountUpdatesByDate).map(([accountId, filteredAmount]) => {
+      const account = accountMap[accountId];
+      if (account && filteredAmount !== 0) {
+        account.balance += filteredAmount;
+        account.updated_at = Date.now();
+        return account.save();
+      }
+      return null;
+    }).filter(Boolean);
     
     // Wait for all account updates to complete
     await Promise.all(accountUpdatePromises);

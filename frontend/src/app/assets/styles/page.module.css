@@ -185,6 +185,94 @@
   text-align: left;
 }
 
+/* 2FA specific styles */
+.formContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.formContent h2 {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.formContent p {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.formContent .inputGroup {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 1.5rem;
+}
+
+.formContent .inputGroup label {
+  text-align: center;
+  display: block;
+  width: 100%;
+}
+
+.formContent .signInButton {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.qrCodeContainer {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.qrCode {
+  max-width: 200px;
+  height: auto;
+  padding: 10px;
+  background: white;
+  border-radius: 4px;
+}
+
+.successMessage {
+  background-color: #f0f9f4;
+  border: 1px solid #34c759;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  text-align: left;
+  width: 100%;
+}
+
+.successMessage p {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.successMessage ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.successMessage li {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.successMessage li:last-child {
+  margin-bottom: 0;
+}
+
 @media (max-width: 768px) {
   .container {
     flex-direction: column;

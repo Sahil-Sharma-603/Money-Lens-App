@@ -607,10 +607,28 @@ async function getRecurringExpenses(transactions) {
         });
 
         console.log("Detected Recurring Expenses:", recurringExpenses);
-        return recurringExpenses;
+        return removeNARecurring(recurringExpenses);
     } catch (error) {
         console.error("Error in getRecurringExpenses:", error);
         return [];
+    }
+}
+
+async function removeNARecurring(recurring) {
+    try {
+        if (!Array.isArray(recurring)) {
+            console.error("Invalid input: recurring is not an array");
+            return [];
+        }
+
+        // Filter out transactions with no amount or invalid amount
+        const filtered = recurring.filter(item => item.amount !== undefined && item.amount !== null && !isNaN(item.amount));
+
+        console.log("Recurring Expenses with NaN removed:", filtered);
+        return filtered;
+    } catch (error) {
+        console.error("Error removing N/A recurring transactions", error);
+        return recurring; // Return the original list in case of an error
     }
 }
 

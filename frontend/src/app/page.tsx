@@ -9,6 +9,14 @@ import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'next/navigation';
 import { apiRequest, LoginResponse } from './assets/utilities/API_HANDLER';
 
+interface TwoFactorCheckResponse {
+  requires2FA: boolean;
+}
+
+interface TwoFactorVerifyResponse {
+  verified: boolean;
+}
+
 export default function Home() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -18,6 +26,8 @@ export default function Home() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
 
   // Check if user is already logged in or has saved credentials
   useEffect(() => {
@@ -124,7 +134,20 @@ export default function Home() {
       const user = userCredential.user;
 
       if (!user.emailVerified) {
-        setErrorMessage('Please verify your email before logging in. Check your inbox for the verification link.');
+        setErrorMessage('Please verify your email before logging in.');
+        setIsLoading(false);
+        return;
+      }
+
+      // First check if 2FA is required
+      const twoFactorCheck = await apiRequest<TwoFactorCheckResponse>('/users/check-2fa', {
+        method: 'POST',
+        body: { email: user.email },
+        requireAuth: false,
+      });
+
+      if (twoFactorCheck.requires2FA) {
+        setRequires2FA(true);
         setIsLoading(false);
         return;
       }
@@ -171,6 +194,49 @@ export default function Home() {
     }
   };
 
+  const verify2FALogin = async () => {
+    try {
+      const response = await apiRequest<TwoFactorVerifyResponse>('/users/verify-2fa', {
+        method: 'POST',
+        body: {
+          email,
+          token: otpCode
+        },
+        requireAuth: false,
+      });
+
+      if (response.verified) {
+        // Complete the login process
+        const data = await apiRequest<LoginResponse>('/users/login', {
+          method: 'POST',
+          body: {
+            email,
+            firebaseUid: auth.currentUser?.uid,
+            name: auth.currentUser?.displayName?.split(' ')[0] || 'User',
+            lastName: auth.currentUser?.displayName?.split(' ')[1] || 'Unknown',
+          },
+          requireAuth: false,
+        });
+
+        localStorage.setItem('token', data.token);
+        
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberMe');
+        }
+        
+        router.push('/pages/dashboard');
+      } else {
+        setErrorMessage('Invalid 2FA code');
+      }
+    } catch (error) {
+      setErrorMessage('Error verifying 2FA code');
+    }
+  };
+
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
@@ -186,10 +252,57 @@ export default function Home() {
     );
   }
 
+  if (requires2FA) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.container}>
+          {/* Left Side */}
+          <div className={styles.sidebar}>
+            <div className={styles.brandContent}>
+              <h1>MoneyLens</h1>
+              <p>Secure authentication for your finances</p>
+            </div>
+          </div>
+
+          {/* Right Side */}
+          <div className={styles.formSection}>
+            <div className={styles.formContainer}>
+              <div className={styles.formContent}>
+                <h2>Two-Factor Authentication Required</h2>
+                <p>Please enter the code from your Google Authenticator app</p>
+                {errorMessage && (
+                  <div className={styles.errorMessage}>
+                    {errorMessage}
+                  </div>
+                )}
+                <div className={styles.inputGroup}>
+                  <label>Verification Code</label>
+                  <input
+                    type="text"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    placeholder="Enter 6-digit code"
+                    className={styles.input}
+                  />
+                </div>
+                <button 
+                  onClick={verify2FALogin}
+                  className={styles.signInButton}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Verifying...' : 'Verify'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        {/* Left Side */}
         <div className={styles.sidebar}>
           <div className={styles.brandContent}>
             <h1>MoneyLens</h1>
@@ -197,7 +310,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Side */}
         <div className={styles.formSection}>
           <div className={styles.formContainer}>
             <h2>Welcome!</h2>
@@ -208,12 +320,6 @@ export default function Home() {
                 {errorMessage}
               </div>
             )}
-
-            {/* Hidden form to trick browser autofill */}
-            <div style={{ display: 'none' }}>
-              <input type="text" id="fake-email" name="fake-email" tabIndex={-1} />
-              <input type="password" id="fake-password" name="fake-password" tabIndex={-1} />
-            </div>
 
             <form 
               ref={formRef}

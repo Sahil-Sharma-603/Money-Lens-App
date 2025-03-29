@@ -8,6 +8,9 @@ import {
   AccountsResponse,
 } from '@/app/assets/utilities/API_HANDLER';
 import React, { useEffect, useState, useCallback } from 'react';
+import { Button } from '@mui/material';
+
+import AlertBanner from '@/app/components/AlertBanner';
 
 interface CSVImportFormProps {
   onClose: () => void;
@@ -27,7 +30,16 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
   // Track total data rows in file
-  const [totalRows, setTotalRows] = useState<number>(0); 
+  const [totalRows, setTotalRows] = useState<number>(0);
+
+
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [alertType, setAlertType] = useState<'success' | 'error' | 'warning'>('success');
+  const showAlert = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+    setAlertMessage(message);
+    setAlertType(type);
+  };
+
 
   // Transaction fields
   const requiredFields = ['date', 'name', 'category'];
@@ -65,10 +77,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
         const hasHeader = true;
         const headerRow = hasHeader ? data[0] : [];
         const dataRows = hasHeader ? data.slice(1) : data;
-        
+
         // Set total rows in the file
         setTotalRows(dataRows.length);
-
 
         const previewData = showAllRows
           ? data
@@ -177,7 +188,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
 
       if (result.success) {
         if (result.errors > 0 || result.skipped > 0) {
-          alert(
+          showAlert(
             `Imported ${result.count} transactions.\n` +
               `${
                 result.skipped > 0
@@ -191,7 +202,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
               }`
           );
         } else {
-          alert(`Successfully imported ${result.count} transactions`);
+          showAlert(`Successfully imported ${result.count} transactions`,'success');
         }
         onSuccess();
       } else {
@@ -260,7 +271,15 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
   }, []);
 
   return (
+
     <div style={styles.container}>
+       {alertMessage && (
+        <AlertBanner
+          message={alertMessage}
+          type={alertType}
+          onClose={() => setAlertMessage(null)}
+        />
+      )}
       <h3>Import Transactions from CSV</h3>
 
       {!file ? (
@@ -276,8 +295,10 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
             style={styles.fileInput}
             id="csv-file-input"
           />
-          <label htmlFor="csv-file-input" style={styles.fileInputLabel}>
-            Select a CSV file
+          <label htmlFor="csv-file-input">
+            <Button variant="contained" component="span" color="primary">
+              Select a CSV file
+            </Button>
           </label>
           <p>or drag and drop a CSV file here</p>
         </div>
@@ -375,9 +396,9 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         // You could open a modal here to create a new account
-                        alert(
+                        showAlert(
                           'Click on "Close Import" button, then click on "Create Account" button on this page '
-                        );
+                        ,'warning');
                       }}
                     >
                       Create a new account
@@ -410,8 +431,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                       {preview.length > 0 &&
                         preview[0].map((cell, i) => (
                           <option key={i} value={i}>
-                            {i + 1}. {cell.substring(0, 20)}
-                            {cell.length > 20 ? '...' : ''}
+                            {i + 1}. {cell}
                           </option>
                         ))}
                     </select>
@@ -442,7 +462,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                         <option value="">Select column</option>
                         {preview[0].map((header, i) => (
                           <option key={i} value={i}>
-                            {header}
+                            {1 + i}.{header}
                           </option>
                         ))}
                       </select>
@@ -468,7 +488,7 @@ const CSVImportForm: React.FC<CSVImportFormProps> = ({
                         <option value="">Select column</option>
                         {preview[0].map((header, i) => (
                           <option key={i} value={i}>
-                            {header}
+                            {1 + i}.{header}
                           </option>
                         ))}
                       </select>

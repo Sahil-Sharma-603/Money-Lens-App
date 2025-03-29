@@ -11,9 +11,8 @@
 
   .pieChart {
     position: relative; 
-    margin: 20px; 
-    min-height: 200px;
-    min-width: 300px; 
+    height: auto;
+    min-width: 200px; 
   }
 
 
@@ -42,4 +41,10 @@
 
 .expensesTable tr:hover {
     background: rgba(0, 31, 63, 0.05);
+}
+
+.recurringExpensesScroll {
+    flex: 1; 
+    overflow-y: "auto"; 
+    max-height: "300px"; 
 }
