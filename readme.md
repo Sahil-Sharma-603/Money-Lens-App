@@ -107,7 +107,7 @@ The app includes Two-Factor Authentication using Google Authenticator. All neces
 
 ### Running Tests
 
-See our ![test plan](/documentation/architecture/Money-Lens_Test-Plan.pdf) for more details.
+See our ![test plan](https://github.com/Money-Lens/Money-Lens-App/blob/main/documentation/Money-Lens_Test-Plan.pdf) for more details.
 
 Unit and Integration:
 
