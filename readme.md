@@ -69,25 +69,25 @@ Money-Lens-App/
     ├── acceptance/
 ```
 
-### Running the App
+## Running the App
 
-#### 1: Using Docker Containers
+### 1: Using Docker Containers
 
 - First build the containers with the command `docker-compose up --build -d`
 - When finished using the containers, close them with the command `docker-compose down`
 - The frontend runs on "localhost:3000"
 - The backend runs on "localhost:5001"
 
-#### 2: Running Manually
+### 2: Running Manually
 
-##### Installation & Running Frontend
+#### Installation & Running Frontend
 
 - cd frontend
 - `npm install --legacy-peer-dep`
 - Once in frontend directory, run `npm run dev`
 - Note (Important): please use "--legacy-peer-dep" flag with npm install as shown above.
 
-##### Running Backend
+#### Running Backend
 
 - cd backend
 - `npm install`
@@ -105,7 +105,7 @@ The app includes Two-Factor Authentication using Google Authenticator. All neces
 3. After scanning, enter the 6-digit code from Google Authenticator to complete setup
 4. For future logins, you'll need to enter the current code from Google Authenticator
 
-##### Running Tests
+### Running Tests
 
 See our ![test plan](/documentation/architecture/Money-Lens_Test-Plan.pdf) for more details.
 
@@ -126,12 +126,6 @@ Run test coverage
 - npm run test:coverage
 
 ### Test Account for Sign ins
-
-For the Money Lens app:
-
-user: ginelletemull@gmail.com
-
-password: test123
 
 For Plaid account connection:
 

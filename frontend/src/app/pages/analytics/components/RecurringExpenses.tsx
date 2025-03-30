@@ -62,12 +62,6 @@ const RecurringExpenses = ({ recurringExpenses}: RecurringExpensesProps) => {
                     </tbody>
                 </table>
             </div>
-{/*         
-            <div  style={{ flex: 1, minHeight: "350px", minWidth: "300px"}}> 
-                <ResponsiveContainer width="100%" height="100%">
-                    <h4>expenses</h4>
-                </ResponsiveContainer>
-            </div> */}
         
         </Card>
 

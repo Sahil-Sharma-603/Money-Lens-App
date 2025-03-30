@@ -3,11 +3,7 @@ const mongoose = require('mongoose');
 
 
 const subGoalSchema = new mongoose.Schema({
-  // goalId: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   required: true,
-  //   ref: 'Goal'
-  // },
+ 
   name: {
     type: String,
     default: "unnamed subgoal"
@@ -116,11 +112,5 @@ const goalSchema = new mongoose.Schema({
 const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);
 
 
-//my version
 const SubGoal = mongoose.models.SubSavingGoal || mongoose.model('SubGoal', subGoalSchema);
 module.exports = {Goal, SubGoal}; 
-
-//Sahil's version
-// module.exports = { Goal };
-
-

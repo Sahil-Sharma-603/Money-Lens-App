@@ -340,47 +340,10 @@ router.put('/:id', auth, async (req, res) => {
 
     // Build update object with only provided fields
     const updateFields = {
-      // title, 
-      // description: description || '',
-      // targetAmount: Number(targetAmount),
-      // targetDate: new Date(getNextMonthDate()),
-      // currentAmount: currentAmount ? Number(currentAmount) : 0,
-      // type: type || 'Savings',
-      // selectedAccount: selectedAccount || undefined,
-      // userId: req.user._id,
-      // ...(type === 'Spending Limit' && {
-      //   limitAmount,
-      //   category,
-      //   interval
-      // }),
-      // ...(type === 'Savings' && {
-      //   subGoals: Array.isArray(subGoals) ? subGoals.map(subGoal => ({
-      //     name: subGoal.name || '',
-      //     goalAmount: subGoal.goalAmount ? Number(subGoal.goalAmount) : 0,
-      //     currentAmount: 0
-
-      //   })) : []
-      // })
+      
     };
 
-    // const newGoal = new Goal(newGoalData);
-    // console.log('Goal to be saved:', {
-    //   title: newGoal.title,
-    //   targetAmount: newGoal.targetAmount,
-    //   type: newGoal.type,
-    //   category: newGoal.category,
-    //   selectedAccount: newGoal.selectedAccount,
-    //   limitAmount: newGoal.limitAmount,
-    //   interval: newGoal.interval,
-    //   subGoals: newGoal.subGoals,
-    //   userId: newGoal.userId
-    // });
-
     
-    // const savedGoal = await newGoal.save();
-    // console.log('Goal saved successfully with ID:', savedGoal._id);
-
-
     if (title) updateFields.title = title;
     if (description !== undefined) updateFields.description = description;
     if (targetDate) updateFields.targetDate = new Date(targetDate);
