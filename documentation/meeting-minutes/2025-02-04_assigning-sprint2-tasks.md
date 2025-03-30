@@ -26,11 +26,11 @@ We'll aim for an aesthetic blue and white design with a side menu and top nav ba
 
 The login page with have a clean, simple look. 
 
-![Dashboard Layout](/images/project-layout-dashboard-2.png)
+![Dashboard Layout]([/images/project-layout-dashboard-2.png](https://github.com/Money-Lens/Money-Lens-App/blob/main/documentation/meeting-minutes/images/project-layout-dashboard-2.png))
 
-![Login Layout](/images/project-layout-login-2.png)
+![Login Layout]([/images/project-layout-login-2.png](https://github.com/Money-Lens/Money-Lens-App/blob/main/documentation/meeting-minutes/images/project-layout-login-2.png))
 
-![Settings Layout](/images/project-layout-settings-2.png)
+![Settings Layout]([/images/project-layout-settings-2.png](https://github.com/Money-Lens/Money-Lens-App/blob/main/documentation/meeting-minutes/images/project-layout-settings-2.png))
 
 ## Database
 
