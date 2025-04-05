@@ -6,7 +6,7 @@ Money Lens is a web application designed to simplify the process of managing per
 
 ### Group Members:
 
-- Jashanjot Gill
+- Jashanjot Gill [(Github Profile)](https://github.com/jashann)
 - Ginelle Temull
 - Una Mayberry
 - Sahil Sharma
