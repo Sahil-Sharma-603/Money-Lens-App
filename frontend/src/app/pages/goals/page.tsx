@@ -159,61 +159,56 @@ fetchGoals();
     return nextMonthDate;  // Return a Date object directly
   };
 
-
-
-  // Edit a goal in MongoDB
   const editGoal = async (updatedGoal: any, goalId: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      console.log('Updating goal with data:', updatedGoal);
-      console.log('Editing goal:', editingGoal);
-      
-      // Ensure subGoals exist before mapping
-      const updatedSubGoals = updatedGoal.subGoals && updatedGoal.subGoals.length > 0
-      ? updatedGoal.subGoals.map((subGoal: any) => ({
-          name: subGoal.name,
-          goalAmount: Number(subGoal.amount),
-          currentAmount: Number(subGoal.currentAmount) || 0,
-        }))
-      : []; // ✅ Always send an empty array if there are no sub-goals
-
-
+  
+      const isSavings = updatedGoal.type === 'Savings';
+  
       const goalToUpdate = {
         id: editingGoal._id,
         title: updatedGoal.title || editingGoal.title,
         description: updatedGoal.description || editingGoal.description,
-        targetAmount: Number(updatedGoal.targetAmount) || editingGoal.targetAmount,
-        currentAmount: Number(updatedGoal.currentAmount) || editingGoal.currentAmount,
+        type: updatedGoal.type || editingGoal.type,
+        selectedAccount: updatedGoal.selectedAccount || editingGoal.selectedAccount || null,
         targetDate: updatedGoal.targetDate instanceof Date
           ? updatedGoal.targetDate.toISOString()
-          : new Date(getNextMonthDate()).toISOString() || editingGoal.targetDate.toISOString(),
-        category: updatedGoal.category || editingGoal.category,
-        type: updatedGoal.type || editingGoal?.type,
-        interval: updatedGoal.interval || editingGoal?.interval,
-        subGoals: updatedGoal.subGoals.length > 0 ? updatedGoal.subGoals.map((subGoal: any, index: number) => ({
-          name: subGoal.name || editingGoal?.subGoals[index]?.name,
-          goalAmount: Number(subGoal.amount) || editingGoal?.subGoals[index]?.goalAmount,
-          currentAmount: Number(subGoal.currentAmount) || editingGoal?.subGoals[index]?.currentAmount,
-        })) : [],
-        selectedAccount: updatedGoal.selectedAccount || editingGoal?.selectedAccount || null,
-        limitAmount: updatedGoal.limitAmount || editingGoal.limitAmount || 0,
+          : new Date(getNextMonthDate()).toISOString(),
+  
+        ...(isSavings
+          ? {
+              targetAmount: Number(updatedGoal.targetAmount) || editingGoal.targetAmount,
+              currentAmount: Number(updatedGoal.currentAmount) || editingGoal.currentAmount,
+              subGoals: Array.isArray(updatedGoal.subGoals)
+                ? updatedGoal.subGoals.map((subGoal: any, index: number) => ({
+                    name: subGoal.name || editingGoal?.subGoals?.[index]?.name || '',
+                    goalAmount: Number(subGoal.amount ?? subGoal.goalAmount) || 0,
+                    currentAmount: Number(subGoal.currentAmount) || 0,
+                  }))
+                : [],
+            }
+          : {
+              limitAmount: Number(updatedGoal.limitAmount ?? editingGoal.limitAmount) || 0,
+              category: updatedGoal.category || editingGoal.category || '',
+              interval: updatedGoal.interval || editingGoal.interval || 'Monthly',
+              currentAmount: Number(updatedGoal.currentAmount) || editingGoal.currentAmount || 0,
+              targetAmount: 0, // Optional, won't be used for Spending
+              subGoals: [],    // Ensure it's empty
+            }),
       };
-
-
-      console.log('Formatted goal data for update:', goalToUpdate);
-      console.log('Goal ID to update:', updatedGoal._id);
-      console.log('Goal ID to update:', goalToUpdate.id);
+  
       const savedGoal = await apiRequest<Goal>(`/goals/${goalToUpdate.id}`, {
         method: 'PUT',
         body: goalToUpdate,
-        requireAuth: true
+        requireAuth: true,
       });
-
-      savedGoal.targetDate = new Date(savedGoal.targetDate);
-
-      setGoals(goals.map(g => g._id === savedGoal._id ? savedGoal : g));
+  
+      if (savedGoal.targetDate) {
+        savedGoal.targetDate = new Date(savedGoal.targetDate);
+      }
+  
+      setGoals(goals.map((g) => (g._id === savedGoal._id ? savedGoal : g)));
       fetchGoals();
       setEditingGoal(null);
       setError('Goal updated successfully!');
@@ -224,7 +219,7 @@ fetchGoals();
       setIsLoading(false);
     }
   };
-
+  
 
   // Add new function to handle money addition
   const addMoneyToGoal = async (goalId: string, amount: number) => {

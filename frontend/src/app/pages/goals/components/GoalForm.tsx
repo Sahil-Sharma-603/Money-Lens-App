@@ -118,19 +118,41 @@ export default function GoalForm({ onClose, onSubmit, initialGoal: initialGoalPr
   }, [accounts]);  // Runs once when the component mounts
 
 
-  useEffect(() => {
-  // Fetch unique categories for the filter dropdown
-  const fetchAvailableCategories = async () => {
-    try {
-      const response = await apiRequest('/transactions/categories');
-      setAvailableCategories(response.categories || []);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
+  // useEffect(() => {
+  // // Fetch unique categories for the filter dropdown
+  // const fetchAvailableCategories = async () => {
+  //   try {
+  //     const response = await apiRequest('/transactions/categories');
+  //     setAvailableCategories(response.categories || []);
+  //   } catch (error) {
+  //     console.error('Error fetching categories:', error);
+  //   }
+  // };
 
-  fetchAvailableCategories();
-  }), [availableCategories];
+  // fetchAvailableCategories();
+  // }), [availableCategories];
+  useEffect(() => {
+    const defaultCategories = ['Food', 'Entertainment', 'Shopping', 'Bills', 'Transportation', 'Health', 'Other'];
+  
+    const fetchAvailableCategories = async () => {
+      try {
+        const response = await apiRequest('/transactions/categories', { requireAuth: true });
+  
+        if (Array.isArray(response.categories) && response.categories.length > 0) {
+          setAvailableCategories(response.categories);
+        } else {
+          console.warn('No categories from backend. Using default categories.');
+          setAvailableCategories(defaultCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setAvailableCategories(defaultCategories);
+      }
+    };
+  
+    fetchAvailableCategories();
+  }, []);
+  
   
 
 
