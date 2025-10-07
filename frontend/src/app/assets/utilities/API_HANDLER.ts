@@ -1,6 +1,8 @@
 // import { Goal } from '../../types/goals';
 
-const BASE_URL = 'http://localhost:5001/api';
+// const BASE_URL = 'https://money-lens-app.onrender.com/api'; // ✅ correct
+ const BASE_URL = 'http://localhost:5001/api';
+
 
 export type ApiOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
